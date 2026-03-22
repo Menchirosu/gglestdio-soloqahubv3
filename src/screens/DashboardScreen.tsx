@@ -65,7 +65,7 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, s
 
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 lg:col-span-4">
-          <div className="bg-gradient-to-br from-primary to-primary-container p-8 rounded-lg text-white relative overflow-hidden shadow-2xl shadow-primary/20 h-full min-h-[320px] flex flex-col">
+          <div className="bg-primary p-8 rounded-lg text-white relative overflow-hidden shadow-2xl shadow-primary/20 h-full min-h-[320px] flex flex-col">
             <div className="relative z-10 flex flex-col h-full">
               <div className="mb-auto">
                 <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-bold tracking-widest uppercase mb-6 inline-block">Community Impact</span>

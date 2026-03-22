@@ -39,7 +39,8 @@ export const INITIAL_TIPS: Tip[] = [
     desc: 'Always validate your response schema against the documentation before checking data values. This catches contract breaks before they become logic bugs.',
     scenario: 'A microservice updates its JSON keys. Your tests fail on null values instead of identifying the structural change first.',
     author: 'Sarah J.',
-    time: '3 days ago'
+    time: '3 days ago',
+    date: 'Mar 19, 2026'
   },
   {
     id: '2',
@@ -48,7 +49,8 @@ export const INITIAL_TIPS: Tip[] = [
     desc: 'If you can\'t reproduce a bug within 20 minutes, document the steps you *did* take and move to a different task. Reset your perspective.',
     scenario: 'Chasing an intermittent race condition that eats up your entire morning without any captured logs.',
     author: 'David Chen',
-    time: '1 week ago'
+    time: '1 week ago',
+    date: 'Mar 15, 2026'
   },
   {
     id: '3',
@@ -58,6 +60,7 @@ export const INITIAL_TIPS: Tip[] = [
     scenario: 'Finding that navigation items are too small for an older user demographic despite being technically functional.',
     author: 'Maria A.',
     time: 'Yesterday',
+    date: 'Mar 21, 2026',
     highlight: true
   }
 ];

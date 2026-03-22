@@ -280,8 +280,24 @@ function MainApp() {
         </div>
       </aside>
 
+      {/* Search Backdrop */}
+      <AnimatePresence>
+        {isSearchResultsOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55]"
+            onClick={() => {
+              setIsSearchResultsOpen(false);
+              setSearchQuery('');
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* TopBar */}
-      <header className="fixed top-0 right-0 left-0 md:left-64 h-16 bg-background/70 backdrop-blur-xl border-b border-outline-variant/10 flex items-center justify-between px-8 z-30">
+      <header className={`fixed top-0 right-0 left-0 md:left-64 h-16 bg-background/70 backdrop-blur-xl border-b border-outline-variant/10 flex items-center justify-between px-8 transition-all duration-300 ${isSearchResultsOpen ? 'z-[60]' : 'z-30'}`}>
         <div className="flex items-center gap-4 flex-1 max-w-md">
           <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 hover:bg-surface-container-low rounded-full">
             <Menu size={20} />
@@ -306,7 +322,7 @@ function MainApp() {
                 }
               }}
               placeholder="Search wisdom, bugs, or tips..." 
-              className="w-full bg-surface-container-low border-none rounded-full py-2 pl-11 pr-10 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full bg-surface-container-low border-none rounded-full py-2 pl-11 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 transition-all"
             />
             {searchQuery && (
               <button 

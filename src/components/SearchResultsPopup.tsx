@@ -22,20 +22,13 @@ export function SearchResultsPopup({ isOpen, onClose, results, onResultClick, se
   return (
     <AnimatePresence>
       {isOpen && searchQuery && (
-        <div className="fixed inset-0 z-50 pointer-events-none">
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/10 backdrop-blur-[1px] pointer-events-auto" 
-            onClick={onClose} 
-          />
-          
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute top-full left-0 right-0 mt-2 bg-surface rounded-2xl shadow-2xl border border-outline-variant/20 overflow-hidden pointer-events-auto max-h-[400px] flex flex-col"
-          >
+        <motion.div
+          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="absolute top-full left-0 right-0 mt-2 bg-surface rounded-2xl shadow-2xl border border-outline-variant/20 overflow-hidden z-50 max-h-[400px] flex flex-col"
+        >
           <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between bg-surface-container-low">
             <div className="flex items-center gap-2">
               <Search size={14} className="text-primary" />
@@ -95,7 +88,6 @@ export function SearchResultsPopup({ isOpen, onClose, results, onResultClick, se
             </div>
           )}
         </motion.div>
-      </div>
     )}
   </AnimatePresence>
 );

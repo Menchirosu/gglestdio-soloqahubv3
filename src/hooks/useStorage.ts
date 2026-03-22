@@ -125,6 +125,7 @@ export function useStorage() {
       id: tipRef.id,
       authorId: auth.currentUser?.uid || null,
       time: 'Just now',
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       createdAt: serverTimestamp(),
     });
 

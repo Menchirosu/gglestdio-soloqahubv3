@@ -62,6 +62,8 @@ export interface Tip {
   author: string;
   authorId?: string;
   time: string;
+  date?: string;
+  createdAt?: any;
   highlight?: boolean;
 }
 
