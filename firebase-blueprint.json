@@ -1,0 +1,163 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with approval status and role.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique Firebase Auth ID." },
+        "email": { "type": "string", "format": "email", "description": "User's email address." },
+        "displayName": { "type": "string", "description": "User's display name." },
+        "photoURL": { "type": "string", "format": "uri", "description": "User's profile picture URL." },
+        "status": { 
+          "type": "string", 
+          "enum": ["pending", "approved", "rejected"],
+          "description": "Approval status of the user."
+        },
+        "role": { 
+          "type": "string", 
+          "enum": ["user", "admin"],
+          "description": "User's role in the application."
+        },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user profile was created." }
+      },
+      "required": ["uid", "email", "status", "role", "createdAt"]
+    },
+    "BugStory": {
+      "title": "Bug Story",
+      "description": "A story about a bug shared on the wall.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "author": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorPhotoURL": { "type": "string" },
+        "isAnonymous": { "type": "boolean" },
+        "date": { "type": "string" },
+        "title": { "type": "string" },
+        "impact": { "type": "string" },
+        "mood": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "discovery": { "type": "string" },
+        "lesson": { "type": "string" },
+        "reactions": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["author", "title", "impact", "mood", "discovery", "lesson", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a bug story.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "author": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorPhotoURL": { "type": "string" },
+        "text": { "type": "string" },
+        "date": { "type": "string" },
+        "isAnonymous": { "type": "boolean" },
+        "likes": { "type": "array", "items": { "type": "string" } },
+        "replies": { "type": "array", "items": { "$ref": "Comment" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["author", "text", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification for a user interaction.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["like", "comment", "system"] },
+        "title": { "type": "string" },
+        "desc": { "type": "string" },
+        "time": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "targetId": { "type": "string" },
+        "recipientId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "title", "desc", "isRead", "recipientId", "createdAt"]
+    },
+    "Tip": {
+      "title": "Tip",
+      "description": "A testing tip or trick.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cat": { "type": "string" },
+        "title": { "type": "string" },
+        "desc": { "type": "string" },
+        "scenario": { "type": "string" },
+        "author": { "type": "string" },
+        "time": { "type": "string" },
+        "highlight": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["cat", "title", "desc", "author", "createdAt"]
+    },
+    "Concern": {
+      "title": "Concern",
+      "description": "A wellness or workflow concern.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "author": { "type": "string" },
+        "isAnonymous": { "type": "boolean" },
+        "date": { "type": "string" },
+        "category": { "type": "string" },
+        "content": { "type": "string" },
+        "status": { "type": "string" },
+        "adminResponse": { "type": "string" },
+        "helpfulCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["author", "category", "content", "status", "helpfulCount", "createdAt"]
+    },
+    "Proposal": {
+      "title": "Proposal",
+      "description": "A knowledge sharing proposal.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "scope": { "type": "string" },
+        "author": { "type": "string" },
+        "date": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "scope", "author", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles."
+    },
+    "bugs/{bugId}": {
+      "schema": "BugStory",
+      "description": "Collection of bug stories."
+    },
+    "bugs/{bugId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Subcollection of comments for a bug story."
+    },
+    "notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Collection of user notifications."
+    },
+    "tips/{tipId}": {
+      "schema": "Tip",
+      "description": "Collection of testing tips."
+    },
+    "concerns/{concernId}": {
+      "schema": "Concern",
+      "description": "Collection of wellness concerns."
+    },
+    "proposals/{proposalId}": {
+      "schema": "Proposal",
+      "description": "Collection of knowledge sharing proposals."
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "ZenTask Dashboard",
+  "description": "A minimal, high-performance task management dashboard with real-time state management and sleek animations.",
+  "requestFramePermissions": []
+}

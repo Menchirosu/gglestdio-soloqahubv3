@@ -1,0 +1,248 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (UID from Firebase Auth)
+    // Fields:
+    //   - uid: string (required) - The unique Firebase Auth ID.
+    //   - email: string (required, format: email) - User's email address.
+    //   - displayName: string (optional) - User's display name.
+    //   - photoURL: string (optional, format: uri) - User's profile picture URL.
+    //   - status: string (required, enum: ["pending", "approved", "rejected"]) - Approval status.
+    //   - role: string (required, enum: ["user", "admin"]) - User's role.
+    //   - createdAt: timestamp (required) - When the profile was created.
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "cesena0117@gmail.com" && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'status', 'role', 'createdAt']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             data.role in ['user', 'admin'] &&
+             data.createdAt is timestamp;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidBug(data) {
+      return data.keys().hasAll(['author', 'title', 'impact', 'mood', 'discovery', 'lesson', 'createdAt']) &&
+             data.author is string && data.author.size() < 100 &&
+             data.title is string && data.title.size() < 200 &&
+             data.impact is string && data.impact.size() < 100 &&
+             data.mood is string && data.mood.size() < 100 &&
+             data.discovery is string && data.discovery.size() < 5000 &&
+             data.lesson is string && data.lesson.size() < 5000 &&
+             data.createdAt is timestamp &&
+             (!('id' in data) || data.id is string) &&
+             (!('date' in data) || data.date is string) &&
+             (!('reactions' in data) || data.reactions is map) &&
+             (!('comments' in data) || data.comments is list) &&
+             (!('tags' in data) || data.tags is list) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+             (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100)) &&
+             (!('imageUrl' in data) || data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() < 2000)) &&
+             (!('imageUrls' in data) || data.imageUrls == null || data.imageUrls is list) &&
+             (!('gifUrl' in data) || data.gifUrl == null || (data.gifUrl is string && data.gifUrl.size() < 2000)) &&
+             (!('authorPhotoURL' in data) || data.authorPhotoURL == null || (data.authorPhotoURL is string && data.authorPhotoURL.size() < 2000)) &&
+             (!('isAnonymous' in data) || data.isAnonymous is bool);
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['author', 'text', 'createdAt', 'bugId', 'id']) &&
+             data.author is string && data.author.size() < 100 &&
+             data.text is string && data.text.size() < 5000 &&
+             (data.createdAt is timestamp || data.createdAt is string) &&
+             data.bugId is string &&
+             data.id is string &&
+             (!('date' in data) || data.date is string) &&
+             (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100)) &&
+             (!('authorPhotoURL' in data) || data.authorPhotoURL == null || (data.authorPhotoURL is string && data.authorPhotoURL.size() < 2000)) &&
+             (!('imageUrl' in data) || data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() < 2000)) &&
+             (!('imageUrls' in data) || data.imageUrls == null || data.imageUrls is list) &&
+             (!('gifUrl' in data) || data.gifUrl == null || (data.gifUrl is string && data.gifUrl.size() < 2000)) &&
+             (!('isAnonymous' in data) || data.isAnonymous is bool) &&
+             (!('likes' in data) || data.likes is list) &&
+             (!('replies' in data) || data.replies is list);
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['type', 'title', 'desc', 'isRead', 'recipientId', 'createdAt']) &&
+             data.type in ['like', 'comment', 'system'] &&
+             data.title is string && data.title.size() < 200 &&
+             data.desc is string && data.desc.size() < 500 &&
+             data.isRead is bool &&
+             data.recipientId is string &&
+             data.createdAt is timestamp &&
+             (!('id' in data) || data.id is string) &&
+             (!('targetId' in data) || data.targetId is string) &&
+             (!('targetScreen' in data) || data.targetScreen is string) &&
+             (!('time' in data) || data.time is string);
+    }
+
+    function isValidTip(data) {
+      return data.keys().hasAll(['cat', 'title', 'desc', 'author', 'createdAt']) &&
+             data.cat is string &&
+             data.title is string && data.title.size() < 200 &&
+             data.desc is string && data.desc.size() < 2000 &&
+             data.author is string &&
+             data.createdAt is timestamp &&
+             (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100));
+    }
+
+    function isValidConcern(data) {
+      return data.keys().hasAll(['author', 'category', 'content', 'status', 'helpfulCount', 'createdAt']) &&
+             data.author is string &&
+             data.category is string &&
+             data.content is string && data.content.size() < 2000 &&
+             data.status is string &&
+             data.helpfulCount is number &&
+             data.createdAt is timestamp &&
+             (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100));
+    }
+
+    function isValidProposal(data) {
+      return data.keys().hasAll(['title', 'scope', 'author', 'createdAt']) &&
+             data.title is string && data.title.size() < 200 &&
+             data.scope is string && data.scope.size() < 2000 &&
+             data.author is string &&
+             data.createdAt is timestamp &&
+             (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100));
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Allow read if user is authenticated (to see names/photos)
+      allow read: if isAuthenticated();
+      allow get: if isAuthenticated();
+      allow list: if isAuthenticated();
+
+      // Allow create if user is authenticated and creating their own profile as 'pending' and 'user'
+      allow create: if isOwner(userId) && 
+                      isValidUser(request.resource.data) &&
+                      request.resource.data.status == 'pending' &&
+                      request.resource.data.role == 'user' &&
+                      request.resource.data.uid == request.auth.uid;
+
+      // Allow update:
+      // 1. Admins can update any field (status, role, etc.)
+      // 2. Owners can only update non-sensitive fields (displayName, photoURL)
+      allow update: if isAdmin() || 
+                      (isOwner(userId) && 
+                       isValidUser(request.resource.data) &&
+                       request.resource.data.status == resource.data.status &&
+                       request.resource.data.role == resource.data.role &&
+                       request.resource.data.uid == resource.data.uid &&
+                       request.resource.data.createdAt == resource.data.createdAt);
+    }
+
+    match /bugs/{bugId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        // Author can update their own bug within 15 mins
+        (request.auth.uid == resource.data.authorId && 
+         isValidBug(request.resource.data) &&
+         request.time < resource.data.createdAt + duration.value(15, 'm')) ||
+        // Anyone can update reactions or comments
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'comments']))
+      );
+      allow delete: if isAdmin() || (
+        isAuthenticated() && 
+        request.auth.uid == resource.data.authorId &&
+        request.time < resource.data.createdAt + duration.value(15, 'm')
+      );
+
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated() && (
+          ((isAdmin() || request.auth.uid == resource.data.authorId) && isValidComment(request.resource.data))
+          ||
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']) && (!('likes' in request.resource.data) || request.resource.data.likes is list))
+          ||
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replies']) && (!('replies' in request.resource.data) || request.resource.data.replies is list))
+          ||
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'replies']) && (!('likes' in request.resource.data) || request.resource.data.likes is list) && (!('replies' in request.resource.data) || request.resource.data.replies is list))
+        );
+        allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
+      }
+    }
+
+    // Collection group rules for comments
+    match /{path=**}/comments/{commentId} {
+      allow read: if isAuthenticated();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.recipientId in [request.auth.uid, 'all'];
+      allow create: if isAuthenticated() && isValidNotification(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.recipientId in [request.auth.uid, 'all'] && 
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      allow delete: if isAuthenticated() && resource.data.recipientId in [request.auth.uid, 'all'];
+    }
+
+    match /tips/{tipId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                      isValidTip(request.resource.data) &&
+                      (request.resource.data.authorId == null || request.resource.data.authorId == request.auth.uid);
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.authorId && isValidTip(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
+    }
+
+    match /concerns/{concernId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                      isValidConcern(request.resource.data) &&
+                      (request.resource.data.authorId == null || request.resource.data.authorId == request.auth.uid);
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (request.auth.uid == resource.data.authorId && isValidConcern(request.resource.data)) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['helpfulCount'])
+      );
+      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
+    }
+
+    match /proposals/{proposalId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                      isValidProposal(request.resource.data) &&
+                      (request.resource.data.authorId == null || request.resource.data.authorId == request.auth.uid);
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.authorId && isValidProposal(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
+    }
+  }
+}
