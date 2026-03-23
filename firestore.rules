@@ -17,6 +17,14 @@ service cloud.firestore {
     //   - role: string (required, enum: ["user", "admin"]) - User's role.
     //   - createdAt: timestamp (required) - When the profile was created.
     //
+    // Collection: knowledgeSharing
+    // Document ID: currentPresenter
+    // Fields:
+    //   - name: string (required) - Name of the selected presenter.
+    //   - photoURL: string (optional) - Photo URL of the presenter.
+    //   - uid: string (optional) - UID of the presenter.
+    //   - updatedAt: timestamp (required) - When the presenter was last updated.
+    //
     // ===============================================================
 
     // ===============================================================
@@ -137,9 +145,25 @@ service cloud.firestore {
              (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100));
     }
 
+    function isValidPresenter(data) {
+      return data.keys().hasAll(['name', 'updatedAt']) &&
+             data.name is string && data.name.size() < 100 &&
+             data.updatedAt is timestamp &&
+             (!('photoURL' in data) || data.photoURL == null || (data.photoURL is string && data.photoURL.size() < 2000)) &&
+             (!('uid' in data) || data.uid == null || (data.uid is string && data.uid.size() < 100));
+    }
+
     // ===============================================================
     // Collection Rules
     // ===============================================================
+
+    match /knowledgeSharing/currentPresenter {
+      allow read, write: if true;
+    }
+
+    match /knowledgeSharing/{document=**} {
+      allow read, write: if true;
+    }
 
     match /users/{userId} {
       // Allow read if user is authenticated (to see names/photos)

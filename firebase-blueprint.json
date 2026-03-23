@@ -1,5 +1,17 @@
 {
   "entities": {
+    "Presenter": {
+      "title": "Presenter",
+      "description": "Current presenter information.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "uid": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "updatedAt"]
+    },
     "User": {
       "title": "User Profile",
       "description": "User profile with approval status and role.",
@@ -158,6 +170,10 @@
     "proposals/{proposalId}": {
       "schema": "Proposal",
       "description": "Collection of knowledge sharing proposals."
+    },
+    "knowledgeSharing/currentPresenter": {
+      "schema": "Presenter",
+      "description": "Document storing the current presenter for knowledge sharing."
     }
   }
 }

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, updateDoc, serverTimestamp, Timestamp, arrayUnion, deleteDoc, orderBy, collectionGroup } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, updateDoc, serverTimestamp, Timestamp, arrayUnion, deleteDoc, orderBy, collectionGroup } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -289,4 +289,37 @@ export const markNotificationRead = async (notifId: string) => {
 export const markAllNotificationsRead = async (uid: string) => {
   // This is a bit inefficient without a batch, but for small scale it's okay.
   // In a real app, we'd use a batch or a cloud function.
+};
+
+// Knowledge Sharing - Presenter Picker
+export const updateCurrentPresenter = async (presenter: { name: string, photoURL?: string, uid?: string }) => {
+  try {
+    await setDoc(doc(db, 'knowledgeSharing', 'currentPresenter'), {
+      ...presenter,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, 'knowledgeSharing/currentPresenter');
+  }
+};
+
+export const getCurrentPresenter = (callback: (presenter: any) => void) => {
+  return onSnapshot(doc(db, 'knowledgeSharing', 'currentPresenter'), (doc) => {
+    if (doc.exists()) {
+      callback(doc.data());
+    } else {
+      callback(null);
+    }
+  }, (error) => handleFirestoreError(error, OperationType.GET, 'knowledgeSharing/currentPresenter'));
+};
+
+export const getAllUsers = async (): Promise<UserProfile[]> => {
+  try {
+    const q = query(collection(db, 'users'), where('status', '==', 'approved'));
+    const usersSnapshot = await getDocs(q);
+    return usersSnapshot.docs.map(doc => doc.data() as UserProfile);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, 'users');
+    return [];
+  }
 };

@@ -102,7 +102,7 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, s
           <div className="space-y-6">
             {latestActivity.map((entry) => (
               <div 
-                key={entry.id}
+                key={`${entry.type}-${entry.id}`}
                 onClick={() => onNavigate(entry.screen as Screen)}
                 className="group bg-surface-container-low hover:bg-surface-container-high transition-all p-6 rounded-lg flex gap-6 border-l-4 border-primary/20 hover:border-primary cursor-pointer"
               >

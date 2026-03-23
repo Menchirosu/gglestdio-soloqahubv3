@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Rocket, Sprout, Bug, BookOpen, Lightbulb, Edit3, Play, Send, Leaf, PlusCircle, MoreHorizontal, Trash2, X } from 'lucide-react';
+import { Rocket, Sprout, Bug, BookOpen, Lightbulb, Edit3, Play, Send, Leaf, PlusCircle, MoreHorizontal, Trash2, X, Trophy } from 'lucide-react';
 import { Screen, Proposal } from '../types';
 import { useAuth } from '../AuthContext';
-import { DuckRace } from '../components/DuckRace';
+import { SpinWheel } from '../components/SpinWheel';
+import { getAllUsers, getCurrentPresenter, UserProfile } from '../firebase';
 
 interface KnowledgeSharingProps {
   onNavigate: (screen: Screen) => void;
@@ -15,7 +16,7 @@ interface KnowledgeSharingProps {
   onClearSelection?: () => void;
 }
 
-const TEAM_PIONEERS = [
+const PLACEHOLDER_MEMBERS = [
   { name: 'Alex Chen', role: 'Automation Architect', active: true },
   { name: 'Jamie Lark', role: 'Security Specialist' },
   { name: 'Sia Varma', role: 'UX Quality Lead' },
@@ -37,6 +38,24 @@ const UPCOMING_TOPICS = [
 export function KnowledgeSharingScreen({ onNavigate, proposals, onAddProposal, onDeleteProposal, onEditProposal, searchQuery, selectedItemId, onClearSelection }: KnowledgeSharingProps) {
   const { profile } = useAuth();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [realUsers, setRealUsers] = useState<UserProfile[]>([]);
+  const [currentPresenter, setCurrentPresenter] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const users = await getAllUsers();
+      setRealUsers(users);
+    };
+    fetchUsers();
+
+    const unsubscribe = getCurrentPresenter(setCurrentPresenter);
+    return () => unsubscribe();
+  }, []);
+
+  const allMembers = [
+    ...realUsers.map(u => ({ name: u.displayName, role: u.role === 'admin' ? 'Admin' : 'Solo QA Architect', photoURL: u.photoURL, uid: u.uid })),
+    ...PLACEHOLDER_MEMBERS.filter(p => !realUsers.find(u => u.displayName === p.name))
+  ];
 
   const filteredProposals = proposals.filter(p => {
     if (selectedItemId) return p.id === selectedItemId;
@@ -56,27 +75,41 @@ export function KnowledgeSharingScreen({ onNavigate, proposals, onAddProposal, o
 
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 bg-surface-container-lowest rounded-lg p-8 shadow-sm relative overflow-hidden group">
-          <DuckRace />
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-xl font-bold text-on-surface font-headline">Presenter Picker</h3>
+              <p className="text-xs text-tertiary">Spin the wheel to choose this week's knowledge sharer.</p>
+            </div>
+            {currentPresenter && (
+              <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border border-primary/20 rounded-full animate-in fade-in slide-in-from-right-4">
+                <Trophy size={16} className="text-primary" />
+                <p className="text-xs font-bold text-primary">Current: {currentPresenter.name}</p>
+              </div>
+            )}
+          </div>
+          <SpinWheel members={allMembers} />
         </div>
 
         <div className="lg:col-span-4 bg-surface-container-low rounded-lg p-8 flex flex-col">
-          <h3 className="text-xl font-bold text-on-surface mb-6 font-headline">Team Pioneers</h3>
-          <div className="space-y-4 flex-1">
-            {TEAM_PIONEERS.map((member, i) => (
-              <div key={i} className="flex items-center gap-4 p-3 hover:bg-surface-container-lowest rounded-lg transition-all group">
+          <h3 className="text-xl font-bold text-on-surface mb-6 font-headline">Members</h3>
+          <div className="space-y-4 flex-1 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
+            {allMembers.map((member, i) => (
+              <div key={member.uid || member.name} className="flex items-center gap-4 p-3 hover:bg-surface-container-lowest rounded-lg transition-all group">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high ring-2 ring-transparent group-hover:ring-secondary/30 transition-all">
-                  <img src={`https://picsum.photos/seed/pioneer${i}/100/100`} alt={member.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <img 
+                    src={(member as any).photoURL || `https://picsum.photos/seed/pioneer${i}/100/100`} 
+                    alt={member.name} 
+                    className="w-full h-full object-cover" 
+                    referrerPolicy="no-referrer" 
+                  />
                 </div>
                 <div>
                   <p className="text-sm font-bold text-on-surface font-headline">{member.name}</p>
                   <p className="text-[11px] text-tertiary font-medium">{member.role}</p>
                 </div>
-                {member.active && <div className="ml-auto w-2 h-2 rounded-full bg-secondary-fixed-dim wellness-pulse"></div>}
+                {(member as any).active && <div className="ml-auto w-2 h-2 rounded-full bg-secondary-fixed-dim wellness-pulse"></div>}
               </div>
             ))}
-            <div className="pt-2 text-center">
-              <button className="text-[11px] font-bold text-primary uppercase tracking-widest hover:underline">+3 More Members</button>
-            </div>
           </div>
         </div>
       </section>
@@ -89,13 +122,13 @@ export function KnowledgeSharingScreen({ onNavigate, proposals, onAddProposal, o
           </div>
           <div className="space-y-4">
             {ARCHITECTURAL_LEGACY.map((item, i) => (
-              <div key={i} className="flex items-center gap-6 p-4 bg-surface-container-low rounded-xl group hover:bg-surface-container transition-colors">
+              <div key={`legacy-${i}`} className="flex items-center gap-6 p-4 bg-surface-container-low rounded-xl group hover:bg-surface-container transition-colors">
                 <span className="text-xs font-bold text-outline w-12">{item.date}</span>
                 <div className="flex-1">
                   <h4 className="text-sm font-bold text-on-surface font-headline">{item.title}</h4>
                   <p className="text-xs text-tertiary">{item.meta}</p>
                 </div>
-                <button className="p-2 bg-white rounded-full text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                <button className="p-2 bg-surface rounded-full text-primary opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                   <Play size={16} fill="currentColor" />
                 </button>
               </div>
@@ -203,7 +236,7 @@ export function KnowledgeSharingScreen({ onNavigate, proposals, onAddProposal, o
             </div>
           ))}
           {filteredUpcoming.map((item, i) => (
-            <div key={i} className={`bg-surface-container-low p-8 rounded-lg group hover:bg-surface-container-lowest hover:shadow-lg transition-all border-b-4 ${item.color}`}>
+            <div key={`upcoming-${i}`} className={`bg-surface-container-low p-8 rounded-lg group hover:bg-surface-container-lowest hover:shadow-lg transition-all border-b-4 ${item.color}`}>
               <div className="flex justify-between items-start mb-6">
                 <span className={`px-3 py-1 ${item.bg} text-on-surface text-[10px] font-bold rounded-full uppercase tracking-tighter`}>{item.date}</span>
                 <item.icon size={20} className="opacity-40" />

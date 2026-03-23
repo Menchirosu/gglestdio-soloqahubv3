@@ -5,33 +5,34 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-headline: "Manrope", sans-serif;
   
-  --color-background: #FAFAF8;
-  --color-foreground: #292524;
-  --color-surface: #F5F3EE;
-  --color-on-surface: #292524;
-  --color-surface-container-low: #FAFAF8;
-  --color-surface-container-high: #F5F3EE;
-  --color-surface-container-highest: #E7E5E4;
-  --color-on-surface-variant: #78716C;
-  --color-outline: #78716C;
-  --color-outline-variant: #E7E5E4;
-  --color-card: #F5F3EE;
-  --color-card-foreground: #292524;
-  --color-primary: #D97706;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #F5F3EE;
-  --color-secondary-foreground: #292524;
-  --color-tertiary: #78716C;
-  --color-error: #ef4444;
-  --color-muted: #F5F3EE;
-  --color-muted-foreground: #78716C;
-  --color-accent: #F5F3EE;
-  --color-accent-foreground: #292524;
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #FAFAF8;
-  --color-border: #E7E5E4;
-  --color-input: #E7E5E4;
-  --color-ring: #D97706;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--card);
+  --color-on-surface: var(--foreground);
+  --color-surface-container-lowest: var(--background);
+  --color-surface-container-low: var(--surface-low);
+  --color-surface-container-high: var(--surface-high);
+  --color-surface-container-highest: var(--surface-highest);
+  --color-on-surface-variant: var(--muted-foreground);
+  --color-outline: var(--muted-foreground);
+  --color-outline-variant: var(--border);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--muted-foreground);
+  --color-error: var(--destructive);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
 @layer base {
@@ -54,6 +55,10 @@
     --input: #E7E5E4;
     --ring: #D97706;
     --radius: 0.75rem;
+
+    --surface-low: #FAFAF8;
+    --surface-high: #F5F3EE;
+    --surface-highest: #E7E5E4;
   }
 
   .dark {
@@ -74,16 +79,18 @@
     --border: #44403C;
     --input: #44403C;
     --ring: #D97706;
+
+    --surface-low: #292524;
+    --surface-high: #44403C;
+    --surface-highest: #57534E;
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-white/70 backdrop-blur-md border border-white/20;
-  }
-  
-  .dark .glass {
-    @apply bg-slate-900/70 backdrop-blur-md border border-slate-800/50;
+    background-color: color-mix(in srgb, var(--background) 70%, transparent);
+    backdrop-filter: blur(12px);
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
   }
 
   .breathing-circle {
