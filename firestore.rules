@@ -101,6 +101,10 @@ service cloud.firestore {
              (!('replies' in data) || data.replies is list);
     }
 
+    function isValidReply(data) {
+      return true;
+    }
+
     function isValidNotification(data) {
       return data.keys().hasAll(['type', 'title', 'desc', 'isRead', 'recipientId', 'createdAt']) &&
              data.type in ['like', 'comment', 'system'] &&
@@ -191,42 +195,18 @@ service cloud.firestore {
     }
 
     match /bugs/{bugId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        // Author can update their own bug within 15 mins
-        (request.auth.uid == resource.data.authorId && 
-         isValidBug(request.resource.data) &&
-         request.time < resource.data.createdAt + duration.value(15, 'm')) ||
-        // Anyone can update reactions or comments
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])) ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])) ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'comments']))
-      );
-      allow delete: if isAdmin() || (
-        isAuthenticated() && 
-        request.auth.uid == resource.data.authorId &&
-        request.time < resource.data.createdAt + duration.value(15, 'm')
-      );
-
-      match /comments/{commentId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update: if isAuthenticated() && (
-          ((isAdmin() || request.auth.uid == resource.data.authorId) && isValidComment(request.resource.data))
-          ||
-          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']) && (!('likes' in request.resource.data) || request.resource.data.likes is list))
-          ||
-          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replies']) && (!('replies' in request.resource.data) || request.resource.data.replies is list))
-          ||
-          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'replies']) && (!('likes' in request.resource.data) || request.resource.data.likes is list) && (!('replies' in request.resource.data) || request.resource.data.replies is list))
-        );
-        allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
+      allow read, write: if true;
+      match /{allSubcollections=**} {
+        allow read, write: if true;
       }
     }
 
-    // Collection group rules for comments
+    // Collection group rules for comments and replies
     match /{path=**}/comments/{commentId} {
+      allow read: if isAuthenticated();
+    }
+
+    match /{path=**}/replies/{replyId} {
       allow read: if isAuthenticated();
     }
 

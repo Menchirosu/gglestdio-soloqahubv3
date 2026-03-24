@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { getFirestore, doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, updateDoc, serverTimestamp, Timestamp, arrayUnion, deleteDoc, orderBy, collectionGroup } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, updateDoc, serverTimestamp, Timestamp, arrayUnion, deleteDoc, orderBy, collectionGroup, getDocFromServer } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -10,6 +10,20 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Connection Test
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+    console.log("Firestore connection successful");
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Please check your Firebase configuration. The client is offline.");
+    }
+    // Skip logging for other errors, as this is simply a connection test.
+  }
+}
+testConnection();
 
 export const uploadImage = async (file: File, path: string): Promise<string> => {
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dq5kvfglj';
@@ -255,12 +269,31 @@ export const reactToComment = async (bugId: string, commentId: string, likes: st
   }
 };
 
-export const replyToComment = async (bugId: string, commentId: string, replies: any[]) => {
+export const addReply = async (bugId: string, commentId: string, reply: any) => {
   try {
-    await updateDoc(doc(db, 'bugs', bugId, 'comments', commentId), { replies });
+    const replyRef = doc(collection(db, 'bugs', bugId, 'comments', commentId, 'replies'));
+    const newReply = {
+      ...reply,
+      id: replyRef.id,
+      bugId,
+      commentId,
+      createdAt: new Date().toISOString(),
+    };
+    await setDoc(replyRef, newReply);
+    return newReply.id;
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, `bugs/${bugId}/comments/${commentId}`);
+    handleFirestoreError(error, OperationType.WRITE, `bugs/${bugId}/comments/${commentId}/replies`);
   }
+};
+
+export const getReplies = (bugId: string, commentId: string, callback: (replies: any[]) => void) => {
+  const repliesQuery = query(collection(db, 'bugs', bugId, 'comments', commentId, 'replies'));
+  return onSnapshot(repliesQuery, (snapshot) => {
+    const replies = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).sort((a: any, b: any) => 
+      new Date(a.createdAt || a.date).getTime() - new Date(b.createdAt || b.date).getTime()
+    );
+    callback(replies);
+  }, (error) => handleFirestoreError(error, OperationType.GET, `bugs/${bugId}/comments/${commentId}/replies`));
 };
 
 // Notifications

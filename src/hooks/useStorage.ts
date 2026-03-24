@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BugStory, Tip, Concern, Proposal, Notification, Comment } from '../types';
 import { INITIAL_BUGS, INITIAL_TIPS, INITIAL_CONCERNS } from '../constants';
-import { db, auth, createBugStory, updateBugReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, replyToComment as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType } from '../firebase';
+import { db, auth, createBugStory, updateBugReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType } from '../firebase';
 import { collection, onSnapshot, query, orderBy, where, writeBatch, doc, setDoc, serverTimestamp, updateDoc, deleteDoc, collectionGroup } from 'firebase/firestore';
 
 export function useStorage() {
@@ -53,9 +53,32 @@ export function useStorage() {
         });
       });
     }, (error) => {
-      // If index is missing, it will show a link in console
-      console.error("Collection group query error:", error);
+      console.error("Collection group query error (comments):", error);
       handleFirestoreError(error, OperationType.GET, 'all-comments');
+    });
+
+    // Listen to all replies across all comments and bugs
+    const repliesQuery = query(collectionGroup(db, 'replies'));
+    const unsubscribeReplies = onSnapshot(repliesQuery, (snapshot) => {
+      const allReplies = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as any));
+      
+      setBugs(prevBugs => {
+        return prevBugs.map(bug => {
+          if (!bug.comments) return bug;
+          const updatedComments = bug.comments.map(comment => {
+            const subReplies = allReplies.filter(r => r.commentId === comment.id);
+            // Merge with legacy replies if any
+            const legacyReplies = comment.replies?.filter(r => !subReplies.find(sr => sr.id === r.id)) || [];
+            return { ...comment, replies: [...legacyReplies, ...subReplies].sort((a, b) => 
+              new Date(a.createdAt || a.date).getTime() - new Date(b.createdAt || b.date).getTime()
+            ) };
+          });
+          return { ...bug, comments: updatedComments };
+        });
+      });
+    }, (error) => {
+      console.error("Collection group query error (replies):", error);
+      handleFirestoreError(error, OperationType.GET, 'all-replies');
     });
 
     const tipsQuery = query(collection(db, 'tips'), orderBy('createdAt', 'desc'));
@@ -90,6 +113,7 @@ export function useStorage() {
     return () => {
       unsubscribeBugs();
       unsubscribeComments();
+      unsubscribeReplies();
       unsubscribeTips();
       unsubscribeConcerns();
       unsubscribeProposals();
@@ -286,14 +310,7 @@ export function useStorage() {
     const comment = bug.comments?.find(c => c.id === commentId);
     if (!comment) return;
 
-    const newReply = {
-      ...reply,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
-
-    const replies = [...(comment.replies || []), newReply];
-    await firebaseReplyToComment(bugId, commentId, replies);
+    await firebaseReplyToComment(bugId, commentId, reply);
 
     // Notify comment author
     if (comment.authorId && comment.authorId !== reply.authorId) {

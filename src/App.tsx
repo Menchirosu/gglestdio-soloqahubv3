@@ -507,6 +507,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                 onClearSelection={() => setSelectedItemId(null)}
                 onSearchChange={setSearchQuery}
                 showToast={showToast}
+                onAddBugSubmit={handleBugSubmit}
               />
             )}
             {currentScreen === 'tips-tricks' && (
@@ -554,7 +555,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       <Modal 
         isOpen={activeModal?.type === 'bug'} 
         onClose={() => setActiveModal(null)} 
-        title="Post a Bug Story"
+        hideHeader
       >
         <BugForm 
           onSubmit={handleBugSubmit} 
@@ -566,7 +567,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       <Modal 
         isOpen={activeModal?.type === 'edit-bug'} 
         onClose={() => setActiveModal(null)} 
-        title="Edit Bug Story"
+        hideHeader
       >
         {activeModal?.type === 'edit-bug' && (
           <BugForm 
