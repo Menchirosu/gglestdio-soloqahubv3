@@ -53,6 +53,23 @@ export default function App() {
 
 function AppContent() {
   const { user, loading, isApproved } = useAuth();
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('darkMode');
+      // Default to false (light mode) if no preference is saved, instead of auto-detecting system preference
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
 
   if (loading) {
     return (
@@ -72,12 +89,12 @@ function AppContent() {
 
   return (
     <SearchProvider>
-      <MainApp />
+      <MainApp isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
     </SearchProvider>
   );
 }
 
-function MainApp() {
+function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDarkMode: (val: boolean) => void }) {
   const { profile, isAdmin } = useAuth();
   const { searchQuery, setSearchQuery, selectedItemId, setSelectedItemId } = useSearch();
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard');
@@ -85,22 +102,6 @@ function MainApp() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('darkMode');
-      return saved ? JSON.parse(saved) : window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-  }, [isDarkMode]);
 
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 

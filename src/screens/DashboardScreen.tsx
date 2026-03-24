@@ -44,7 +44,7 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, s
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="max-w-2xl">
             <h1 className="text-5xl font-extrabold text-on-surface tracking-tighter mb-4 leading-tight font-headline">
-              A home for solo QAs to <span className="text-primary italic">learn</span>, <span className="text-secondary italic">share</span>, and <span className="text-tertiary italic">breathe</span>.
+              A home for solo QAs to <span className="text-primary italic">learn</span>, <span className="text-primary italic">share</span>, and <span className="text-tertiary italic">breathe</span>.
             </h1>
             <p className="text-lg text-on-surface-variant leading-relaxed max-w-xl">
               Post bug stories, exchange testing wisdom, raise concerns, and recharge before the next test cycle.
@@ -65,33 +65,32 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, s
 
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 lg:col-span-4">
-          <div className="bg-primary p-8 rounded-lg text-white relative overflow-hidden shadow-2xl shadow-primary/20 h-full min-h-[320px] flex flex-col">
+          <div className="bg-[#FEF3C7] p-8 rounded-lg text-[#92400E] relative overflow-hidden h-full min-h-[320px] flex flex-col">
             <div className="relative z-10 flex flex-col h-full">
               <div className="mb-auto">
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-bold tracking-widest uppercase mb-6 inline-block">Community Impact</span>
+                <span className="px-3 py-1 bg-[#FDE68A] rounded-full text-[10px] font-bold tracking-widest uppercase mb-6 inline-block">Community Impact</span>
                 <h2 className="text-3xl font-bold mb-2 font-headline">QA Solo Hub Stats</h2>
-                <p className="text-white/80 font-medium">Your collective contributions at a glance.</p>
+                <p className="text-[#92400E]/80 font-medium">Your collective contributions at a glance.</p>
               </div>
               <div className="mt-8 grid grid-cols-2 gap-4">
-                <div className="bg-white/10 p-4 rounded-xl">
+                <div className="bg-[#FDE68A] p-4 rounded-xl">
                   <p className="text-3xl font-bold">{bugs.length}</p>
-                  <p className="text-xs opacity-70">Bugs Reported</p>
+                  <p className="text-xs font-medium">Bugs Reported</p>
                 </div>
-                <div className="bg-white/10 p-4 rounded-xl">
+                <div className="bg-[#FDE68A] p-4 rounded-xl">
                   <p className="text-3xl font-bold">{tips.length}</p>
-                  <p className="text-xs opacity-70">Tips Shared</p>
+                  <p className="text-xs font-medium">Tips Shared</p>
                 </div>
-                <div className="bg-white/10 p-4 rounded-xl">
+                <div className="bg-[#FDE68A] p-4 rounded-xl">
                   <p className="text-3xl font-bold">{proposals.length}</p>
-                  <p className="text-xs opacity-70">Proposals</p>
+                  <p className="text-xs font-medium">Proposals</p>
                 </div>
-                <div className="bg-white/10 p-4 rounded-xl">
+                <div className="bg-[#FDE68A] p-4 rounded-xl">
                   <p className="text-3xl font-bold">{concerns.length}</p>
-                  <p className="text-xs opacity-70">Concerns</p>
+                  <p className="text-xs font-medium">Concerns</p>
                 </div>
               </div>
             </div>
-            <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
           </div>
         </div>
 
