@@ -3,14 +3,22 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Bug, MoreHorizontal, PlusCircle, MessageCircle, Heart, Shield, Trash2, Clock, Edit3, Image as ImageIcon, Smile, Share2, CornerDownRight, AlertCircle, Zap, Send, Search, X, Repeat } from 'lucide-react';
 import { BugStory } from '../types';
 import { useAuth } from '../AuthContext';
+import { timeAgo } from '../utils/timeAgo';
 import Linkify from 'linkify-react';
 import { GiphyFetch } from '@giphy/js-fetch-api';
 
+const isSafeUrl = (href: string) =>
+  /^https?:\/\//i.test(href) &&
+  !/^(javascript|data|vbscript):/i.test(href);
+
 const safeLinkifyOptions = {
-  className: 'text-primary hover:underline',
+  className: 'text-primary hover:underline break-all',
   target: '_blank',
   rel: 'noopener noreferrer nofollow',
-  attributes: (href: string) => /^https?:\/\//i.test(href) ? {} : { href: '#', onClick: (e: Event) => e.preventDefault() },
+  attributes: (href: string) =>
+    isSafeUrl(href)
+      ? {}
+      : { href: '#', onClick: (e: Event) => e.preventDefault() },
 };
 import { Grid, Gif } from '@giphy/react-components';
 import { uploadImage } from '../firebase';
@@ -237,11 +245,20 @@ export function BugWallScreen({
   const getMoodColor = (mood: string) => {
     if (!mood) return 'bg-surface-container-high text-on-surface-variant border-outline-variant/20';
     if (mood.includes('Terrified')) return 'bg-error/10 text-error border-error/20';
-    if (mood.includes('Amused')) return 'bg-secondary/10 text-secondary border-secondary/20';
-    if (mood.includes('Frustrated')) return 'bg-tertiary/10 text-tertiary border-tertiary/20';
-    if (mood.includes('Proud')) return 'bg-primary/10 text-primary border-primary/20';
+    if (mood.includes('Amused')) return 'bg-blue-500/10 text-blue-500 border-blue-300/40';
+    if (mood.includes('Frustrated')) return 'bg-amber-500/10 text-amber-600 border-amber-300/40';
+    if (mood.includes('Proud')) return 'bg-emerald-500/10 text-emerald-600 border-emerald-300/40';
     if (mood.includes('Confused')) return 'bg-outline/10 text-outline border-outline/20';
     return 'bg-surface-container-high text-on-surface-variant border-outline-variant/20';
+  };
+
+  const getMoodBorderColor = (mood: string) => {
+    if (!mood) return 'border-l-outline-variant/30';
+    if (mood.includes('Terrified')) return 'border-l-red-500';
+    if (mood.includes('Frustrated')) return 'border-l-amber-500';
+    if (mood.includes('Proud')) return 'border-l-emerald-500';
+    if (mood.includes('Amused')) return 'border-l-blue-400';
+    return 'border-l-primary/40';
   };
 
   const getAvatarUrl = (item: { authorId?: string, authorPhotoURL?: string, author: string, isAnonymous?: boolean, id: string }) => {
@@ -312,7 +329,7 @@ export function BugWallScreen({
               <div className="p-2.5 bg-primary/10 rounded-xl">
                 <Bug className="text-primary" size={28} />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">System Intelligence</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">Bug Archive</span>
             </div>
             <h2 className="text-6xl md:text-7xl font-black text-on-surface tracking-tighter font-headline leading-[0.9]">
               Freedom <span className="text-primary italic">Wall</span>
@@ -349,7 +366,7 @@ export function BugWallScreen({
             <div className="flex-1 text-outline/40 text-sm font-medium">
               What's the bug story today, {profile?.displayName?.split(' ')[0]}?
             </div>
-            <button className="px-4 py-1.5 bg-on-surface text-surface text-sm font-bold rounded-full opacity-50 group-hover:opacity-100 transition-opacity">
+            <button className="px-4 py-1.5 bg-primary text-primary-foreground text-sm font-bold rounded-full transition-opacity">
               Post
             </button>
           </div>
@@ -409,14 +426,14 @@ export function BugWallScreen({
         )}
         <AnimatePresence mode="popLayout">
           {filteredBugs.map((bug) => (
-            <motion.article 
+            <motion.article
               layout
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              key={bug.id} 
+              key={bug.id}
               onClick={() => setCommentingOn(prev => prev === bug.id ? null : bug.id)}
-              className={`bug-card group relative bg-surface py-6 transition-all border-b border-outline-variant/10 last:border-0 cursor-pointer ${commentingOn === bug.id ? 'bg-surface-container-low/50' : 'hover:bg-surface-container-low/30'}`}
+              className={`bug-card group relative bg-surface py-6 transition-all border-b border-outline-variant/10 last:border-0 cursor-pointer border-l-[3px] pl-4 ${getMoodBorderColor(bug.mood)} ${commentingOn === bug.id ? 'bg-surface-container-low/50' : 'hover:bg-surface-container-low/30'}`}
             >
               <div className="flex gap-3">
                 {/* Avatar Column */}
@@ -429,17 +446,17 @@ export function BugWallScreen({
                       referrerPolicy="no-referrer" 
                     />
                   </div>
-                  <div className="w-0.5 flex-1 bg-outline-variant/20 rounded-full" />
                 </div>
                 
                 <div className="flex-1 min-w-0 space-y-2">
                   {/* Top Row */}
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-sm font-bold text-on-surface hover:underline cursor-pointer">
                         {bug.isAnonymous ? 'Anonymous Architect' : bug.author}
                       </h4>
-                      <span className="text-xs text-outline/60">{bug.date}</span>
+                      <span className="text-xs text-outline/60">{timeAgo(bug.createdAt || bug.date)}</span>
+                      <span className="text-[9px] font-mono text-outline/35 hidden sm:inline">#{bug.id.slice(0, 7).toUpperCase()}</span>
                     </div>
                     
                     <div className="relative">
@@ -525,8 +542,32 @@ export function BugWallScreen({
                     </motion.div>
                   )}
 
-                  <div className="space-y-3">
-                    <p className={`text-sm text-on-surface leading-relaxed whitespace-pre-wrap ${commentingOn !== bug.id ? 'line-clamp-3' : ''}`}>
+                  {/* Title + severity badges */}
+                  <div className="space-y-1.5 mt-1">
+                    {bug.title && (
+                      <h3 className="text-base font-bold text-on-surface font-headline leading-snug">{bug.title}</h3>
+                    )}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {bug.impact && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider bg-error/10 text-error border border-error/20">
+                          {bug.impact}
+                        </span>
+                      )}
+                      {bug.mood && (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${getMoodColor(bug.mood)}`}>
+                          {bug.mood}
+                        </span>
+                      )}
+                      {bug.tags?.map(tag => (
+                        <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider bg-surface-container-high text-outline/70 border border-outline-variant/20">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 mt-2">
+                    <p className={`text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap ${commentingOn !== bug.id ? 'line-clamp-3' : ''}`}>
                       <Linkify options={safeLinkifyOptions}>
                         {bug.discovery}
                       </Linkify>
@@ -627,7 +668,7 @@ export function BugWallScreen({
                                   <span className="text-sm font-bold text-on-surface">
                                     {comment.isAnonymous ? 'Anonymous Architect' : comment.author}
                                   </span>
-                                  <span className="text-xs text-outline/60">{comment.date}</span>
+                                  <span className="text-xs text-outline/60">{timeAgo(comment.createdAt || comment.date)}</span>
                                 </div>
                                 
                                 {isCommentDeletable(comment) && (
@@ -775,7 +816,7 @@ export function BugWallScreen({
                                               <span className="text-[10px] font-black uppercase tracking-tight text-on-surface">
                                                 {reply.isAnonymous ? 'Anonymous Architect' : reply.author}
                                               </span>
-                                              <span className="text-[8px] font-black text-outline/40 uppercase tracking-widest">{reply.date}</span>
+                                              <span className="text-[8px] font-black text-outline/40 uppercase tracking-widest">{timeAgo(reply.createdAt || reply.date)}</span>
                                             </div>
                                             <p className="text-xs text-on-surface-variant font-medium leading-relaxed whitespace-pre-wrap break-words">
                                               <Linkify options={{ ...safeLinkifyOptions, className: 'text-primary hover:underline font-bold' }}>

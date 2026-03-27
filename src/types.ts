@@ -1,14 +1,13 @@
-import { 
-  LayoutDashboard, 
-  Bug, 
-  Lightbulb, 
-  BookOpen, 
-  AlertTriangle, 
+import {
+  LayoutDashboard,
+  Bug,
+  Lightbulb,
+  BookOpen,
   Focus,
   LucideIcon
 } from 'lucide-react';
 
-export type Screen = 'dashboard' | 'bug-wall' | 'tips-tricks' | 'knowledge-sharing' | 'concerns' | 'focus-zone' | 'admin-dashboard';
+export type Screen = 'dashboard' | 'bug-wall' | 'tips-tricks' | 'knowledge-sharing' | 'focus-zone' | 'admin-dashboard';
 
 export interface NavItem {
   id: Screen;
@@ -67,18 +66,6 @@ export interface Tip {
   highlight?: boolean;
 }
 
-export interface Concern {
-  id: string;
-  author: string;
-  authorId?: string;
-  isAnonymous: boolean;
-  date: string;
-  category: string;
-  content: string;
-  status: 'Under Review' | 'Resolved' | 'In Progress';
-  adminResponse?: string;
-  helpfulCount: number;
-}
 
 export interface Notification {
   id: string;
@@ -99,6 +86,7 @@ export interface Proposal {
   author: string;
   authorId?: string;
   date: string;
+  createdAt?: any;
   type?: 'Session' | 'Resource';
   tags?: string[];
 }

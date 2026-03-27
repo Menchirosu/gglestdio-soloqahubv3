@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, MoreHorizontal, Edit3, Trash2, X, Lightbulb, ArrowUpDown, Calendar, User as UserIcon } from 'lucide-react';
 import { Tip } from '../types';
 import { useAuth } from '../AuthContext';
+import { timeAgo } from '../utils/timeAgo';
 
 interface TipsTricksProps {
   tips: Tip[];
@@ -159,7 +160,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, searc
               </div>
               <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                 <span className={`text-[10px] font-medium uppercase tracking-wider ${tip.highlight ? 'text-white/60' : 'text-outline'}`}>
-                  {tip.date || tip.time}
+                  {timeAgo(tip.createdAt || tip.date || tip.time)}
                 </span>
                 
                 {(profile?.uid === tip.authorId || (!tip.authorId && profile?.displayName === tip.author)) && (

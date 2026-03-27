@@ -51,7 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(userProfile);
 
         // Listen for real-time profile changes (e.g. admin approving)
-        console.log("Listening to user profile:", firebaseUser.uid);
         const profileUnsubscribe = onSnapshot(doc(db, 'users', firebaseUser.uid), (doc) => {
           if (doc.exists()) {
             setProfile(doc.data() as UserProfile);

@@ -11,6 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@giphy/js-fetch-api": "^5.7.0",
     "@giphy/react-components": "^10.1.1",
     "@google/genai": "^1.29.0",
@@ -19,19 +20,20 @@
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "firebase": "^12.11.0",
+    "howler": "^2.2.4",
     "linkify-react": "^4.3.2",
     "linkifyjs": "^4.3.2",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-linkify": "^1.0.0-alpha",
-    "socket.io": "^4.8.3",
+"socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "vite": "^6.2.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
+    "@types/howler": "^2.2.12",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
     "tailwindcss": "^4.1.14",

@@ -1,9 +1,9 @@
 import React from 'react';
-import { Bug, Lightbulb, BookOpen, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Bug, Lightbulb, BookOpen, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface EntrySelectorModalProps {
-  onSelect: (type: 'bug' | 'tip' | 'knowledge' | 'concern') => void;
+  onSelect: (type: 'bug' | 'tip' | 'knowledge') => void;
 }
 
 export function EntrySelectorModal({ onSelect }: EntrySelectorModalProps) {
@@ -32,14 +32,6 @@ export function EntrySelectorModal({ onSelect }: EntrySelectorModalProps) {
       color: 'text-secondary',
       bgColor: 'bg-secondary/10'
     },
-    {
-      id: 'concern',
-      title: 'Concerns',
-      desc: 'Raise a concern or suggestion for improvement.',
-      icon: AlertTriangle,
-      color: 'text-tertiary',
-      bgColor: 'bg-tertiary/10'
-    }
   ];
 
   return (

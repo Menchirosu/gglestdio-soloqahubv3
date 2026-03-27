@@ -3,9 +3,8 @@ import {
   LayoutDashboard, 
   Bug, 
   Lightbulb, 
-  BookOpen, 
-  AlertTriangle, 
-  Focus, 
+  BookOpen,
+  Focus,
   Search, 
   Bell, 
   PlusCircle,
@@ -19,13 +18,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-import { Screen, BugStory, Tip, Concern, Proposal } from './types';
+import { Screen, BugStory, Tip, Proposal } from './types';
 import { useStorage } from './hooks/useStorage';
 import { useToast, Toast } from './components/Toast';
 import { Modal } from './components/Modal';
 import { BugForm } from './components/BugForm';
 import { TipForm } from './components/TipForm';
-import { ConcernForm } from './components/ConcernForm';
 import { ProposalForm } from './components/ProposalForm';
 import { EntrySelectorModal } from './components/EntrySelectorModal';
 import { ProfileForm } from './components/ProfileForm';
@@ -34,7 +32,6 @@ import { DashboardScreen } from './screens/DashboardScreen';
 import { BugWallScreen } from './screens/BugWallScreen';
 import { TipsTricksScreen } from './screens/TipsTricksScreen';
 import { KnowledgeSharingScreen } from './screens/KnowledgeSharingScreen';
-import { ConcernsScreen } from './screens/ConcernsScreen';
 import { FocusZoneScreen } from './screens/FocusZoneScreen';
 import { AdminDashboard } from './screens/AdminDashboard';
 import { SearchProvider, useSearch } from './SearchContext';
@@ -107,10 +104,10 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
 
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
-  const { 
-    bugs, tips, concerns, proposals, notifications,
-    addBug, deleteBug, editBug, addTip, deleteTip, editTip, addConcern, deleteConcern, editConcern, addProposal, deleteProposal, editProposal,
-    reactToBug, addCommentToBug, reactToComment, replyToComment, deleteComment, editComment, updateUserAvatars, markConcernHelpful,
+  const {
+    bugs, tips, proposals, notifications,
+    addBug, deleteBug, editBug, addTip, deleteTip, editTip, addProposal, deleteProposal, editProposal,
+    reactToBug, addCommentToBug, reactToComment, replyToComment, deleteComment, editComment, updateUserAvatars,
     markNotificationAsRead, markAllNotificationsAsRead
   } = useStorage();
 
@@ -152,7 +149,6 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
     { id: 'bug-wall', label: 'Bug Wall', icon: Bug },
     { id: 'tips-tricks', label: 'Tips & Tricks', icon: Lightbulb },
     { id: 'knowledge-sharing', label: 'Knowledge Sharing', icon: BookOpen },
-    { id: 'concerns', label: 'Concerns', icon: AlertTriangle },
     { id: 'focus-zone', label: 'Focus Zone', icon: Focus },
   ];
 
@@ -167,11 +163,10 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
     setCurrentScreen(screen);
   };
 
-  const handleEntrySelect = (type: 'bug' | 'tip' | 'knowledge' | 'concern') => {
+  const handleEntrySelect = (type: 'bug' | 'tip' | 'knowledge') => {
     if (type === 'bug') setActiveModal({ type: 'bug' });
     if (type === 'tip') setActiveModal({ type: 'tip' });
     if (type === 'knowledge') setActiveModal({ type: 'proposal' });
-    if (type === 'concern') setActiveModal({ type: 'concern' });
   };
 
   const handleBugSubmit = async (bug: any) => {
@@ -190,15 +185,6 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       showToast('Tip shared with the community!');
     } catch (error) {
       showToast('Failed to share tip.', 'error');
-    }
-  };
-
-  const handleConcernSubmit = async (concern: any) => {
-    try {
-      await addConcern(concern);
-      showToast('Concern submitted for review.');
-    } catch (error) {
-      showToast('Failed to submit concern.', 'error');
     }
   };
 
@@ -241,14 +227,8 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       }
     });
 
-    concerns.forEach(c => {
-      if (c.content.toLowerCase().includes(query) || c.category.toLowerCase().includes(query)) {
-        results.push({ id: c.id, title: c.content.substring(0, 50) + (c.content.length > 50 ? '...' : ''), type: 'concern', screen: 'concerns' });
-      }
-    });
-
     return results.slice(0, 10);
-  }, [searchQuery, bugs, tips, proposals, concerns]);
+  }, [searchQuery, bugs, tips, proposals]);
 
   const handleResultClick = (result: any) => {
     navigateTo(result.screen as Screen);
@@ -275,7 +255,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-full w-64 bg-surface border-r border-outline-variant/10 flex flex-col py-6 z-50 transition-transform duration-300 md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed left-0 top-0 h-full w-64 bg-surface border-r border-outline-variant/10 flex flex-col py-6 z-50 transition-transform duration-300 md:translate-x-0 dot-grid ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="px-8 mb-10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
@@ -292,7 +272,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
         </div>
 
         <nav className="flex-1 px-4 space-y-2">
-          {navItems.map((item) => (
+          {navItems.map((item, idx) => (
             <button
               key={item.id}
               onClick={() => {
@@ -302,26 +282,56 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                 setSelectedItemId(null);
                 setIsSearchResultsOpen(false);
               }}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-full transition-all active:scale-95 ${
-                currentScreen === item.id 
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-full transition-all active:scale-95 group/nav ${
+                currentScreen === item.id
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
                   : 'text-tertiary hover:text-primary hover:bg-surface-container-high'
               }`}
             >
               <item.icon size={20} />
-              <span className="font-headline font-medium text-sm">{item.label}</span>
+              <span className="font-headline font-medium text-sm flex-1 text-left">{item.label}</span>
+              <span className={`text-[9px] font-mono transition-opacity ${
+                currentScreen === item.id ? 'opacity-50 text-white' : 'opacity-0 group-hover/nav:opacity-40 text-outline'
+              }`}>{idx + 1}</span>
             </button>
           ))}
         </nav>
 
-        <div className="px-6 mt-auto">
-          <button 
+        <div className="px-4 mt-auto space-y-3">
+          <button
             onClick={() => setActiveModal({ type: 'selector' })}
             className="w-full bg-primary text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
           >
             <PlusCircle size={20} />
             New Entry
           </button>
+
+          {/* User identity footer */}
+          <div className="flex items-center gap-3 px-2 py-3 rounded-2xl hover:bg-surface-container-high transition-colors cursor-pointer" onClick={() => setActiveModal({ type: 'profile' })}>
+            <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-outline-variant/20 shrink-0">
+              <img
+                src={profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`}
+                alt="Profile"
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-on-surface truncate leading-tight">{profile?.displayName || 'You'}</p>
+              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                profile?.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-tertiary'
+              }`}>
+                {profile?.role === 'admin' ? 'Admin' : 'QA'}
+              </span>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); logout(); }}
+              className="p-1.5 text-outline hover:text-error hover:bg-error/10 rounded-full transition-all shrink-0"
+              title="Sign out"
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -466,7 +476,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                       )}
                     </div>
                     <div className="p-3 text-center bg-surface-container-low">
-                      <button className="text-xs font-bold text-tertiary hover:text-primary transition-colors">View all notifications</button>
+                      <p className="text-xs text-outline italic">Showing latest {notifications.length} notification{notifications.length !== 1 ? 's' : ''}</p>
                     </div>
                   </motion.div>
                 </>
@@ -509,7 +519,6 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
         currentScreen === 'bug-wall' ? 'page-glow-bug' :
         currentScreen === 'tips-tricks' ? 'page-glow-tips' :
         currentScreen === 'knowledge-sharing' ? 'page-glow-knowledge' :
-        currentScreen === 'concerns' ? 'page-glow-concerns' :
         currentScreen === 'focus-zone' ? 'page-glow-focus' : ''
       }`}>
         <AnimatePresence mode="wait" custom={navDirection}>
@@ -522,7 +531,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             transition={{ duration: 0.22, ease: 'easeOut' }}
             className="max-w-7xl mx-auto"
           >
-            {currentScreen === 'dashboard' && <DashboardScreen onNavigate={navigateTo} bugs={bugs} tips={tips} proposals={proposals} concerns={concerns} searchQuery={searchQuery} activeUsers={activeUsers} />}
+            {currentScreen === 'dashboard' && <DashboardScreen onNavigate={navigateTo} bugs={bugs} tips={tips} proposals={proposals} searchQuery={searchQuery} activeUsers={activeUsers} />}
             {currentScreen === 'bug-wall' && (
               <BugWallScreen 
                 bugs={bugs} 
@@ -566,19 +575,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                 onClearSelection={() => setSelectedItemId(null)}
               />
             )}
-            {currentScreen === 'concerns' && (
-              <ConcernsScreen 
-                concerns={concerns} 
-                onAddConcern={() => setActiveModal({ type: 'concern' })}
-                onMarkHelpful={markConcernHelpful}
-                onDeleteConcern={deleteConcern}
-                onEditConcern={(concern) => setActiveModal({ type: 'edit-concern', data: concern })}
-                searchQuery={searchQuery}
-                selectedItemId={selectedItemId}
-                onClearSelection={() => setSelectedItemId(null)}
-              />
-            )}
-            {currentScreen === 'focus-zone' && <FocusZoneScreen />}
+{currentScreen === 'focus-zone' && <FocusZoneScreen />}
             {currentScreen === 'admin-dashboard' && <AdminDashboard />}
           </motion.div>
         </AnimatePresence>
@@ -642,33 +639,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
         )}
       </Modal>
 
-      <Modal 
-        isOpen={activeModal?.type === 'concern'} 
-        onClose={() => setActiveModal(null)} 
-        title="Raise a Concern"
-      >
-        <ConcernForm onSubmit={handleConcernSubmit} onClose={() => setActiveModal(null)} />
-      </Modal>
-
-      <Modal 
-        isOpen={activeModal?.type === 'edit-concern'} 
-        onClose={() => setActiveModal(null)} 
-        title="Edit Concern"
-      >
-        {activeModal?.type === 'edit-concern' && (
-          <ConcernForm 
-            initialData={activeModal.data}
-            onSubmit={(updatedConcern) => {
-              editConcern(activeModal.data.id, updatedConcern);
-              showToast('Concern updated successfully!', 'success');
-              setActiveModal(null);
-            }} 
-            onClose={() => setActiveModal(null)} 
-          />
-        )}
-      </Modal>
-
-      <Modal 
+<Modal 
         isOpen={activeModal?.type === 'proposal'} 
         onClose={() => setActiveModal(null)} 
         title="Knowledge Sharing Proposal"

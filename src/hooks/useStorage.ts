@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BugStory, Tip, Concern, Proposal, Notification, Comment } from '../types';
-import { INITIAL_BUGS, INITIAL_TIPS, INITIAL_CONCERNS } from '../constants';
+import { BugStory, Tip, Proposal, Notification, Comment } from '../types';
 import { db, auth, createBugStory, updateBugReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType } from '../firebase';
 import { collection, onSnapshot, query, orderBy, where, writeBatch, doc, setDoc, serverTimestamp, updateDoc, deleteDoc, collectionGroup } from 'firebase/firestore';
 import { sendBroadcastEmail, sendUserEmail } from '../utils/emailNotifier';
@@ -15,16 +14,14 @@ function toDate(ts: any): number {
 export function useStorage() {
   const [bugs, setBugs] = useState<BugStory[]>([]);
   const [tips, setTips] = useState<Tip[]>([]);
-  const [concerns, setConcerns] = useState<Concern[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   // Real-time listeners
   useEffect(() => {
     if (!auth.currentUser) {
-      setBugs(INITIAL_BUGS);
-      setTips(INITIAL_TIPS);
-      setConcerns(INITIAL_CONCERNS);
+      setBugs([]);
+      setTips([]);
       setProposals([]);
       setNotifications([]);
       return;
@@ -37,7 +34,7 @@ export function useStorage() {
         return { ...data, id: doc.id, comments: data.comments || [] } as BugStory;
       });
       setBugs(prevBugs => {
-        return (bugsData.length > 0 ? bugsData : INITIAL_BUGS).map(bug => {
+        return bugsData.map(bug => {
           const existingBug = prevBugs.find(b => b.id === bug.id);
           // We'll merge subcollection comments later in the comments listener
           return { ...bug, comments: existingBug?.comments || bug.comments || [] };
@@ -92,16 +89,10 @@ export function useStorage() {
     const tipsQuery = query(collection(db, 'tips'), orderBy('createdAt', 'desc'));
     const unsubscribeTips = onSnapshot(tipsQuery, (snapshot) => {
       const tipsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Tip));
-      setTips(tipsData.length > 0 ? tipsData : INITIAL_TIPS);
+      setTips(tipsData);
     }, (error) => handleFirestoreError(error, OperationType.GET, 'tips'));
 
-    const concernsQuery = query(collection(db, 'concerns'), orderBy('createdAt', 'desc'));
-    const unsubscribeConcerns = onSnapshot(concernsQuery, (snapshot) => {
-      const concernsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Concern));
-      setConcerns(concernsData.length > 0 ? concernsData : INITIAL_CONCERNS);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'concerns'));
-
-    const proposalsQuery = query(collection(db, 'proposals'), orderBy('createdAt', 'desc'));
+const proposalsQuery = query(collection(db, 'proposals'), orderBy('createdAt', 'desc'));
     const unsubscribeProposals = onSnapshot(proposalsQuery, (snapshot) => {
       const proposalsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Proposal));
       setProposals(proposalsData);
@@ -123,7 +114,6 @@ export function useStorage() {
       unsubscribeComments();
       unsubscribeReplies();
       unsubscribeTips();
-      unsubscribeConcerns();
       unsubscribeProposals();
       unsubscribeNotifs();
     };
@@ -186,38 +176,7 @@ export function useStorage() {
     );
   };
 
-  const addConcern = async (concern: Omit<Concern, 'id' | 'date' | 'status' | 'helpfulCount'>) => {
-    const concernRef = doc(collection(db, 'concerns'));
-    await setDoc(concernRef, {
-      ...concern,
-      id: concernRef.id,
-      authorId: auth.currentUser?.uid || null,
-      date: 'Just now',
-      status: 'Under Review',
-      helpfulCount: 0,
-      createdAt: serverTimestamp(),
-    });
-
-    // Notify everyone
-    await createNotification({
-      type: 'system',
-      title: 'New Concern Raised',
-      desc: `A new concern was raised in ${concern.category}`,
-      targetId: concernRef.id,
-      targetScreen: 'concerns',
-      recipientId: 'all',
-      isRead: false,
-      time: 'Just now'
-    });
-    sendBroadcastEmail(
-      `⚠️ New Concern Raised on QHUB`,
-      auth.currentUser?.displayName || 'Someone',
-      `A new concern was raised in the "${concern.category}" category. Check it out on the Concerns board!`,
-      auth.currentUser?.uid,
-    );
-  };
-
-  const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) => {
+const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) => {
     const proposalRef = doc(collection(db, 'proposals'));
     const author = auth.currentUser?.displayName || 'Anonymous';
     await setDoc(proposalRef, {
@@ -425,13 +384,7 @@ export function useStorage() {
     }
   };
 
-  const markConcernHelpful = async (concernId: string) => {
-    const concern = concerns.find(c => c.id === concernId);
-    if (!concern) return;
-    await updateDoc(doc(db, 'concerns', concernId), { helpfulCount: concern.helpfulCount + 1 });
-  };
-
-  const deleteBug = async (bugId: string) => {
+const deleteBug = async (bugId: string) => {
     try {
       await deleteDoc(doc(db, 'bugs', bugId));
     } catch (error) {
@@ -459,23 +412,7 @@ export function useStorage() {
     }
   };
 
-  const deleteConcern = async (concernId: string) => {
-    try {
-      await deleteDoc(doc(db, 'concerns', concernId));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `concerns/${concernId}`);
-    }
-  };
-
-  const editConcern = async (concernId: string, concern: Partial<Concern>) => {
-    try {
-      await updateDoc(doc(db, 'concerns', concernId), concern);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `concerns/${concernId}`);
-    }
-  };
-
-  const deleteProposal = async (proposalId: string) => {
+const deleteProposal = async (proposalId: string) => {
     try {
       await deleteDoc(doc(db, 'proposals', proposalId));
     } catch (error) {
@@ -510,7 +447,6 @@ export function useStorage() {
   return {
     bugs,
     tips,
-    concerns,
     proposals,
     notifications,
     addBug,
@@ -519,9 +455,6 @@ export function useStorage() {
     addTip,
     deleteTip,
     editTip,
-    addConcern,
-    deleteConcern,
-    editConcern,
     addProposal,
     deleteProposal,
     editProposal,
@@ -532,7 +465,6 @@ export function useStorage() {
     deleteComment,
     editComment,
     updateUserAvatars,
-    markConcernHelpful,
     markNotificationAsRead,
     markAllNotificationsAsRead
   };

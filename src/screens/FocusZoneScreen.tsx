@@ -85,8 +85,31 @@ export function FocusZoneScreen() {
       </section>
 
       <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant/10 max-w-2xl mx-auto flex flex-col items-center justify-center gap-6">
+        {/* SVG Circular Progress Ring */}
         <div className="relative w-56 h-56 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full border-8 border-surface-container-low"></div>
+          {(() => {
+            const total = mode === 'focus' ? 25 * 60 : 5 * 60;
+            const elapsed = total - timeLeft;
+            const progress = elapsed / total;
+            const radius = 100;
+            const circumference = 2 * Math.PI * radius;
+            const strokeDashoffset = circumference * (1 - progress);
+            const isLow = timeLeft / total < 0.25;
+            return (
+              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 224 224">
+                <circle cx="112" cy="112" r={radius} fill="none" stroke="currentColor" strokeWidth="10" className="text-surface-container-low" />
+                <circle
+                  cx="112" cy="112" r={radius} fill="none"
+                  stroke="currentColor"
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  className={`transition-all duration-1000 ${isLow ? 'text-amber-500' : 'text-primary'}`}
+                />
+              </svg>
+            );
+          })()}
           <div className="text-center relative z-10">
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-tertiary mb-1">{mode} session</p>
             <h3 className="text-6xl font-black font-mono tracking-tighter">{formatTime(timeLeft)}</h3>

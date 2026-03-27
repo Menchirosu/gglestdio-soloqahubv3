@@ -1,12 +1,12 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bug, Lightbulb, BookOpen, AlertTriangle, Search, X } from 'lucide-react';
-import { BugStory, Tip, Proposal, Concern, Screen } from '../types';
+import { Bug, Lightbulb, BookOpen, Search, X } from 'lucide-react';
+import { BugStory, Tip, Proposal, Screen } from '../types';
 
 interface SearchResult {
   id: string;
   title: string;
-  type: 'bug' | 'tip' | 'proposal' | 'concern';
+  type: 'bug' | 'tip' | 'proposal';
   screen: Screen;
 }
 
@@ -55,13 +55,11 @@ export function SearchResultsPopup({ isOpen, onClose, results, onResultClick, se
                     <div className={`p-2 rounded-lg ${
                       result.type === 'bug' ? 'bg-error/10 text-error' :
                       result.type === 'tip' ? 'bg-primary/10 text-primary' :
-                      result.type === 'proposal' ? 'bg-secondary/10 text-secondary' :
-                      'bg-tertiary/10 text-tertiary'
+                      'bg-secondary/10 text-secondary'
                     }`}>
                       {result.type === 'bug' && <Bug size={16} />}
                       {result.type === 'tip' && <Lightbulb size={16} />}
                       {result.type === 'proposal' && <BookOpen size={16} />}
-                      {result.type === 'concern' && <AlertTriangle size={16} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-on-surface truncate group-hover:text-primary transition-colors">
@@ -70,8 +68,7 @@ export function SearchResultsPopup({ isOpen, onClose, results, onResultClick, se
                       <p className="text-[10px] text-outline uppercase tracking-widest font-bold mt-0.5">
                         {result.type === 'bug' ? 'Bug Story' :
                          result.type === 'tip' ? 'Tip & Trick' :
-                         result.type === 'proposal' ? 'Proposal' :
-                         'Concern'}
+                         'Proposal'}
                       </p>
                     </div>
                   </button>

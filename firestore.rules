@@ -2,34 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Document ID: {userId} (UID from Firebase Auth)
-    // Fields:
-    //   - uid: string (required) - The unique Firebase Auth ID.
-    //   - email: string (required, format: email) - User's email address.
-    //   - displayName: string (optional) - User's display name.
-    //   - photoURL: string (optional, format: uri) - User's profile picture URL.
-    //   - status: string (required, enum: ["pending", "approved", "rejected"]) - Approval status.
-    //   - role: string (required, enum: ["user", "admin"]) - User's role.
-    //   - createdAt: timestamp (required) - When the profile was created.
-    //
-    // Collection: knowledgeSharing
-    // Document ID: currentPresenter
-    // Fields:
-    //   - name: string (required) - Name of the selected presenter.
-    //   - photoURL: string (optional) - Photo URL of the presenter.
-    //   - uid: string (optional) - UID of the presenter.
-    //   - updatedAt: timestamp (required) - When the presenter was last updated.
-    //
-    // ===============================================================
-
-    // ===============================================================
+    // ═══════════════════════════════════════════════════════════════
     // Helper Functions
-    // ===============================================================
+    // ═══════════════════════════════════════════════════════════════
 
     function isAuthenticated() {
       return request.auth != null;
@@ -42,9 +17,15 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && (
         (request.auth.token.email == "cesena0117@gmail.com" && request.auth.token.email_verified == true) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
+    }
+
+    function isApprovedUser() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved';
     }
 
     function isValidUser(data) {
@@ -54,10 +35,6 @@ service cloud.firestore {
              data.status in ['pending', 'approved', 'rejected'] &&
              data.role in ['user', 'admin'] &&
              data.createdAt is timestamp;
-    }
-
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
     }
 
     function isValidBug(data) {
@@ -101,13 +78,9 @@ service cloud.firestore {
              (!('replies' in data) || data.replies is list);
     }
 
-    function isValidReply(data) {
-      return true;
-    }
-
     function isValidNotification(data) {
       return data.keys().hasAll(['type', 'title', 'desc', 'isRead', 'recipientId', 'createdAt']) &&
-             data.type in ['like', 'comment', 'system'] &&
+             data.type in ['like', 'comment', 'system', 'new-member'] &&
              data.title is string && data.title.size() < 200 &&
              data.desc is string && data.desc.size() < 500 &&
              data.isRead is bool &&
@@ -129,17 +102,6 @@ service cloud.firestore {
              (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100));
     }
 
-    function isValidConcern(data) {
-      return data.keys().hasAll(['author', 'category', 'content', 'status', 'helpfulCount', 'createdAt']) &&
-             data.author is string &&
-             data.category is string &&
-             data.content is string && data.content.size() < 2000 &&
-             data.status is string &&
-             data.helpfulCount is number &&
-             data.createdAt is timestamp &&
-             (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100));
-    }
-
     function isValidProposal(data) {
       return data.keys().hasAll(['title', 'scope', 'author', 'createdAt']) &&
              data.title is string && data.title.size() < 200 &&
@@ -149,44 +111,26 @@ service cloud.firestore {
              (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100));
     }
 
-    function isValidPresenter(data) {
-      return data.keys().hasAll(['name', 'updatedAt']) &&
-             data.name is string && data.name.size() < 100 &&
-             data.updatedAt is timestamp &&
-             (!('photoURL' in data) || data.photoURL == null || (data.photoURL is string && data.photoURL.size() < 2000)) &&
-             (!('uid' in data) || data.uid == null || (data.uid is string && data.uid.size() < 100));
-    }
-
-    // ===============================================================
+    // ═══════════════════════════════════════════════════════════════
     // Collection Rules
-    // ===============================================================
+    // ═══════════════════════════════════════════════════════════════
 
-    match /knowledgeSharing/currentPresenter {
-      allow read, write: if true;
-    }
-
+    // Knowledge Sharing — authenticated users read/write (presenter wheel, proposals listed here)
     match /knowledgeSharing/{document=**} {
-      allow read, write: if true;
+      allow read: if isAuthenticated();
+      allow write: if isApprovedUser();
     }
 
+    // Users — own profile create/read; admins manage all
     match /users/{userId} {
-      // Allow read if user is authenticated (to see names/photos)
       allow read: if isAuthenticated();
-      allow get: if isAuthenticated();
-      allow list: if isAuthenticated();
-
-      // Allow create if user is authenticated and creating their own profile as 'pending' and 'user'
-      allow create: if isOwner(userId) && 
+      allow create: if isOwner(userId) &&
                       isValidUser(request.resource.data) &&
                       request.resource.data.status == 'pending' &&
                       request.resource.data.role == 'user' &&
                       request.resource.data.uid == request.auth.uid;
-
-      // Allow update:
-      // 1. Admins can update any field (status, role, etc.)
-      // 2. Owners can only update non-sensitive fields (displayName, photoURL)
-      allow update: if isAdmin() || 
-                      (isOwner(userId) && 
+      allow update: if isAdmin() ||
+                      (isOwner(userId) &&
                        isValidUser(request.resource.data) &&
                        request.resource.data.status == resource.data.status &&
                        request.resource.data.role == resource.data.role &&
@@ -194,14 +138,28 @@ service cloud.firestore {
                        request.resource.data.createdAt == resource.data.createdAt);
     }
 
+    // Bugs — approved users read/create; owner or admin can delete; reactions/edits by any approved user
     match /bugs/{bugId} {
-      allow read, write: if true;
-      match /{allSubcollections=**} {
-        allow read, write: if true;
+      allow read: if isAuthenticated();
+      allow create: if isApprovedUser() && isValidBug(request.resource.data);
+      allow update: if isApprovedUser();
+      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
+
+      // Comments & replies subcollections
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isApprovedUser() && isValidComment(request.resource.data);
+        allow update: if isApprovedUser();
+        allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
+
+        match /replies/{replyId} {
+          allow read: if isAuthenticated();
+          allow write: if isApprovedUser();
+        }
       }
     }
 
-    // Collection group rules for comments and replies
+    // Collection group queries for comments and replies
     match /{path=**}/comments/{commentId} {
       allow read: if isAuthenticated();
     }
@@ -210,43 +168,37 @@ service cloud.firestore {
       allow read: if isAuthenticated();
     }
 
+    // Notifications — read own; create if authenticated; update read status only; delete own
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() && resource.data.recipientId in [request.auth.uid, 'all'];
       allow create: if isAuthenticated() && isValidNotification(request.resource.data);
-      allow update: if isAuthenticated() && resource.data.recipientId in [request.auth.uid, 'all'] && 
+      allow update: if isAuthenticated() && resource.data.recipientId in [request.auth.uid, 'all'] &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
       allow delete: if isAuthenticated() && resource.data.recipientId in [request.auth.uid, 'all'];
     }
 
+    // Tips — approved users create own; admin or owner edit/delete
     match /tips/{tipId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
-                      isValidTip(request.resource.data) &&
+      allow create: if isApprovedUser() && isValidTip(request.resource.data) &&
                       (request.resource.data.authorId == null || request.resource.data.authorId == request.auth.uid);
       allow update: if isAuthenticated() && request.auth.uid == resource.data.authorId && isValidTip(request.resource.data);
       allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
     }
 
-    match /concerns/{concernId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
-                      isValidConcern(request.resource.data) &&
-                      (request.resource.data.authorId == null || request.resource.data.authorId == request.auth.uid);
-      allow update: if isAuthenticated() && (
-        isAdmin() || 
-        (request.auth.uid == resource.data.authorId && isValidConcern(request.resource.data)) ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['helpfulCount'])
-      );
-      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
-    }
-
+    // Proposals — approved users create own; admin or owner edit/delete
     match /proposals/{proposalId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
-                      isValidProposal(request.resource.data) &&
+      allow create: if isApprovedUser() && isValidProposal(request.resource.data) &&
                       (request.resource.data.authorId == null || request.resource.data.authorId == request.auth.uid);
       allow update: if isAuthenticated() && request.auth.uid == resource.data.authorId && isValidProposal(request.resource.data);
       allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
+    }
+
+    // Presence — own write; all authenticated read
+    match /presence/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
     }
   }
 }

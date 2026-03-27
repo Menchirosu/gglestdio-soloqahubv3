@@ -1,166 +1,237 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { 
-  LayoutDashboard, 
-  Bug, 
-  Lightbulb, 
-  BookOpen, 
-  AlertTriangle, 
-  Focus,
-  ChevronRight,
+
+/** Animates a number from 0 → target over ~700ms (ease-out cubic). */
+function CountUpNumber({ value, className }: { value: number; className?: string }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    if (value === 0) { setDisplay(0); return; }
+    const duration = 700;
+    const start = performance.now();
+    const raf = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      setDisplay(Math.round((1 - Math.pow(1 - p, 3)) * value));
+      if (p < 1) requestAnimationFrame(raf);
+    };
+    requestAnimationFrame(raf);
+  }, [value]);
+  return <span className={className}>{display}</span>;
+}
+
+/** Types out text character by character. */
+function TypewriterText({ text, delayMs = 0, speedMs = 18 }: { text: string; delayMs?: number; speedMs?: number }) {
+  const [displayed, setDisplayed] = useState('');
+  useEffect(() => {
+    let i = 0;
+    const timeout = setTimeout(() => {
+      const iv = setInterval(() => {
+        i++;
+        setDisplayed(text.slice(0, i));
+        if (i >= text.length) clearInterval(iv);
+      }, speedMs);
+      return () => clearInterval(iv);
+    }, delayMs);
+    return () => clearTimeout(timeout);
+  }, [text, delayMs, speedMs]);
+  return <>{displayed}</>;
+}
+import {
+  Bug,
+  Lightbulb,
+  BookOpen,
   MessageSquare,
-  ThumbsUp,
-  Rocket
+  ArrowRight,
+  Flame,
 } from 'lucide-react';
-import { Screen, BugStory, Tip, Proposal, Concern } from '../types';
+import { Screen, BugStory, Tip, Proposal } from '../types';
 import { useAuth } from '../AuthContext';
+import { timeAgo } from '../utils/timeAgo';
 
 interface DashboardProps {
   onNavigate: (screen: Screen) => void;
   bugs: BugStory[];
   tips: Tip[];
   proposals: Proposal[];
-  concerns: Concern[];
   searchQuery: string;
   activeUsers?: { uid: string; displayName: string; photoURL: string }[];
 }
 
-export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, searchQuery, activeUsers = [] }: DashboardProps) {
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+export function DashboardScreen({ onNavigate, bugs, tips, proposals, activeUsers = [] }: DashboardProps) {
   const { profile } = useAuth();
-  
-  // Use raw data for the activity list to keep it stable while searching
+
   const latestActivity = [
-    ...bugs.map(b => ({ id: b.id, title: b.title, description: b.discovery, date: b.date, type: 'bug', icon: Bug, color: 'text-error', screen: 'bug-wall' as Screen })),
-    ...tips.map(t => ({ id: t.id, title: t.title, description: t.desc, date: t.time, type: 'tip', icon: Lightbulb, color: 'text-primary', screen: 'tips-tricks' as Screen })),
-    ...proposals.map(p => ({ id: p.id, title: p.title, description: p.scope, date: p.date, type: 'proposal', icon: BookOpen, color: 'text-secondary', screen: 'knowledge-sharing' as Screen })),
-    ...concerns.map(c => ({ id: c.id, title: c.category, description: c.content, date: c.date, type: 'concern', icon: AlertTriangle, color: 'text-tertiary', screen: 'concerns' as Screen })),
+    ...bugs.map(b => ({ id: b.id, title: b.title, description: b.discovery, date: b.date, createdAt: b.createdAt, type: 'bug', icon: Bug, color: 'text-error', bg: 'bg-error/10', screen: 'bug-wall' as Screen })),
+    ...tips.map(t => ({ id: t.id, title: t.title, description: t.desc, date: t.time, createdAt: t.createdAt, type: 'tip', icon: Lightbulb, color: 'text-primary', bg: 'bg-primary/10', screen: 'tips-tricks' as Screen })),
+    ...proposals.map(p => ({ id: p.id, title: p.title, description: p.scope, date: p.date, createdAt: p.createdAt, type: 'proposal', icon: BookOpen, color: 'text-violet-600', bg: 'bg-violet-500/10', screen: 'knowledge-sharing' as Screen })),
   ].sort((a, b) => {
-    const dateA = a.date === 'Just now' ? Date.now() : new Date(a.date).getTime();
-    const dateB = b.date === 'Just now' ? Date.now() : new Date(b.date).getTime();
-    return dateB - dateA;
-  }).slice(0, 3);
+    const toMs = (d: string) => d === 'Just now' ? Date.now() : new Date(d).getTime() || 0;
+    return toMs(b.date) - toMs(a.date);
+  }).slice(0, 6);
+
+  const stats = [
+    { label: 'Bugs Reported', value: bugs.length, mine: bugs.filter(b => b.authorId === profile?.uid).length, icon: Bug, color: 'text-error', bg: 'bg-error/10', border: 'border-error/20', screen: 'bug-wall' as Screen },
+    { label: 'Tips Shared', value: tips.length, mine: tips.filter(t => t.authorId === profile?.uid).length, icon: Lightbulb, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', screen: 'tips-tricks' as Screen },
+    { label: 'Knowledge Hub', value: proposals.length, mine: proposals.filter(p => p.authorId === profile?.uid).length, icon: BookOpen, color: 'text-violet-600', bg: 'bg-violet-500/10', border: 'border-violet-200 dark:border-violet-800', screen: 'knowledge-sharing' as Screen },
+  ];
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-12">
+
+      {/* ── Hero greeting ── */}
       <section>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-          <div className="max-w-2xl">
-            <h1 className="text-5xl font-extrabold text-on-surface tracking-tighter mb-4 leading-tight font-headline">
-              A home for solo QAs to <span className="text-primary italic">learn</span>, <span className="text-primary italic">share</span>, and <span className="text-tertiary italic">breathe</span>.
-            </h1>
-            <p className="text-lg text-on-surface-variant leading-relaxed max-w-xl">
-              Post bug stories, exchange testing wisdom, raise concerns, and recharge before the next test cycle.
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="max-w-2xl"
+          >
+            <p className="text-xs font-mono text-primary/70 mb-3 flex items-center gap-1.5">
+              <span className="opacity-50">$</span>
+              <span className="font-semibold">{getGreeting()}, {profile?.displayName?.split(' ')[0] || 'QA'}</span>
+              <span className="w-1.5 h-3.5 bg-primary/70 rounded-sm status-pulse inline-block ml-0.5" />
             </p>
-          </div>
-          <div className="flex items-center bg-surface-container-low px-4 py-2 rounded-full gap-3">
+            <h1 className="text-5xl font-extrabold text-on-surface tracking-tighter mb-3 leading-tight font-headline">
+              A home for solo QAs to{' '}
+              <span className="text-primary italic">learn</span>,{' '}
+              <span className="text-primary italic">share</span>, and{' '}
+              <span className="text-tertiary italic">breathe</span>.
+            </h1>
+            <p className="text-base text-on-surface-variant leading-relaxed max-w-xl font-mono text-sm">
+              <TypewriterText
+                text="// Post bug stories, exchange testing wisdom, and recharge before the next test cycle."
+                delayMs={400}
+                speedMs={14}
+              />
+            </p>
+          </motion.div>
+
+          {/* Active users pill */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+            className="flex items-center bg-surface-container-low border border-outline-variant/10 px-4 py-2.5 rounded-full gap-3 shrink-0"
+          >
             <div className="flex -space-x-2">
               {activeUsers.slice(0, 5).map((u) => (
-                <div key={u.uid} className="w-8 h-8 rounded-full border-2 border-surface overflow-hidden bg-primary/20 flex-shrink-0" title={u.displayName}>
+                <div
+                  key={u.uid}
+                  className="w-8 h-8 rounded-full border-2 border-surface overflow-hidden bg-primary/20 flex-shrink-0"
+                  title={u.displayName}
+                >
                   {u.photoURL ? (
                     <img src={u.photoURL} alt={u.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    <span className="w-full h-full flex items-center justify-center text-[10px] font-bold text-primary">{u.displayName?.[0] || '?'}</span>
+                    <span className="w-full h-full flex items-center justify-center text-[10px] font-bold text-primary">
+                      {u.displayName?.[0] || '?'}
+                    </span>
                   )}
                 </div>
               ))}
             </div>
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
               <span className="text-xs font-bold text-tertiary tracking-wide uppercase">
                 {activeUsers.length} Active Now
               </span>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-12 lg:col-span-4">
-          <div className="bg-[#FEF3C7] p-8 rounded-lg text-[#92400E] relative overflow-hidden h-full min-h-[320px] flex flex-col">
-            <div className="relative z-10 flex flex-col h-full">
-              <div className="mb-auto">
-                <span className="px-3 py-1 bg-[#FDE68A] rounded-full text-[10px] font-bold tracking-widest uppercase mb-6 inline-block">Community Impact</span>
-                <h2 className="text-3xl font-bold mb-2 font-headline">QA Solo Hub Stats</h2>
-                <p className="text-[#92400E]/80 font-medium">Your collective contributions at a glance.</p>
-              </div>
-              <div className="mt-8 grid grid-cols-2 gap-4">
-                <div className="bg-[#FDE68A] p-4 rounded-xl">
-                  <p className="text-3xl font-bold">{bugs.length}</p>
-                  <p className="text-xs font-medium">Bugs Reported</p>
-                </div>
-                <div className="bg-[#FDE68A] p-4 rounded-xl">
-                  <p className="text-3xl font-bold">{tips.length}</p>
-                  <p className="text-xs font-medium">Tips Shared</p>
-                </div>
-                <div className="bg-[#FDE68A] p-4 rounded-xl">
-                  <p className="text-3xl font-bold">{proposals.length}</p>
-                  <p className="text-xs font-medium">Proposals</p>
-                </div>
-                <div className="bg-[#FDE68A] p-4 rounded-xl">
-                  <p className="text-3xl font-bold">{concerns.length}</p>
-                  <p className="text-xs font-medium">Concerns</p>
-                </div>
-              </div>
+      {/* ── Stats row ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="grid grid-cols-3 gap-4"
+      >
+        {stats.map((s, i) => (
+          <motion.button
+            key={s.label}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + i * 0.06 }}
+            onClick={() => onNavigate(s.screen)}
+            className={`bg-surface-container-lowest border ${s.border} hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 rounded-2xl p-5 flex items-center gap-4 transition-all text-left`}
+          >
+            <div className={`w-11 h-11 rounded-xl ${s.bg} ${s.color} flex items-center justify-center shrink-0`}>
+              <s.icon size={20} />
             </div>
-          </div>
+            <div>
+              <CountUpNumber value={s.value} className={`text-2xl font-extrabold font-mono ${s.color}`} />
+              <p className="text-xs font-medium text-on-surface-variant">{s.label}</p>
+              <p className="text-[10px] text-outline mt-0.5 font-mono"><CountUpNumber value={s.mine} /> yours</p>
+            </div>
+          </motion.button>
+        ))}
+      </motion.div>
+
+      {/* ── Activity feed ── */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Flame size={18} className="text-primary" />
+          <h3 className="text-xl font-bold tracking-tight font-headline">Latest Activity</h3>
         </div>
 
-        <div className="col-span-12 lg:col-span-8 space-y-8">
-          <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold tracking-tight font-headline">Latest Community Activity</h3>
+        {latestActivity.length === 0 ? (
+          <div className="text-center py-16 bg-surface-container-lowest rounded-2xl border border-dashed border-outline-variant/20 flex flex-col items-center gap-3">
+            <MessageSquare size={28} strokeWidth={1.5} className="text-outline" />
+            <p className="text-sm font-bold text-on-surface">No activity yet</p>
+            <p className="text-xs text-on-surface-variant">Be the first to post something!</p>
           </div>
-          <div className="space-y-6">
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {latestActivity.map((entry, idx) => (
               <motion.div
                 key={`${entry.type}-${entry.id}`}
                 initial={{ opacity: 0, x: 16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.07, duration: 0.25 }}
-                onClick={() => onNavigate(entry.screen as Screen)}
-                className="group bg-surface-container-low hover:bg-surface-container-high transition-all p-6 rounded-lg flex gap-6 border-l-4 border-primary/20 hover:border-primary cursor-pointer"
+                onClick={() => onNavigate(entry.screen)}
+                className="group bg-surface-container-lowest hover:bg-surface-container-low transition-all p-5 rounded-2xl flex gap-4 border border-outline-variant/10 hover:border-primary/20 hover:shadow-md cursor-pointer"
               >
-                <div className={`flex-shrink-0 w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center ${entry.color}`}>
-                  <entry.icon size={24} />
+                <div className={`flex-shrink-0 w-10 h-10 rounded-xl ${entry.bg} ${entry.color} flex items-center justify-center mt-0.5`}>
+                  <entry.icon size={18} />
                 </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-bold text-lg group-hover:text-primary transition-colors font-headline">{entry.title}</h4>
-                    <span className="text-[10px] font-bold text-outline uppercase tracking-tighter">{entry.date}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start gap-2 mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`shrink-0 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-widest ${
+                        entry.type === 'bug' ? 'bg-red-500/10 text-red-500 border-red-300/40 dark:border-red-700/40' :
+                        entry.type === 'tip' ? 'bg-primary/10 text-primary border-primary/30' :
+                        'bg-violet-500/10 text-violet-600 border-violet-300/40 dark:border-violet-700/40'
+                      }`}>
+                        {entry.type === 'bug' ? 'BUG' : entry.type === 'tip' ? 'TIP' : 'DOC'}
+                      </span>
+                      <h4 className="font-bold text-sm group-hover:text-primary transition-colors font-headline truncate">
+                        {entry.title}
+                      </h4>
+                    </div>
+                    <span className="text-[10px] font-mono text-outline shrink-0">
+                      {timeAgo(entry.createdAt || entry.date)}
+                    </span>
                   </div>
-                  <p className="text-on-surface-variant text-sm mb-4 leading-relaxed line-clamp-2">
+                  <p className="text-on-surface-variant text-xs leading-relaxed line-clamp-2">
                     {entry.description}
                   </p>
                 </div>
+                <ArrowRight size={14} className="text-outline-variant group-hover:text-primary transition-colors shrink-0 mt-1 opacity-0 group-hover:opacity-100" />
               </motion.div>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-        {[
-          { id: 'focus-zone', title: 'Focus Zone', desc: 'Deep work timers & ambient noise.', icon: Focus, color: 'text-primary' },
-          { id: 'knowledge-sharing', title: 'Knowledge Hub', desc: 'Shared templates & test cases.', icon: BookOpen, color: 'text-secondary' },
-          { id: 'concerns', title: 'Mental Health', desc: 'Solo QA survival guides.', icon: AlertTriangle, color: 'text-tertiary' },
-          { id: 'knowledge-sharing', title: 'Community Hall', desc: 'Daily stand-ups & watercooler.', icon: MessageSquare, color: 'text-error' },
-        ].map((item, idx) => (
-          <button 
-            key={idx} 
-            onClick={() => onNavigate(item.id as Screen)}
-            className="group bg-surface-container-lowest p-6 rounded-lg shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all flex flex-col gap-4 text-left"
-          >
-            <div className={`w-12 h-12 rounded-2xl bg-surface-container-low ${item.color} flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all group-hover:scale-110`}>
-              <item.icon size={24} />
-            </div>
-            <div>
-              <p className="font-bold text-lg font-headline">{item.title}</p>
-              <p className="text-xs text-outline">{item.desc}</p>
-            </div>
-          </button>
-        ))}
+        )}
       </div>
     </div>
   );

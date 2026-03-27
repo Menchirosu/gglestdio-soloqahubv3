@@ -15,7 +15,7 @@ export const googleProvider = new GoogleAuthProvider();
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log("Firestore connection successful");
+    // connected
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
       console.error("Please check your Firebase configuration. The client is offline.");
