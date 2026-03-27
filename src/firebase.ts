@@ -226,6 +226,14 @@ export const updateBugReactions = async (bugId: string, reactions: any) => {
   }
 };
 
+export const updateTipReactions = async (tipId: string, reactions: any) => {
+  try {
+    await updateDoc(doc(db, 'tips', tipId), { reactions });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `tips/${tipId}`);
+  }
+};
+
 export const updateBugStory = async (bugId: string, bug: any) => {
   try {
     await updateDoc(doc(db, 'bugs', bugId), {

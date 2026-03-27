@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, MoreHorizontal, Edit3, Trash2, X, Lightbulb, ArrowUpDown, Calendar, User as UserIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Edit3, Trash2, X, Lightbulb, ArrowUpDown, Heart, Calendar } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Tip } from '../types';
 import { useAuth } from '../AuthContext';
 import { timeAgo } from '../utils/timeAgo';
@@ -9,12 +10,13 @@ interface TipsTricksProps {
   onAddTip: () => void;
   onDeleteTip: (tipId: string) => void;
   onEditTip: (tip: Tip) => void;
+  onReact: (tipId: string, emoji: string, currentUserName?: string) => void;
   searchQuery: string;
   selectedItemId?: string | null;
   onClearSelection?: () => void;
 }
 
-export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, searchQuery, selectedItemId, onClearSelection }: TipsTricksProps) {
+export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onReact, searchQuery, selectedItemId, onClearSelection }: TipsTricksProps) {
   const { profile } = useAuth();
   const [activeCat, setActiveCat] = useState('All Resources');
   const [currentPage, setCurrentPage] = useState(1);
@@ -158,7 +160,17 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, searc
                 </div>
                 <span className={`text-xs font-bold ${tip.highlight ? 'text-white' : 'text-on-surface'}`}>{tip.author}</span>
               </div>
-              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                <motion.button
+                  whileTap={{ scale: 0.85 }}
+                  onClick={() => onReact(tip.id, '❤️', profile?.displayName)}
+                  className={`flex items-center gap-1 transition-colors ${
+                    tip.highlight ? 'text-white/70 hover:text-white' : 'text-outline/60 hover:text-error'
+                  }`}
+                >
+                  <Heart size={15} className={(tip.reactions?.['❤️'] ?? 0) > 0 ? (tip.highlight ? 'fill-white text-white' : 'fill-error text-error') : ''} />
+                  <span className="text-xs font-medium">{tip.reactions?.['❤️'] || ''}</span>
+                </motion.button>
                 <span className={`text-[10px] font-medium uppercase tracking-wider ${tip.highlight ? 'text-white/60' : 'text-outline'}`}>
                   {timeAgo(tip.createdAt || tip.date || tip.time)}
                 </span>
@@ -330,8 +342,16 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, searc
               </div>
             </div>
 
-            <div className="p-6 bg-surface border-t border-outline-variant/10 flex justify-end">
-              <button 
+            <div className="p-6 bg-surface border-t border-outline-variant/10 flex items-center justify-between">
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={() => onReact(selectedTip.id, '❤️', profile?.displayName)}
+                className="flex items-center gap-2 text-outline/60 hover:text-error transition-colors"
+              >
+                <Heart size={18} className={(selectedTip.reactions?.['❤️'] ?? 0) > 0 ? 'fill-error text-error' : ''} />
+                <span className="text-sm font-bold">{selectedTip.reactions?.['❤️'] || 0}</span>
+              </motion.button>
+              <button
                 onClick={() => setSelectedTip(null)}
                 className="px-8 py-3 bg-primary text-white font-black rounded-full shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest text-xs"
               >

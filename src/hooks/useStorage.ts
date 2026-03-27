@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BugStory, Tip, Proposal, Notification, Comment } from '../types';
-import { db, auth, createBugStory, updateBugReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType } from '../firebase';
+import { db, auth, createBugStory, updateBugReactions, updateTipReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType } from '../firebase';
 import { collection, onSnapshot, query, orderBy, where, writeBatch, doc, setDoc, serverTimestamp, updateDoc, deleteDoc, collectionGroup } from 'firebase/firestore';
 import { sendBroadcastEmail, sendUserEmail } from '../utils/emailNotifier';
 
@@ -238,6 +238,36 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
     }
   };
 
+  const reactToTip = async (tipId: string, emoji: string, currentUserName?: string) => {
+    const tip = tips.find(t => t.id === tipId);
+    if (!tip) return;
+
+    const reactions = { ...(tip.reactions || {}) };
+    reactions[emoji] = (reactions[emoji] || 0) + 1;
+
+    await updateTipReactions(tipId, reactions);
+
+    if (currentUserName && tip.authorId && tip.authorId !== auth.currentUser?.uid) {
+      await createNotification({
+        type: 'like',
+        title: 'New Tip Reaction',
+        desc: `${currentUserName} reacted ${emoji} to your tip: "${tip.title}"`,
+        targetId: tip.id,
+        targetScreen: 'tips-tricks',
+        recipientId: tip.authorId,
+        isRead: false,
+        time: 'Just now'
+      });
+      sendUserEmail(
+        tip.authorId,
+        auth.currentUser?.uid || '',
+        `${emoji} Someone reacted to your tip on QHUB`,
+        currentUserName,
+        `${currentUserName} reacted ${emoji} to your tip: "${tip.title}".`,
+      );
+    }
+  };
+
   const addCommentToBug = async (bugId: string, text: string, author: string, isAnonymous: boolean = false, authorPhotoURL?: string, authorId?: string, imageUrl?: string, gifUrl?: string, imageUrls?: string[]) => {
     const bug = bugs.find(b => b.id === bugId);
     if (!bug) return;
@@ -459,6 +489,7 @@ const deleteProposal = async (proposalId: string) => {
     deleteProposal,
     editProposal,
     reactToBug,
+    reactToTip,
     addCommentToBug,
     reactToComment,
     replyToComment,

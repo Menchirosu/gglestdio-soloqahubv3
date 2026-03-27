@@ -64,6 +64,7 @@ export interface Tip {
   date?: string;
   createdAt?: any;
   highlight?: boolean;
+  reactions?: Record<string, number>;
 }
 
 

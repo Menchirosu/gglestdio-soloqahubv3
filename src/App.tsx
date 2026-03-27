@@ -107,7 +107,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
   const {
     bugs, tips, proposals, notifications,
     addBug, deleteBug, editBug, addTip, deleteTip, editTip, addProposal, deleteProposal, editProposal,
-    reactToBug, addCommentToBug, reactToComment, replyToComment, deleteComment, editComment, updateUserAvatars,
+    reactToBug, reactToTip, addCommentToBug, reactToComment, replyToComment, deleteComment, editComment, updateUserAvatars,
     markNotificationAsRead, markAllNotificationsAsRead
   } = useStorage();
 
@@ -553,11 +553,12 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
               />
             )}
             {currentScreen === 'tips-tricks' && (
-              <TipsTricksScreen 
-                tips={tips} 
-                onAddTip={() => setActiveModal({ type: 'tip' })} 
+              <TipsTricksScreen
+                tips={tips}
+                onAddTip={() => setActiveModal({ type: 'tip' })}
                 onDeleteTip={deleteTip}
                 onEditTip={(tip) => setActiveModal({ type: 'edit-tip', data: tip })}
+                onReact={reactToTip}
                 searchQuery={searchQuery}
                 selectedItemId={selectedItemId}
                 onClearSelection={() => setSelectedItemId(null)}
