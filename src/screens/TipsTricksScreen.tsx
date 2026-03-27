@@ -23,7 +23,8 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [isSortOpen, setIsSortOpen] = useState(false);
-  const [selectedTip, setSelectedTip] = useState<Tip | null>(null);
+  const [selectedTipId, setSelectedTipId] = useState<string | null>(null);
+  const selectedTip = tips.find(t => t.id === selectedTipId) ?? null;
 
   const categories = ['All Resources', 'Manual Testing', 'Automation', 'API Testing', 'Test Data', 'Reporting', 'Communication'];
   
@@ -129,7 +130,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
         {paginatedTips.map((tip, idx) => (
           <article 
             key={tip.id} 
-            onClick={() => setSelectedTip(tip)}
+            onClick={() => setSelectedTipId(tip.id)}
             className={`p-8 rounded-lg shadow-sm transition-all duration-300 flex flex-col h-full group relative overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 ${
               tip.highlight ? 'bg-primary text-white' : 'bg-surface-container-lowest'
             }`}
@@ -279,7 +280,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
       {/* Tip Detail Modal */}
       {selectedTip && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedTip(null)}></div>
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedTipId(null)}></div>
           <div className="bg-surface-container-lowest w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 md:p-8 border-b border-outline-variant/10 flex items-center justify-between bg-surface">
               <div className="flex items-center gap-3">
@@ -289,7 +290,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
                 <h2 className="text-2xl font-black font-headline tracking-tight">Tip Details</h2>
               </div>
               <button 
-                onClick={() => setSelectedTip(null)}
+                onClick={() => setSelectedTipId(null)}
                 className="p-2 hover:bg-surface-container-low rounded-full transition-colors"
               >
                 <X size={24} />
@@ -352,7 +353,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
                 <span className="text-sm font-bold">{selectedTip.reactions?.['❤️'] || 0}</span>
               </motion.button>
               <button
-                onClick={() => setSelectedTip(null)}
+                onClick={() => setSelectedTipId(null)}
                 className="px-8 py-3 bg-primary text-white font-black rounded-full shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest text-xs"
               >
                 Close View
