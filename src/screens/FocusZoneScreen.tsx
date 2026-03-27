@@ -33,8 +33,8 @@ export function FocusZoneScreen() {
 
     const generator = soundGeneratorRef.current;
 
-    // Stop audio if timer is inactive or no sound is selected
-    if (!isActive || sound === 'none') {
+    // Stop audio if no sound is selected
+    if (sound === 'none') {
       generator.stop();
       return;
     }
@@ -45,7 +45,7 @@ export function FocusZoneScreen() {
     return () => {
       // Cleanup handled by dependencies and unmount effect
     };
-  }, [sound, isActive]);
+  }, [sound]);
 
   // Separate effect for muting to avoid restarting the audio
   useEffect(() => {
