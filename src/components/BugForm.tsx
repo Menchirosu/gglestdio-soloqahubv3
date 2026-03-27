@@ -125,13 +125,9 @@ export function BugForm({ onSubmit, onClose, initialData, showToast }: BugFormPr
               value={content}
               onChange={e => setContent(e.target.value)}
               onPaste={handlePaste}
-              minLength={10}
               className="w-full bg-transparent border-none p-0 text-base text-on-surface placeholder:text-outline/40 focus:ring-0 transition-all resize-none min-h-[100px]"
               placeholder={`What's the bug story today, ${profile?.displayName?.split(' ')[0]}?`}
             />
-            {content.length > 0 && content.length < 10 && (
-              <p className="text-[10px] text-error">Please enter at least 10 characters.</p>
-            )}
           </div>
 
           {/* Previews */}
