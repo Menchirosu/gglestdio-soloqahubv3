@@ -182,7 +182,9 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isApprovedUser() && isValidTip(request.resource.data) &&
                       (request.resource.data.authorId == null || request.resource.data.authorId == request.auth.uid);
-      allow update: if isAuthenticated() && request.auth.uid == resource.data.authorId && isValidTip(request.resource.data);
+      allow update: if isAdmin() ||
+                      (isAuthenticated() && request.auth.uid == resource.data.authorId && isValidTip(request.resource.data)) ||
+                      (isApprovedUser() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']));
       allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
     }
 
