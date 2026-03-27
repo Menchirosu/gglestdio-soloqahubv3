@@ -3,6 +3,7 @@ import { BugStory, Tip, Concern, Proposal, Notification, Comment } from '../type
 import { INITIAL_BUGS, INITIAL_TIPS, INITIAL_CONCERNS } from '../constants';
 import { db, auth, createBugStory, updateBugReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType } from '../firebase';
 import { collection, onSnapshot, query, orderBy, where, writeBatch, doc, setDoc, serverTimestamp, updateDoc, deleteDoc, collectionGroup } from 'firebase/firestore';
+import { sendBroadcastEmail, sendUserEmail } from '../utils/emailNotifier';
 
 function toDate(ts: any): number {
   if (!ts) return 0;
@@ -147,6 +148,12 @@ export function useStorage() {
       isRead: false,
       time: 'Just now'
     });
+    sendBroadcastEmail(
+      `🐛 New Bug Story on QHUB`,
+      bug.author,
+      `${bug.author} shared a new bug story: "${bug.title}". Check it out on the Bug Wall!`,
+      auth.currentUser?.uid,
+    );
   };
 
   const addTip = async (tip: Omit<Tip, 'id' | 'time'>) => {
@@ -171,6 +178,12 @@ export function useStorage() {
       isRead: false,
       time: 'Just now'
     });
+    sendBroadcastEmail(
+      `💡 New Tip & Trick on QHUB`,
+      tip.author,
+      `${tip.author} shared a new tip: "${tip.title}". Check it out in Tips & Tricks!`,
+      auth.currentUser?.uid,
+    );
   };
 
   const addConcern = async (concern: Omit<Concern, 'id' | 'date' | 'status' | 'helpfulCount'>) => {
@@ -196,6 +209,12 @@ export function useStorage() {
       isRead: false,
       time: 'Just now'
     });
+    sendBroadcastEmail(
+      `⚠️ New Concern Raised on QHUB`,
+      auth.currentUser?.displayName || 'Someone',
+      `A new concern was raised in the "${concern.category}" category. Check it out on the Concerns board!`,
+      auth.currentUser?.uid,
+    );
   };
 
   const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) => {
@@ -221,6 +240,12 @@ export function useStorage() {
       isRead: false,
       time: 'Just now'
     });
+    sendBroadcastEmail(
+      `📚 New Knowledge Sharing on QHUB`,
+      author,
+      `${author} proposed a new knowledge sharing session: "${proposal.title}". Check it out!`,
+      auth.currentUser?.uid,
+    );
   };
 
   const reactToBug = async (bugId: string, emoji: string, currentUserName?: string) => {
@@ -244,6 +269,13 @@ export function useStorage() {
         isRead: false,
         time: 'Just now'
       });
+      sendUserEmail(
+        bug.authorId,
+        auth.currentUser?.uid || '',
+        `${emoji} Someone reacted to your story on QHUB`,
+        currentUserName,
+        `${currentUserName} reacted ${emoji} to your bug story: "${bug.title}".`,
+      );
     }
   };
 
@@ -276,6 +308,13 @@ export function useStorage() {
           isRead: false,
           time: 'Just now'
         });
+        sendUserEmail(
+          bug.authorId,
+          authorId,
+          `💬 New comment on your story on QHUB`,
+          author,
+          `${author} commented on your bug story: "${bug.title}".`,
+        );
       }
     } catch (notifError) {
       console.error("Failed to create notification for comment", notifError);
@@ -298,6 +337,7 @@ export function useStorage() {
 
     // Notify comment author if it's a new like
     if (!likes.includes(currentUserId) && comment.authorId && comment.authorId !== currentUserId) {
+      const actor = auth.currentUser?.displayName || 'Someone';
       await createNotification({
         type: 'like',
         title: 'New Comment Reaction',
@@ -308,6 +348,13 @@ export function useStorage() {
         isRead: false,
         time: 'Just now'
       });
+      sendUserEmail(
+        comment.authorId,
+        currentUserId,
+        `❤️ Someone liked your comment on QHUB`,
+        actor,
+        `${actor} liked your comment on the bug story: "${bug.title}".`,
+      );
     }
   };
 
@@ -331,6 +378,13 @@ export function useStorage() {
         isRead: false,
         time: 'Just now'
       });
+      sendUserEmail(
+        comment.authorId,
+        reply.authorId || '',
+        `↩️ New reply to your comment on QHUB`,
+        reply.author,
+        `${reply.author} replied to your comment on the bug story: "${bug.title}".`,
+      );
     }
   };
 
