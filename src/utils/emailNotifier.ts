@@ -44,14 +44,14 @@ export async function sendNotificationEmail(
 }
 
 /** Fetch emails of all approved users from Firestore. */
-async function getApprovedUsers(): Promise<{ email: string; displayName: string; uid: string }[]> {
+async function getApprovedUsers(): Promise<{ email: string; displayName: string; uid: string; emailNotifications?: boolean }[]> {
   try {
     const snap = await getDocs(
       query(collection(db, 'users'), where('status', '==', 'approved')),
     );
     return snap.docs.map(d => {
-      const data = d.data() as { email: string; displayName: string; uid: string };
-      return { email: data.email, displayName: data.displayName, uid: data.uid };
+      const data = d.data() as { email: string; displayName: string; uid: string; emailNotifications?: boolean };
+      return { email: data.email, displayName: data.displayName, uid: data.uid, emailNotifications: data.emailNotifications };
     });
   } catch {
     return [];
@@ -72,7 +72,7 @@ export async function sendBroadcastEmail(
   const users = await getApprovedUsers();
   await Promise.allSettled(
     users
-      .filter(u => u.uid !== excludeUid && u.email)
+      .filter(u => u.uid !== excludeUid && u.email && u.emailNotifications !== false)
       .map(u => sendNotificationEmail(u.email, u.displayName, subject, actor, message)),
   );
 }
@@ -93,6 +93,6 @@ export async function sendUserEmail(
   if (recipientUid === senderUid) return; // never email yourself
   const users = await getApprovedUsers();
   const recipient = users.find(u => u.uid === recipientUid);
-  if (!recipient?.email) return;
+  if (!recipient?.email || recipient.emailNotifications === false) return;
   await sendNotificationEmail(recipient.email, recipient.displayName, subject, actor, message);
 }
