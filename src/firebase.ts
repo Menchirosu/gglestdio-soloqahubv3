@@ -146,9 +146,28 @@ export const createUserProfile = async (user: FirebaseUser) => {
   };
   try {
     await setDoc(userRef, userProfile);
+    // Notify admins that a new member is waiting for approval
+    await createNotification({
+      type: 'new-member',
+      title: 'New Member Request',
+      desc: `${user.displayName || user.email} has signed up and is waiting for approval.`,
+      targetId: user.uid,
+      targetScreen: 'admin-dashboard',
+      recipientId: 'all',
+      isRead: false,
+      time: 'Just now',
+    });
     return userProfile;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+  }
+};
+
+export const promoteToAdmin = async (uid: string) => {
+  try {
+    await updateDoc(doc(db, 'users', uid), { role: 'admin', status: 'approved' });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `users/${uid}`);
   }
 };
 
@@ -344,6 +363,29 @@ export const getCurrentPresenter = (callback: (presenter: any) => void) => {
       callback(null);
     }
   }, (error) => handleFirestoreError(error, OperationType.GET, 'knowledgeSharing/currentPresenter'));
+};
+
+// Presence tracking
+export const updatePresence = async (uid: string, displayName: string, photoURL: string) => {
+  try {
+    await setDoc(doc(db, 'presence', uid), {
+      uid,
+      displayName,
+      photoURL,
+      lastSeen: serverTimestamp(),
+    });
+  } catch {
+    // Presence is best-effort; silently ignore errors
+  }
+};
+
+export const subscribeToPresence = (callback: (users: { uid: string; displayName: string; photoURL: string }[]) => void) => {
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  const q = query(collection(db, 'presence'), where('lastSeen', '>=', Timestamp.fromDate(fiveMinutesAgo)));
+  return onSnapshot(q, (snapshot) => {
+    const activeUsers = snapshot.docs.map(d => d.data() as { uid: string; displayName: string; photoURL: string });
+    callback(activeUsers);
+  }, () => callback([]));
 };
 
 export const getAllUsers = async (): Promise<UserProfile[]> => {

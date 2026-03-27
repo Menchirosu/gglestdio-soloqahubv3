@@ -40,7 +40,7 @@ import { AdminDashboard } from './screens/AdminDashboard';
 import { SearchProvider, useSearch } from './SearchContext';
 import { AuthProvider, useAuth } from './AuthContext';
 import { LoginScreen, PendingApprovalScreen } from './screens/AuthScreens';
-import { logout } from './firebase';
+import { logout, updatePresence, subscribeToPresence } from './firebase';
 import { SearchResultsPopup } from './components/SearchResultsPopup';
 
 export default function App() {
@@ -98,10 +98,12 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
   const { profile, isAdmin } = useAuth();
   const { searchQuery, setSearchQuery, selectedItemId, setSelectedItemId } = useSearch();
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard');
+  const [navDirection, setNavDirection] = useState<1 | -1>(1);
   const [activeModal, setActiveModal] = useState<{ type: string; data?: any } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
+  const [activeUsers, setActiveUsers] = useState<{ uid: string; displayName: string; photoURL: string }[]>([]);
 
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
@@ -120,6 +122,21 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       updateUserAvatars(profile.uid, profile.photoURL, profile.displayName);
     }
   }, [profile?.uid, profile?.photoURL, profile?.displayName]);
+
+  // Presence tracking — update on mount and every 60s
+  useEffect(() => {
+    if (!profile?.uid) return;
+    const ping = () => updatePresence(profile.uid, profile.displayName || '', profile.photoURL || '');
+    ping();
+    const interval = setInterval(ping, 60_000);
+    return () => clearInterval(interval);
+  }, [profile?.uid]);
+
+  // Subscribe to active users for dashboard
+  useEffect(() => {
+    const unsub = subscribeToPresence(setActiveUsers);
+    return unsub;
+  }, []);
 
   // Handle search results visibility
   useEffect(() => {
@@ -142,6 +159,13 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
   if (isAdmin) {
     navItems.push({ id: 'admin-dashboard', label: 'Admin Panel', icon: ShieldCheck });
   }
+
+  const navigateTo = (screen: Screen) => {
+    const currentIdx = navItems.findIndex(n => n.id === currentScreen);
+    const nextIdx = navItems.findIndex(n => n.id === screen);
+    setNavDirection(nextIdx >= currentIdx ? 1 : -1);
+    setCurrentScreen(screen);
+  };
 
   const handleEntrySelect = (type: 'bug' | 'tip' | 'knowledge' | 'concern') => {
     if (type === 'bug') setActiveModal({ type: 'bug' });
@@ -227,7 +251,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
   }, [searchQuery, bugs, tips, proposals, concerns]);
 
   const handleResultClick = (result: any) => {
-    setCurrentScreen(result.screen);
+    navigateTo(result.screen as Screen);
     setIsSearchResultsOpen(false);
     setSelectedItemId(result.id);
     setSearchQuery('');
@@ -272,7 +296,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             <button
               key={item.id}
               onClick={() => {
-                setCurrentScreen(item.id as Screen);
+                navigateTo(item.id as Screen);
                 setIsSidebarOpen(false);
                 setSearchQuery('');
                 setSelectedItemId(null);
@@ -481,17 +505,24 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       </header>
 
       {/* Main Content */}
-      <main className="pt-24 pb-12 px-6 md:pl-72 min-h-screen">
-        <AnimatePresence mode="wait">
+      <main className={`pt-24 pb-12 px-6 md:pl-72 min-h-screen relative ${
+        currentScreen === 'bug-wall' ? 'page-glow-bug' :
+        currentScreen === 'tips-tricks' ? 'page-glow-tips' :
+        currentScreen === 'knowledge-sharing' ? 'page-glow-knowledge' :
+        currentScreen === 'concerns' ? 'page-glow-concerns' :
+        currentScreen === 'focus-zone' ? 'page-glow-focus' : ''
+      }`}>
+        <AnimatePresence mode="wait" custom={navDirection}>
           <motion.div
             key={currentScreen}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            custom={navDirection}
+            initial={{ opacity: 0, x: navDirection * 32 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: navDirection * -32 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
             className="max-w-7xl mx-auto"
           >
-            {currentScreen === 'dashboard' && <DashboardScreen onNavigate={setCurrentScreen} bugs={bugs} tips={tips} proposals={proposals} concerns={concerns} searchQuery={searchQuery} />}
+            {currentScreen === 'dashboard' && <DashboardScreen onNavigate={navigateTo} bugs={bugs} tips={tips} proposals={proposals} concerns={concerns} searchQuery={searchQuery} activeUsers={activeUsers} />}
             {currentScreen === 'bug-wall' && (
               <BugWallScreen 
                 bugs={bugs} 

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { auth, db, getUserProfile, createUserProfile, UserProfile } from './firebase';
+import { auth, db, getUserProfile, createUserProfile, promoteToAdmin, UserProfile } from './firebase';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -39,6 +39,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userProfile = await createUserProfile(firebaseUser);
         }
         
+        // Auto-promote admin email from env var (one-time migration)
+        const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+        if (adminEmail && firebaseUser.email === adminEmail && userProfile?.role !== 'admin') {
+          await promoteToAdmin(firebaseUser.uid);
+          if (userProfile) {
+            userProfile = { ...userProfile, role: 'admin', status: 'approved' };
+          }
+        }
+
         setProfile(userProfile);
 
         // Listen for real-time profile changes (e.g. admin approving)

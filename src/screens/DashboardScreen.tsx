@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { 
   LayoutDashboard, 
   Bug, 
@@ -21,9 +22,10 @@ interface DashboardProps {
   proposals: Proposal[];
   concerns: Concern[];
   searchQuery: string;
+  activeUsers?: { uid: string; displayName: string; photoURL: string }[];
 }
 
-export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, searchQuery }: DashboardProps) {
+export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, searchQuery, activeUsers = [] }: DashboardProps) {
   const { profile } = useAuth();
   
   // Use raw data for the activity list to keep it stable while searching
@@ -50,15 +52,27 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, s
               Post bug stories, exchange testing wisdom, raise concerns, and recharge before the next test cycle.
             </p>
           </div>
-          <div className="flex items-center bg-surface-container-low p-2 rounded-full">
-            <div className="w-10 h-10 rounded-full border-2 border-surface bg-primary text-white text-[10px] font-bold flex items-center justify-center shadow-sm overflow-hidden">
-              {profile?.photoURL ? (
-                <img src={profile.photoURL} alt={profile.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <span>{profile?.displayName?.[0] || 'U'}</span>
-              )}
+          <div className="flex items-center bg-surface-container-low px-4 py-2 rounded-full gap-3">
+            <div className="flex -space-x-2">
+              {activeUsers.slice(0, 5).map((u) => (
+                <div key={u.uid} className="w-8 h-8 rounded-full border-2 border-surface overflow-hidden bg-primary/20 flex-shrink-0" title={u.displayName}>
+                  {u.photoURL ? (
+                    <img src={u.photoURL} alt={u.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="w-full h-full flex items-center justify-center text-[10px] font-bold text-primary">{u.displayName?.[0] || '?'}</span>
+                  )}
+                </div>
+              ))}
             </div>
-            <span className="ml-4 pr-4 text-xs font-bold text-tertiary tracking-wide uppercase">Active Now</span>
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-xs font-bold text-tertiary tracking-wide uppercase">
+                {activeUsers.length} Active Now
+              </span>
+            </div>
           </div>
         </div>
       </section>
@@ -99,9 +113,12 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, s
             <h3 className="text-2xl font-bold tracking-tight font-headline">Latest Community Activity</h3>
           </div>
           <div className="space-y-6">
-            {latestActivity.map((entry) => (
-              <div 
+            {latestActivity.map((entry, idx) => (
+              <motion.div
                 key={`${entry.type}-${entry.id}`}
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.07, duration: 0.25 }}
                 onClick={() => onNavigate(entry.screen as Screen)}
                 className="group bg-surface-container-low hover:bg-surface-container-high transition-all p-6 rounded-lg flex gap-6 border-l-4 border-primary/20 hover:border-primary cursor-pointer"
               >
@@ -117,7 +134,7 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, s
                     {entry.description}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
