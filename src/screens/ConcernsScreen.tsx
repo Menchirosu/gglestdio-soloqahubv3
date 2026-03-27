@@ -97,6 +97,15 @@ export function ConcernsScreen({ concerns, onAddConcern, onMarkHelpful, onDelete
             </div>
           </div>
           <div className="space-y-6">
+            {filteredConcerns.length === 0 && (
+              <div className="text-center py-16 flex flex-col items-center justify-center space-y-3 bg-surface-container-lowest rounded-lg border border-dashed border-outline-variant/20">
+                <MessageSquare size={32} strokeWidth={1.5} className="text-outline" />
+                <div className="space-y-1">
+                  <p className="font-bold text-on-surface text-sm">No reflections yet</p>
+                  <p className="text-xs text-on-surface-variant opacity-70">Concerns and suggestions will appear here.</p>
+                </div>
+              </div>
+            )}
             {filteredConcerns.map((concern) => (
               <div key={concern.id} className="bg-surface-container-low hover:bg-surface-container-high transition-colors rounded-lg p-6 group">
                 <div className="flex justify-between items-start mb-4">

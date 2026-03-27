@@ -133,9 +133,9 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, concerns, s
           <button 
             key={idx} 
             onClick={() => onNavigate(item.id as Screen)}
-            className="group bg-surface-container-lowest p-6 rounded-lg shadow-sm hover:shadow-xl transition-all flex flex-col gap-4 text-left"
+            className="group bg-surface-container-lowest p-6 rounded-lg shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all flex flex-col gap-4 text-left"
           >
-            <div className={`w-12 h-12 rounded-2xl bg-surface-container-low ${item.color} flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all`}>
+            <div className={`w-12 h-12 rounded-2xl bg-surface-container-low ${item.color} flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all group-hover:scale-110`}>
               <item.icon size={24} />
             </div>
             <div>

@@ -4,6 +4,13 @@ import { INITIAL_BUGS, INITIAL_TIPS, INITIAL_CONCERNS } from '../constants';
 import { db, auth, createBugStory, updateBugReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType } from '../firebase';
 import { collection, onSnapshot, query, orderBy, where, writeBatch, doc, setDoc, serverTimestamp, updateDoc, deleteDoc, collectionGroup } from 'firebase/firestore';
 
+function toDate(ts: any): number {
+  if (!ts) return 0;
+  if (typeof ts.toMillis === 'function') return ts.toMillis();
+  if (ts.seconds) return ts.seconds * 1000;
+  return new Date(ts).getTime() || 0;
+}
+
 export function useStorage() {
   const [bugs, setBugs] = useState<BugStory[]>([]);
   const [tips, setTips] = useState<Tip[]>([]);
@@ -47,8 +54,8 @@ export function useStorage() {
           const subComments = allComments.filter(c => c.bugId === bug.id);
           // Merge with legacy comments if any, using ID to avoid duplicates
           const legacyComments = bug.comments?.filter(c => !subComments.find(sc => sc.id === c.id)) || [];
-          return { ...bug, comments: [...legacyComments, ...subComments].sort((a, b) => 
-            new Date(a.createdAt || a.date).getTime() - new Date(b.createdAt || b.date).getTime()
+          return { ...bug, comments: [...legacyComments, ...subComments].sort((a, b) =>
+            toDate(a.createdAt || a.date) - toDate(b.createdAt || b.date)
           ) };
         });
       });
@@ -69,8 +76,8 @@ export function useStorage() {
             const subReplies = allReplies.filter(r => r.commentId === comment.id);
             // Merge with legacy replies if any
             const legacyReplies = comment.replies?.filter(r => !subReplies.find(sr => sr.id === r.id)) || [];
-            return { ...comment, replies: [...legacyReplies, ...subReplies].sort((a, b) => 
-              new Date(a.createdAt || a.date).getTime() - new Date(b.createdAt || b.date).getTime()
+            return { ...comment, replies: [...legacyReplies, ...subReplies].sort((a, b) =>
+              toDate(a.createdAt || a.date) - toDate(b.createdAt || b.date)
             ) };
           });
           return { ...bug, comments: updatedComments };

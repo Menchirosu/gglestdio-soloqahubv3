@@ -259,10 +259,10 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             </div>
             <div>
               <h1 className="text-lg font-black text-primary leading-none font-headline">QA Solo Hub</h1>
-              <p className="text-[10px] uppercase tracking-widest text-tertiary mt-1 font-bold">The Mindful Architect</p>
+              <p className="text-[10px] uppercase tracking-widest text-tertiary mt-1 font-bold">QA Community Hub</p>
             </div>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 hover:bg-surface-container-low rounded-full">
+          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 hover:bg-surface-container-low rounded-full" aria-label="Close menu">
             <X size={20} />
           </button>
         </div>
@@ -320,7 +320,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       {/* TopBar */}
       <header className={`fixed top-0 right-0 left-0 md:left-64 h-16 bg-background/70 backdrop-blur-xl border-b border-outline-variant/10 flex items-center justify-between px-8 transition-all duration-300 ${isSearchResultsOpen ? 'z-[60]' : 'z-30'}`}>
         <div className="flex items-center gap-4 flex-1 max-w-md">
-          <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 hover:bg-surface-container-low rounded-full">
+          <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 hover:bg-surface-container-low rounded-full" aria-label="Open menu">
             <Menu size={20} />
           </button>
           <form onSubmit={handleSearch} className="relative w-full">
@@ -372,17 +372,19 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
         </div>
 
         <div className="flex items-center gap-4 md:gap-6">
-          <button 
+          <button
             onClick={toggleDarkMode}
             className="p-2 text-outline hover:bg-surface-container-low rounded-full transition-all"
             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className="relative p-2 text-outline hover:bg-surface-container-low rounded-full transition-colors"
+              aria-label="Notifications"
             >
               <Bell size={20} />
               {notifications.some(n => !n.isRead) && (

@@ -122,12 +122,12 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, searc
         </div>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 items-stretch">
         {paginatedTips.map((tip, idx) => (
           <article 
             key={tip.id} 
             onClick={() => setSelectedTip(tip)}
-            className={`p-8 rounded-lg shadow-sm transition-all duration-300 flex flex-col group relative overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 ${
+            className={`p-8 rounded-lg shadow-sm transition-all duration-300 flex flex-col h-full group relative overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 ${
               tip.highlight ? 'bg-primary text-white' : 'bg-surface-container-lowest'
             }`}
           >

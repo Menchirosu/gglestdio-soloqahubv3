@@ -84,8 +84,8 @@ export function FocusZoneScreen() {
         <p className="text-tertiary text-base">Silence the noise. Sharpen the mind. Ship the quality.</p>
       </section>
 
-      <div className="flex flex-col items-center justify-center gap-6">
-        <div className="relative w-64 h-64 flex items-center justify-center">
+      <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant/10 max-w-2xl mx-auto flex flex-col items-center justify-center gap-6">
+        <div className="relative w-56 h-56 flex items-center justify-center">
           <div className="absolute inset-0 rounded-full border-8 border-surface-container-low"></div>
           <div className="text-center relative z-10">
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-tertiary mb-1">{mode} session</p>
@@ -94,20 +94,23 @@ export function FocusZoneScreen() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={resetTimer}
+            aria-label="Reset timer"
             className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-all"
           >
             <RefreshCw size={20} />
           </button>
-          <button 
+          <button
             onClick={toggleTimer}
+            aria-label={isActive ? 'Pause timer' : 'Start timer'}
             className="w-20 h-20 rounded-full bg-primary text-white flex items-center justify-center shadow-2xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all"
           >
             {isActive ? <div className="w-5 h-5 bg-white rounded-sm"></div> : <Play size={28} fill="currentColor" />}
           </button>
-          <button 
+          <button
             onClick={toggleMute}
+            aria-label={isMuted ? 'Unmute' : 'Mute'}
             className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
               isMuted ? 'bg-error/10 text-error' : 'bg-surface-container-low text-outline hover:text-primary hover:bg-surface-container-high'
             }`}

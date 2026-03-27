@@ -5,6 +5,13 @@ import { BugStory } from '../types';
 import { useAuth } from '../AuthContext';
 import Linkify from 'linkify-react';
 import { GiphyFetch } from '@giphy/js-fetch-api';
+
+const safeLinkifyOptions = {
+  className: 'text-primary hover:underline',
+  target: '_blank',
+  rel: 'noopener noreferrer nofollow',
+  attributes: (href: string) => /^https?:\/\//i.test(href) ? {} : { href: '#', onClick: (e: Event) => e.preventDefault() },
+};
 import { Grid, Gif } from '@giphy/react-components';
 import { uploadImage } from '../firebase';
 import { BugForm } from '../components/BugForm';
@@ -378,9 +385,9 @@ export function BugWallScreen({
             key={idx} 
             onClick={() => setActiveFilter(tag)}
             className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
-              activeFilter === tag 
-                ? 'bg-on-surface text-surface border-on-surface' 
-                : 'bg-surface-container-low border-outline-variant/10 text-outline hover:border-outline/30'
+              activeFilter === tag
+                ? 'bg-primary/10 text-primary border-primary shadow-sm shadow-primary/10'
+                : 'bg-surface-container-low border-outline-variant/10 text-outline hover:border-outline/30 hover:text-on-surface'
             }`}
           >
             {tag}
@@ -389,6 +396,17 @@ export function BugWallScreen({
       </div>
 
       <div className="flex flex-col gap-6 max-w-2xl mx-auto">
+        {filteredBugs.length === 0 && (
+          <div className="text-center py-20 flex flex-col items-center justify-center space-y-4">
+            <div className="w-16 h-16 bg-surface-container-low rounded-full flex items-center justify-center text-outline">
+              <Bug size={32} strokeWidth={1.5} />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-black font-headline text-on-surface">No stories here yet</h3>
+              <p className="text-sm text-on-surface-variant opacity-70">Be the first to share one, or try a different filter.</p>
+            </div>
+          </div>
+        )}
         <AnimatePresence mode="popLayout">
           {filteredBugs.map((bug) => (
             <motion.article 
@@ -509,7 +527,7 @@ export function BugWallScreen({
 
                   <div className="space-y-3">
                     <p className={`text-sm text-on-surface leading-relaxed whitespace-pre-wrap ${commentingOn !== bug.id ? 'line-clamp-3' : ''}`}>
-                      <Linkify options={{ className: 'text-primary hover:underline', target: '_blank' }}>
+                      <Linkify options={safeLinkifyOptions}>
                         {bug.discovery}
                       </Linkify>
                     </p>
@@ -700,7 +718,7 @@ export function BugWallScreen({
                                 <div className="mt-1 space-y-3">
                                   {comment.text && (
                                     <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap break-words">
-                                      <Linkify options={{ className: 'text-primary hover:underline', target: '_blank' }}>
+                                      <Linkify options={safeLinkifyOptions}>
                                         {comment.text}
                                       </Linkify>
                                     </p>
@@ -760,7 +778,7 @@ export function BugWallScreen({
                                               <span className="text-[8px] font-black text-outline/40 uppercase tracking-widest">{reply.date}</span>
                                             </div>
                                             <p className="text-xs text-on-surface-variant font-medium leading-relaxed whitespace-pre-wrap break-words">
-                                              <Linkify options={{ className: 'text-primary hover:underline font-bold', target: '_blank' }}>
+                                              <Linkify options={{ ...safeLinkifyOptions, className: 'text-primary hover:underline font-bold' }}>
                                                 {reply.text}
                                               </Linkify>
                                             </p>

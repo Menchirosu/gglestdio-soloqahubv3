@@ -64,14 +64,18 @@ export function TipForm({ onSubmit, onClose, initialData }: TipFormProps) {
 
       <div className="space-y-2">
         <label className="text-xs font-bold uppercase tracking-widest text-outline">Description</label>
-        <textarea 
+        <textarea
           required
+          minLength={10}
           value={formData.desc}
           onChange={e => setFormData({ ...formData, desc: e.target.value })}
           className="w-full bg-surface-container-highest border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none"
           placeholder="Explain the tip..."
           rows={3}
         />
+        {formData.desc.length > 0 && formData.desc.length < 10 && (
+          <p className="text-[10px] text-error">Please enter at least 10 characters.</p>
+        )}
       </div>
 
       <div className="space-y-2">
