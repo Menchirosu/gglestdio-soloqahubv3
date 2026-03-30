@@ -8,7 +8,6 @@ import {
   Filter,
   FolderOpen,
   HeartHandshake,
-  Link2,
   MoreHorizontal,
   PlusCircle,
   ShieldCheck,
@@ -39,7 +38,6 @@ export function scoreAchievement(achievement: Achievement) {
   if (achievement.category === 'Work') score += 40;
   score += Math.min(achievement.story.trim().length, 220) * 0.08;
   score += Math.min(achievement.impact.trim().length, 180) * 0.12;
-  if (achievement.evidence?.trim()) score += 18;
   if (achievement.achievementDate) score += 8;
   return Math.round(score);
 }
@@ -121,7 +119,6 @@ export function AchievementsScreen({
       total: achievements.length,
       workCount: achievements.filter((item) => item.category === 'Work').length,
       personalCount: achievements.filter((item) => item.category === 'Personal').length,
-      proofCount: achievements.filter((item) => item.evidence?.trim()).length,
       mineCount,
     };
   }, [achievements, profile?.displayName, profile?.uid]);
@@ -176,10 +173,6 @@ export function AchievementsScreen({
           <div className="rounded-[1.4rem] border border-outline-variant/10 bg-surface px-5 py-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-outline">Personal</p>
             <p className="mt-3 text-3xl font-black text-on-surface">{stats.personalCount}</p>
-          </div>
-          <div className="rounded-[1.4rem] border border-outline-variant/10 bg-surface px-5 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-outline">With proof</p>
-            <p className="mt-3 text-3xl font-black text-on-surface">{stats.proofCount}</p>
           </div>
           <div className="rounded-[1.4rem] border border-outline-variant/10 bg-surface px-5 py-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-outline">Mine</p>
@@ -316,12 +309,6 @@ export function AchievementsScreen({
                         <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-outline">
                           {timeAgo(achievement.createdAt || achievement.date)}
                         </span>
-                        {achievement.evidence?.trim() && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant/10 bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-on-surface-variant">
-                            <Link2 size={11} />
-                            Proof
-                          </span>
-                        )}
                       </div>
 
                       {isOwner && (
@@ -553,13 +540,6 @@ export function AchievementsScreen({
                   <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-outline">Why it mattered</p>
                   <p className="mt-3 text-base leading-8 text-on-surface">{selectedAchievement.impact}</p>
                 </section>
-
-                {selectedAchievement.evidence?.trim() && (
-                  <section className="rounded-[1.5rem] border border-emerald-500/15 bg-emerald-500/8 px-5 py-5">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-800/80 dark:text-emerald-200/80">Proof</p>
-                    <p className="mt-3 text-sm leading-7 text-on-surface">{selectedAchievement.evidence}</p>
-                  </section>
-                )}
 
                 <section className="grid gap-4 border-t border-outline-variant/10 pt-6 md:grid-cols-3">
                   <div className="flex items-center gap-3">

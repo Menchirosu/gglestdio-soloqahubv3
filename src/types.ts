@@ -98,7 +98,6 @@ export interface Achievement {
   category: 'Work' | 'Personal';
   story: string;
   impact: string;
-  evidence?: string;
   achievementDate?: string;
   author: string;
   authorId?: string;

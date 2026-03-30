@@ -121,7 +121,6 @@ service cloud.firestore {
              data.createdAt is timestamp &&
              (!('id' in data) || data.id is string) &&
              (!('date' in data) || data.date is string) &&
-             (!('evidence' in data) || data.evidence == null || (data.evidence is string && data.evidence.size() < 3000)) &&
              (!('achievementDate' in data) || data.achievementDate == null || data.achievementDate is string) &&
              (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100)) &&
              (!('authorPhotoURL' in data) || data.authorPhotoURL == null || (data.authorPhotoURL is string && data.authorPhotoURL.size() < 2000));

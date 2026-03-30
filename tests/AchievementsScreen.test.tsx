@@ -18,7 +18,6 @@ function makeAchievement(overrides: Partial<Achievement> = {}): Achievement {
     category: overrides.category || 'Work',
     story: overrides.story || 'Tracked down a release-blocking issue before it reached production.',
     impact: overrides.impact || 'Saved the team a late rollback and gave support a quiet day.',
-    evidence: overrides.evidence,
     achievementDate: overrides.achievementDate,
     author: overrides.author || 'Coy Admin',
     authorId: overrides.authorId || 'user-1',
@@ -167,15 +166,13 @@ describe('AchievementsScreen', () => {
 });
 
 describe('Achievements helpers', () => {
-  it('scores work entries higher when they include proof and a date', () => {
+  it('scores work entries higher when they include a date and stronger detail', () => {
     const lowSignal = makeAchievement({
-      evidence: undefined,
       achievementDate: undefined,
       story: 'Short story',
       impact: 'Short impact',
     });
     const highSignal = makeAchievement({
-      evidence: 'Linked release notes',
       achievementDate: '2026-03-30',
       story: 'A much longer and more detailed write-up of the work that happened here.',
       impact: 'A fuller impact note that explains why the work mattered for users and the team.',

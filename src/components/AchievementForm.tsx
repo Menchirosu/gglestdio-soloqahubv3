@@ -14,7 +14,6 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
     category: initialData?.category || 'Work' as 'Work' | 'Personal',
     story: initialData?.story || '',
     impact: initialData?.impact || '',
-    evidence: initialData?.evidence || '',
     achievementDate: initialData?.achievementDate || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,7 +25,6 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
     setTimeout(() => {
       onSubmit({
         ...formData,
-        evidence: formData.evidence.trim() || undefined,
         achievementDate: formData.achievementDate || undefined,
       });
       setIsSubmitting(false);
@@ -105,17 +103,6 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
           className="w-full bg-surface-container-highest border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none"
           placeholder="Explain the impact on quality, team flow, customer confidence, or personal growth."
           rows={4}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-outline">Optional Proof</label>
-        <textarea
-          value={formData.evidence}
-          onChange={(e) => setFormData({ ...formData, evidence: e.target.value })}
-          className="w-full bg-surface-container-highest border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none"
-          placeholder="Add a metric, link, release, stakeholder note, or any concrete signal."
-          rows={3}
         />
       </div>
 
