@@ -111,6 +111,22 @@ service cloud.firestore {
              (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100));
     }
 
+    function isValidAchievement(data) {
+      return data.keys().hasAll(['title', 'category', 'story', 'impact', 'author', 'createdAt']) &&
+             data.title is string && data.title.size() < 200 &&
+             data.category in ['Work', 'Personal'] &&
+             data.story is string && data.story.size() < 4000 &&
+             data.impact is string && data.impact.size() < 3000 &&
+             data.author is string &&
+             data.createdAt is timestamp &&
+             (!('id' in data) || data.id is string) &&
+             (!('date' in data) || data.date is string) &&
+             (!('evidence' in data) || data.evidence == null || (data.evidence is string && data.evidence.size() < 3000)) &&
+             (!('achievementDate' in data) || data.achievementDate == null || data.achievementDate is string) &&
+             (!('authorId' in data) || data.authorId == null || (data.authorId is string && data.authorId.size() < 100)) &&
+             (!('authorPhotoURL' in data) || data.authorPhotoURL == null || (data.authorPhotoURL is string && data.authorPhotoURL.size() < 2000));
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // Collection Rules
     // ═══════════════════════════════════════════════════════════════
@@ -194,6 +210,16 @@ service cloud.firestore {
       allow create: if isApprovedUser() && isValidProposal(request.resource.data) &&
                       (request.resource.data.authorId == null || request.resource.data.authorId == request.auth.uid);
       allow update: if isAuthenticated() && request.auth.uid == resource.data.authorId && isValidProposal(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
+    }
+
+    // Achievements — approved users create own; admin or owner edit/delete
+    match /achievements/{achievementId} {
+      allow read: if isAuthenticated();
+      allow create: if isApprovedUser() && isValidAchievement(request.resource.data) &&
+                      (request.resource.data.authorId == null || request.resource.data.authorId == request.auth.uid);
+      allow update: if isAdmin() ||
+                      (isAuthenticated() && request.auth.uid == resource.data.authorId && isValidAchievement(request.resource.data));
       allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);
     }
 

@@ -4,6 +4,7 @@ import {
   Bug, 
   Lightbulb, 
   BookOpen,
+  Sparkles,
   Focus,
   Search, 
   Bell, 
@@ -25,6 +26,7 @@ import { Modal } from './components/Modal';
 import { BugForm } from './components/BugForm';
 import { TipForm } from './components/TipForm';
 import { ProposalForm } from './components/ProposalForm';
+import { AchievementForm } from './components/AchievementForm';
 import { EntrySelectorModal } from './components/EntrySelectorModal';
 import { ProfileForm } from './components/ProfileForm';
 
@@ -32,6 +34,7 @@ import { DashboardScreen } from './screens/DashboardScreen';
 import { BugWallScreen } from './screens/BugWallScreen';
 import { TipsTricksScreen } from './screens/TipsTricksScreen';
 import { KnowledgeSharingScreen } from './screens/KnowledgeSharingScreen';
+import { AchievementsScreen } from './screens/AchievementsScreen';
 import { FocusZoneScreen } from './screens/FocusZoneScreen';
 import { AdminDashboard } from './screens/AdminDashboard';
 import { SearchProvider, useSearch } from './SearchContext';
@@ -105,8 +108,8 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
   const {
-    bugs, tips, proposals, notifications,
-    addBug, deleteBug, editBug, addTip, deleteTip, editTip, addProposal, deleteProposal, editProposal,
+    bugs, tips, proposals, achievements, notifications,
+    addBug, deleteBug, editBug, addTip, deleteTip, editTip, addProposal, deleteProposal, editProposal, addAchievement, deleteAchievement, editAchievement,
     reactToBug, reactToTip, addCommentToBug, reactToComment, replyToComment, deleteComment, editComment, updateUserAvatars,
     markNotificationAsRead, markAllNotificationsAsRead
   } = useStorage();
@@ -149,6 +152,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
     { id: 'bug-wall', label: 'Bug Wall', icon: Bug },
     { id: 'tips-tricks', label: 'Tips & Tricks', icon: Lightbulb },
     { id: 'knowledge-sharing', label: 'Knowledge Sharing', icon: BookOpen },
+    { id: 'achievements', label: 'Achievements', icon: Sparkles },
     { id: 'focus-zone', label: 'Focus Zone', icon: Focus },
   ];
 
@@ -163,10 +167,11 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
     setCurrentScreen(screen);
   };
 
-  const handleEntrySelect = (type: 'bug' | 'tip' | 'knowledge') => {
+  const handleEntrySelect = (type: 'bug' | 'tip' | 'knowledge' | 'achievement') => {
     if (type === 'bug') setActiveModal({ type: 'bug' });
     if (type === 'tip') setActiveModal({ type: 'tip' });
     if (type === 'knowledge') setActiveModal({ type: 'proposal' });
+    if (type === 'achievement') setActiveModal({ type: 'achievement' });
   };
 
   const handleBugSubmit = async (bug: any) => {
@@ -194,6 +199,15 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       showToast('Proposal submitted!');
     } catch (error) {
       showToast('Failed to submit proposal.', 'error');
+    }
+  };
+
+  const handleAchievementSubmit = async (achievement: any) => {
+    try {
+      await addAchievement(achievement);
+      showToast('Achievement captured successfully!');
+    } catch (error) {
+      showToast('Failed to save achievement.', 'error');
     }
   };
 
@@ -227,8 +241,18 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       }
     });
 
+    achievements.forEach(a => {
+      if (
+        a.title.toLowerCase().includes(query) ||
+        a.story.toLowerCase().includes(query) ||
+        a.impact.toLowerCase().includes(query)
+      ) {
+        results.push({ id: a.id, title: a.title, type: 'achievement', screen: 'achievements' });
+      }
+    });
+
     return results.slice(0, 10);
-  }, [searchQuery, bugs, tips, proposals]);
+  }, [searchQuery, bugs, tips, proposals, achievements]);
 
   const handleResultClick = (result: any) => {
     navigateTo(result.screen as Screen);
@@ -282,9 +306,11 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                 setSelectedItemId(null);
                 setIsSearchResultsOpen(false);
               }}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-full transition-all active:scale-95 group/nav ${
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-full transition-all active:scale-95 group/nav focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
                 currentScreen === item.id
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                  ? item.id === 'achievements'
+                    ? 'bg-emerald-700 text-white shadow-lg shadow-emerald-950/10'
+                    : 'bg-primary text-white shadow-lg shadow-primary/20'
                   : 'text-tertiary hover:text-primary hover:bg-surface-container-high'
               }`}
             >
@@ -300,7 +326,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
         <div className="px-4 mt-auto space-y-3">
           <button
             onClick={() => setActiveModal({ type: 'selector' })}
-            className="w-full bg-primary text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-all"
+            className="w-full bg-primary text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           >
             <PlusCircle size={20} />
             New Entry
@@ -326,7 +352,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); logout(); }}
-              className="p-1.5 text-outline hover:text-error hover:bg-error/10 rounded-full transition-all shrink-0"
+              className="p-1.5 text-outline hover:text-error hover:bg-error/10 rounded-full transition-all shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/30"
               title="Sign out"
             >
               <LogOut size={14} />
@@ -408,7 +434,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
         <div className="flex items-center gap-4 md:gap-6">
           <button
             onClick={toggleDarkMode}
-            className="p-2 text-outline hover:bg-surface-container-low rounded-full transition-all"
+            className="p-2 text-outline hover:bg-surface-container-low rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
@@ -417,7 +443,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
           <div className="relative">
             <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="relative p-2 text-outline hover:bg-surface-container-low rounded-full transition-colors"
+              className="relative p-2 text-outline hover:bg-surface-container-low rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               aria-label="Notifications"
             >
               <Bell size={20} />
@@ -437,11 +463,11 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                   >
                     <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between">
                       <h4 className="font-bold text-sm">Notifications</h4>
-                      <button 
-                        onClick={markAllNotificationsAsRead}
-                        className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline"
-                      >
-                        Mark all as read
+                        <button 
+                          onClick={markAllNotificationsAsRead}
+                          className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-full"
+                        >
+                          Mark all as read
                       </button>
                     </div>
                     <div className="max-h-96 overflow-y-auto">
@@ -498,14 +524,14 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             </div>
             <button 
               onClick={() => setActiveModal({ type: 'profile' })}
-              className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-full transition-all"
+              className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               title="Profile Settings"
             >
               <User size={20} />
             </button>
             <button 
               onClick={logout}
-              className="p-2 text-outline hover:text-error hover:bg-error/10 rounded-full transition-all"
+              className="p-2 text-outline hover:text-error hover:bg-error/10 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/30"
               title="Logout"
             >
               <LogOut size={20} />
@@ -519,6 +545,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
         currentScreen === 'bug-wall' ? 'page-glow-bug' :
         currentScreen === 'tips-tricks' ? 'page-glow-tips' :
         currentScreen === 'knowledge-sharing' ? 'page-glow-knowledge' :
+        currentScreen === 'achievements' ? 'page-glow-achievements' :
         currentScreen === 'focus-zone' ? 'page-glow-focus' : ''
       }`}>
         <AnimatePresence mode="wait" custom={navDirection}>
@@ -571,6 +598,17 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                 onAddProposal={() => setActiveModal({ type: 'proposal' })}
                 onDeleteProposal={deleteProposal}
                 onEditProposal={(proposal) => setActiveModal({ type: 'edit-proposal', data: proposal })}
+                searchQuery={searchQuery}
+                selectedItemId={selectedItemId}
+                onClearSelection={() => setSelectedItemId(null)}
+              />
+            )}
+            {currentScreen === 'achievements' && (
+              <AchievementsScreen
+                achievements={achievements}
+                onAddAchievement={() => setActiveModal({ type: 'achievement' })}
+                onDeleteAchievement={deleteAchievement}
+                onEditAchievement={(achievement) => setActiveModal({ type: 'edit-achievement', data: achievement })}
                 searchQuery={searchQuery}
                 selectedItemId={selectedItemId}
                 onClearSelection={() => setSelectedItemId(null)}
@@ -659,6 +697,32 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             onSubmit={(updatedProposal) => {
               editProposal(activeModal.data.id, updatedProposal);
               showToast('Proposal updated successfully!', 'success');
+              setActiveModal(null);
+            }} 
+            onClose={() => setActiveModal(null)} 
+          />
+        )}
+      </Modal>
+
+      <Modal 
+        isOpen={activeModal?.type === 'achievement'} 
+        onClose={() => setActiveModal(null)} 
+        title="Add Achievement"
+      >
+        <AchievementForm onSubmit={handleAchievementSubmit} onClose={() => setActiveModal(null)} />
+      </Modal>
+
+      <Modal 
+        isOpen={activeModal?.type === 'edit-achievement'} 
+        onClose={() => setActiveModal(null)} 
+        title="Edit Achievement"
+      >
+        {activeModal?.type === 'edit-achievement' && (
+          <AchievementForm 
+            initialData={activeModal.data}
+            onSubmit={(updatedAchievement) => {
+              editAchievement(activeModal.data.id, updatedAchievement);
+              showToast('Achievement updated successfully!', 'success');
               setActiveModal(null);
             }} 
             onClose={() => setActiveModal(null)} 

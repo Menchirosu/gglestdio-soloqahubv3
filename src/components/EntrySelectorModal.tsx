@@ -1,9 +1,9 @@
 import React from 'react';
-import { Bug, Lightbulb, BookOpen, ChevronRight } from 'lucide-react';
+import { Bug, Lightbulb, BookOpen, Sparkles, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface EntrySelectorModalProps {
-  onSelect: (type: 'bug' | 'tip' | 'knowledge') => void;
+  onSelect: (type: 'bug' | 'tip' | 'knowledge' | 'achievement') => void;
 }
 
 export function EntrySelectorModal({ onSelect }: EntrySelectorModalProps) {
@@ -31,6 +31,14 @@ export function EntrySelectorModal({ onSelect }: EntrySelectorModalProps) {
       icon: BookOpen,
       color: 'text-secondary',
       bgColor: 'bg-secondary/10'
+    },
+    {
+      id: 'achievement',
+      title: 'Achievements',
+      desc: 'Capture a meaningful work or personal win in your growth journal.',
+      icon: Sparkles,
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-500/10'
     },
   ];
 

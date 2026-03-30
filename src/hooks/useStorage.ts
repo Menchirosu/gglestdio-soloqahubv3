@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BugStory, Tip, Proposal, Notification, Comment } from '../types';
+import { BugStory, Tip, Proposal, Notification, Comment, Achievement } from '../types';
 import { db, auth, createBugStory, updateBugReactions, updateTipReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType } from '../firebase';
 import { collection, onSnapshot, query, orderBy, where, writeBatch, doc, setDoc, serverTimestamp, updateDoc, deleteDoc, collectionGroup } from 'firebase/firestore';
 import { sendBroadcastEmail, sendUserEmail } from '../utils/emailNotifier';
@@ -15,6 +15,7 @@ export function useStorage() {
   const [bugs, setBugs] = useState<BugStory[]>([]);
   const [tips, setTips] = useState<Tip[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   // Real-time listeners
@@ -23,6 +24,7 @@ export function useStorage() {
       setBugs([]);
       setTips([]);
       setProposals([]);
+      setAchievements([]);
       setNotifications([]);
       return;
     }
@@ -98,6 +100,12 @@ const proposalsQuery = query(collection(db, 'proposals'), orderBy('createdAt', '
       setProposals(proposalsData);
     }, (error) => handleFirestoreError(error, OperationType.GET, 'proposals'));
 
+    const achievementsQuery = query(collection(db, 'achievements'), orderBy('createdAt', 'desc'));
+    const unsubscribeAchievements = onSnapshot(achievementsQuery, (snapshot) => {
+      const achievementsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Achievement));
+      setAchievements(achievementsData);
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'achievements'));
+
     const notifQuery = query(
       collection(db, 'notifications'),
       where('recipientId', 'in', [auth.currentUser.uid, 'all']),
@@ -115,6 +123,7 @@ const proposalsQuery = query(collection(db, 'proposals'), orderBy('createdAt', '
       unsubscribeReplies();
       unsubscribeTips();
       unsubscribeProposals();
+      unsubscribeAchievements();
       unsubscribeNotifs();
     };
   }, [auth.currentUser]);
@@ -205,6 +214,20 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
       `${author} proposed a new knowledge sharing session: "${proposal.title}". Check it out!`,
       auth.currentUser?.uid,
     );
+  };
+
+  const addAchievement = async (achievement: Omit<Achievement, 'id' | 'date' | 'author'>) => {
+    const achievementRef = doc(collection(db, 'achievements'));
+    const author = auth.currentUser?.displayName || 'Anonymous';
+    await setDoc(achievementRef, {
+      ...achievement,
+      id: achievementRef.id,
+      author,
+      authorId: auth.currentUser?.uid || null,
+      authorPhotoURL: auth.currentUser?.photoURL || null,
+      date: 'Just now',
+      createdAt: serverTimestamp(),
+    });
   };
 
   const reactToBug = async (bugId: string, emoji: string, currentUserName?: string) => {
@@ -458,6 +481,22 @@ const deleteProposal = async (proposalId: string) => {
     }
   };
 
+  const deleteAchievement = async (achievementId: string) => {
+    try {
+      await deleteDoc(doc(db, 'achievements', achievementId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `achievements/${achievementId}`);
+    }
+  };
+
+  const editAchievement = async (achievementId: string, achievement: Partial<Achievement>) => {
+    try {
+      await updateDoc(doc(db, 'achievements', achievementId), achievement);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `achievements/${achievementId}`);
+    }
+  };
+
   const deleteComment = async (bugId: string, commentId: string) => {
     try {
       await deleteCommentDoc(bugId, commentId);
@@ -478,6 +517,7 @@ const deleteProposal = async (proposalId: string) => {
     bugs,
     tips,
     proposals,
+    achievements,
     notifications,
     addBug,
     deleteBug,
@@ -488,6 +528,9 @@ const deleteProposal = async (proposalId: string) => {
     addProposal,
     deleteProposal,
     editProposal,
+    addAchievement,
+    deleteAchievement,
+    editAchievement,
     reactToBug,
     reactToTip,
     addCommentToBug,

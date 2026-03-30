@@ -7,7 +7,7 @@ import {
   LucideIcon
 } from 'lucide-react';
 
-export type Screen = 'dashboard' | 'bug-wall' | 'tips-tricks' | 'knowledge-sharing' | 'focus-zone' | 'admin-dashboard';
+export type Screen = 'dashboard' | 'bug-wall' | 'tips-tricks' | 'knowledge-sharing' | 'achievements' | 'focus-zone' | 'admin-dashboard';
 
 export interface NavItem {
   id: Screen;
@@ -90,4 +90,19 @@ export interface Proposal {
   createdAt?: any;
   type?: 'Session' | 'Resource';
   tags?: string[];
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  category: 'Work' | 'Personal';
+  story: string;
+  impact: string;
+  evidence?: string;
+  achievementDate?: string;
+  author: string;
+  authorId?: string;
+  authorPhotoURL?: string;
+  date: string;
+  createdAt?: any;
 }

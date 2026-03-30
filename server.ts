@@ -14,7 +14,7 @@ async function startServer() {
         : '*',
     },
   });
-  const PORT = 3001;
+  const preferredPort = Number(process.env.PORT || 3001);
 
   // Security headers
   app.use((_req, res, next) => {
@@ -60,9 +60,25 @@ async function startServer() {
     });
   }
 
-  httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  const listenOnPort = (port: number) => {
+    httpServer.removeAllListeners("error");
+    httpServer.on("error", (error: NodeJS.ErrnoException) => {
+      if (error.code === "EADDRINUSE") {
+        const nextPort = port + 1;
+        console.warn(`Port ${port} is in use. Retrying on http://localhost:${nextPort}`);
+        listenOnPort(nextPort);
+        return;
+      }
+
+      throw error;
+    });
+
+    httpServer.listen(port, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${port}`);
+    });
+  };
+
+  listenOnPort(preferredPort);
 }
 
 startServer();
