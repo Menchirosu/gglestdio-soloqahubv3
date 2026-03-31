@@ -1,14 +1,33 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import crypto from 'crypto';
 import { readFileSync } from 'fs';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, doc, setDoc, Timestamp } from 'firebase/firestore';
 
 const firebaseConfig = JSON.parse(
   readFileSync(new URL('../firebase-applet-config.json', import.meta.url), 'utf8')
 ) as {
   apiKey: string;
   projectId: string;
+  appId: string;
+  authDomain: string;
   firestoreDatabaseId: string;
+  storageBucket: string;
+  messagingSenderId: string;
 };
+
+const firebaseApp =
+  getApps().find((app) => app.options.projectId === firebaseConfig.projectId) ||
+  initializeApp({
+    apiKey: firebaseConfig.apiKey,
+    projectId: firebaseConfig.projectId,
+    appId: firebaseConfig.appId,
+    authDomain: firebaseConfig.authDomain,
+    storageBucket: firebaseConfig.storageBucket,
+    messagingSenderId: firebaseConfig.messagingSenderId,
+  });
+
+const firestore = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
 type JsonBody = {
   achievement?: {
@@ -50,21 +69,6 @@ function json(res: ServerResponse, status: number, payload: unknown) {
   res.end(JSON.stringify(payload));
 }
 
-function stringField(value: string) {
-  return { stringValue: value };
-}
-
-function nullableStringField(value?: string | null) {
-  if (value == null || value === '') {
-    return { nullValue: null };
-  }
-  return { stringValue: value };
-}
-
-function timestampField(value: string) {
-  return { timestampValue: value };
-}
-
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -91,63 +95,33 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
 
     const docId = crypto.randomUUID();
-    const nowIso = new Date().toISOString();
-    const endpoint =
-      `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}` +
-      `/databases/${firebaseConfig.firestoreDatabaseId}/documents/achievements` +
-      `?documentId=${docId}&key=${firebaseConfig.apiKey}`;
-
-    const fields: Record<string, unknown> = {
-      id: stringField(docId),
-      title: stringField(achievement.title),
-      category: stringField(achievement.category),
-      story: stringField(achievement.story),
-      impact: stringField(achievement.impact),
-      author: stringField(auth.displayName || 'Anonymous'),
-      authorId: nullableStringField(auth.uid),
-      authorPhotoURL: nullableStringField(auth.photoURL),
-      date: stringField('Just now'),
-      createdAt: timestampField(nowIso),
+    const achievementRef = doc(collection(firestore, 'achievements'), docId);
+    const payload: Record<string, unknown> = {
+      id: docId,
+      title: achievement.title,
+      category: achievement.category,
+      story: achievement.story,
+      impact: achievement.impact,
+      author: auth?.displayName || 'Anonymous',
+      authorId: auth?.uid ?? null,
+      authorPhotoURL: auth?.photoURL ?? null,
+      date: 'Just now',
+      createdAt: Timestamp.now(),
     };
 
     if (achievement.achievementDate) {
-      fields.achievementDate = stringField(achievement.achievementDate);
+      payload.achievementDate = achievement.achievementDate;
     }
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ fields }),
-    });
-
-    const text = await response.text();
-    let data: unknown = null;
-
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      data = text;
-    }
-
-    if (!response.ok) {
-      return json(res, response.status, {
-        error: 'Firestore proxy write failed',
-        firestore: data,
-        projectId: firebaseConfig.projectId,
-        databaseId: firebaseConfig.firestoreDatabaseId,
-        path: `achievements/${docId}`,
-      });
-    }
+    await setDoc(achievementRef, payload);
 
     return json(res, 200, {
       id: docId,
-      firestore: data,
       projectId: firebaseConfig.projectId,
       databaseId: firebaseConfig.firestoreDatabaseId,
     });
   } catch (error) {
+    console.error('Achievement API failure', error);
     return json(res, 500, {
       error: error instanceof Error ? error.message : String(error),
       projectId: firebaseConfig.projectId,
