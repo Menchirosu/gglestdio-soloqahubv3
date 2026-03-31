@@ -20,6 +20,27 @@ export function useStorage() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  const fetchAchievements = async () => {
+    try {
+      const response = await fetch('/api/achievements');
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          JSON.stringify({
+            error: result?.error || 'Failed to fetch achievements',
+            operationType: OperationType.GET,
+            path: result?.path || 'api/achievements',
+          })
+        );
+      }
+
+      setAchievements((result?.achievements || []) as Achievement[]);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, 'achievements');
+    }
+  };
+
   // Real-time listeners
   useEffect(() => {
     let unsubscribers: Array<() => void> = [];
@@ -125,12 +146,6 @@ export function useStorage() {
         setProposals(proposalsData);
       }, (error) => handleFirestoreError(error, OperationType.GET, 'proposals'));
 
-      const achievementsQuery = query(collection(db, 'achievements'), orderBy('createdAt', 'desc'));
-      const unsubscribeAchievements = onSnapshot(achievementsQuery, (snapshot) => {
-        const achievementsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Achievement));
-        setAchievements(achievementsData);
-      }, (error) => handleFirestoreError(error, OperationType.GET, 'achievements'));
-
       const notifQuery = query(
         collection(db, 'notifications'),
         where('recipientId', 'in', [user.uid, 'all']),
@@ -148,9 +163,10 @@ export function useStorage() {
         unsubscribeReplies,
         unsubscribeTips,
         unsubscribeProposals,
-        unsubscribeAchievements,
         unsubscribeNotifs,
       ];
+
+      await fetchAchievements();
     };
 
     startListeners();
@@ -290,6 +306,8 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
         })
       );
     }
+
+    await fetchAchievements();
   };
 
   const reactToBug = async (bugId: string, emoji: string, currentUserName?: string) => {

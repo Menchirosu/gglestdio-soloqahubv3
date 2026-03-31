@@ -96,12 +96,44 @@ function extractBearerToken(req: IncomingMessage) {
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return json(res, 405, { error: 'Method not allowed' });
-  }
-
   try {
+    const adminApp = getAdminApp();
+    const firestore = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+
+    if (req.method === 'GET') {
+      const snapshot = await firestore
+        .collection('achievements')
+        .orderBy('createdAt', 'desc')
+        .get();
+
+      const achievements = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          category: data.category,
+          story: data.story,
+          impact: data.impact,
+          achievementDate: data.achievementDate ?? null,
+          author: data.author,
+          authorId: data.authorId ?? null,
+          authorPhotoURL: data.authorPhotoURL ?? null,
+          date: data.date ?? 'Just now',
+          createdAt:
+            typeof data.createdAt?.toDate === 'function'
+              ? data.createdAt.toDate().toISOString()
+              : null,
+        };
+      });
+
+      return json(res, 200, { achievements });
+    }
+
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', 'GET, POST');
+      return json(res, 405, { error: 'Method not allowed' });
+    }
+
     const rawBody = await readBody(req as IncomingMessage & { body?: unknown });
     const body = JSON.parse(rawBody || '{}') as JsonBody;
     const achievement = body.achievement;
@@ -127,9 +159,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return json(res, 400, { error: 'Missing required achievement fields' });
     }
 
-    const adminApp = getAdminApp();
     const decodedToken = await getAuth(adminApp).verifyIdToken(idToken);
-    const firestore = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
 
     const docId = crypto.randomUUID();
     const authorName =
