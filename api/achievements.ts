@@ -129,8 +129,44 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return json(res, 200, { achievements });
     }
 
+    if (req.method === 'DELETE') {
+      const idToken = extractBearerToken(req);
+      if (!idToken) {
+        return json(res, 401, {
+          error: 'Missing Firebase ID token',
+          path: 'api/achievements',
+        });
+      }
+
+      const url = new URL(req.url || '/api/achievements', 'https://qawall.vercel.app');
+      const achievementId = url.searchParams.get('id');
+      if (!achievementId) {
+        return json(res, 400, { error: 'Missing achievement id', path: 'api/achievements' });
+      }
+
+      const decodedToken = await getAuth(adminApp).verifyIdToken(idToken);
+      const achievementRef = firestore.collection('achievements').doc(achievementId);
+      const achievementSnapshot = await achievementRef.get();
+
+      if (!achievementSnapshot.exists) {
+        return json(res, 404, { error: 'Achievement not found', path: `achievements/${achievementId}` });
+      }
+
+      const achievementData = achievementSnapshot.data();
+      const isOwner = achievementData?.authorId === decodedToken.uid;
+      const isAdmin = achievementData?.authorId === decodedToken.uid || decodedToken.email === 'cesena0117@gmail.com';
+
+      if (!isOwner && !isAdmin) {
+        return json(res, 403, { error: 'Permission denied', path: `achievements/${achievementId}` });
+      }
+
+      await achievementRef.delete();
+
+      return json(res, 200, { id: achievementId, deleted: true });
+    }
+
     if (req.method !== 'POST') {
-      res.setHeader('Allow', 'GET, POST');
+      res.setHeader('Allow', 'GET, POST, DELETE');
       return json(res, 405, { error: 'Method not allowed' });
     }
 

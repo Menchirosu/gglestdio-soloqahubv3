@@ -562,8 +562,28 @@ const deleteProposal = async (proposalId: string) => {
   };
 
   const deleteAchievement = async (achievementId: string) => {
+    const idToken = await auth.currentUser?.getIdToken();
+
     try {
-      await deleteDoc(doc(db, 'achievements', achievementId));
+      const response = await fetch(`/api/achievements?id=${encodeURIComponent(achievementId)}`, {
+        method: 'DELETE',
+        headers: {
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          JSON.stringify({
+            error: result?.error || 'Achievement proxy delete failed',
+            operationType: OperationType.DELETE,
+            path: result?.path || `api/achievements?id=${achievementId}`,
+          })
+        );
+      }
+
+      await fetchAchievements();
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `achievements/${achievementId}`);
     }
