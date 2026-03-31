@@ -250,12 +250,6 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
   };
 
   const addAchievement = async (achievement: Omit<Achievement, 'id' | 'date' | 'author'>) => {
-    const idToken = await auth.currentUser?.getIdToken();
-
-    if (!idToken) {
-      throw new Error('Missing authenticated user token for achievement submit.');
-    }
-
     console.info('Achievement create attempt', {
       firebase: getFirebaseDebugInfo(),
       uid: auth.currentUser?.uid || null,
@@ -271,7 +265,6 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
       body: JSON.stringify({
         achievement,
         auth: {
-          idToken,
           uid: auth.currentUser?.uid || null,
           displayName: auth.currentUser?.displayName || null,
           photoURL: auth.currentUser?.photoURL || null,

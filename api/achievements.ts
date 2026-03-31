@@ -5,6 +5,7 @@ import { readFileSync } from 'fs';
 const firebaseConfig = JSON.parse(
   readFileSync(new URL('../firebase-applet-config.json', import.meta.url), 'utf8')
 ) as {
+  apiKey: string;
   projectId: string;
   firestoreDatabaseId: string;
 };
@@ -18,7 +19,6 @@ type JsonBody = {
     achievementDate?: string;
   };
   auth?: {
-    idToken?: string;
     uid?: string | null;
     displayName?: string | null;
     photoURL?: string | null;
@@ -77,8 +77,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const achievement = body.achievement;
     const auth = body.auth;
 
-    if (!achievement || !auth?.idToken) {
-      return json(res, 400, { error: 'Missing achievement payload or auth token' });
+    if (!achievement) {
+      return json(res, 400, { error: 'Missing achievement payload' });
     }
 
     if (
@@ -94,7 +94,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const nowIso = new Date().toISOString();
     const endpoint =
       `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}` +
-      `/databases/${firebaseConfig.firestoreDatabaseId}/documents/achievements?documentId=${docId}`;
+      `/databases/${firebaseConfig.firestoreDatabaseId}/documents/achievements` +
+      `?documentId=${docId}&key=${firebaseConfig.apiKey}`;
 
     const fields: Record<string, unknown> = {
       id: stringField(docId),
@@ -116,7 +117,6 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${auth.idToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ fields }),
