@@ -161,8 +161,32 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     });
   } catch (error) {
     console.error('Achievement API failure', error);
-    return json(res, 500, {
-      error: error instanceof Error ? error.message : String(error),
+
+    const statusCode =
+      typeof error === 'object' &&
+      error !== null &&
+      'statusCode' in error &&
+      typeof error.statusCode === 'number'
+        ? error.statusCode
+        : typeof error === 'object' &&
+            error !== null &&
+            'codePrefix' in error &&
+            error.codePrefix === 'auth'
+          ? 401
+          : 500;
+
+    const message =
+      typeof error === 'object' &&
+      error !== null &&
+      'codePrefix' in error &&
+      error.codePrefix === 'auth'
+        ? 'Invalid or expired Firebase ID token'
+        : error instanceof Error
+          ? error.message
+          : String(error);
+
+    return json(res, statusCode, {
+      error: message,
       path: 'api/achievements',
     });
   }
