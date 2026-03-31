@@ -207,6 +207,11 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       await addAchievement(achievement);
       showToast('Achievement captured successfully!');
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('permission') || message.includes('Missing or insufficient permissions')) {
+        showToast('Permission denied. Please ensure you are logged in and approved.', 'error');
+        return;
+      }
       showToast('Failed to save achievement.', 'error');
     }
   };
@@ -720,10 +725,18 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
         {activeModal?.type === 'edit-achievement' && (
           <AchievementForm 
             initialData={activeModal.data}
-            onSubmit={(updatedAchievement) => {
-              editAchievement(activeModal.data.id, updatedAchievement);
-              showToast('Achievement updated successfully!', 'success');
-              setActiveModal(null);
+            onSubmit={async (updatedAchievement) => {
+              try {
+                await editAchievement(activeModal.data.id, updatedAchievement);
+                showToast('Achievement updated successfully!', 'success');
+              } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                if (message.includes('permission') || message.includes('Missing or insufficient permissions')) {
+                  showToast('Permission denied. You can only edit your own achievements.', 'error');
+                  return;
+                }
+                showToast('Failed to update achievement.', 'error');
+              }
             }} 
             onClose={() => setActiveModal(null)} 
           />

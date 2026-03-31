@@ -3,7 +3,7 @@ import { Sparkles, PlusCircle } from 'lucide-react';
 import { Achievement } from '../types';
 
 interface AchievementFormProps {
-  onSubmit: (achievement: any) => void;
+  onSubmit: (achievement: any) => Promise<void> | void;
   onClose: () => void;
   initialData?: Achievement;
 }
@@ -18,26 +18,30 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      onSubmit({
+    try {
+      await onSubmit({
         ...formData,
         achievementDate: formData.achievementDate || undefined,
       });
-      setIsSubmitting(false);
       onClose();
-    }, 700);
+    } catch (error) {
+      console.error('Failed to submit achievement form', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2 md:col-span-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-outline">Achievement Title</label>
+          <label htmlFor="achievement-title" className="text-xs font-bold uppercase tracking-widest text-outline">Achievement Title</label>
           <input
+            id="achievement-title"
             required
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -70,8 +74,9 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-outline">When Did It Happen?</label>
+          <label htmlFor="achievement-date" className="text-xs font-bold uppercase tracking-widest text-outline">When Did It Happen?</label>
           <input
+            id="achievement-date"
             type="date"
             value={formData.achievementDate}
             onChange={(e) => setFormData({ ...formData, achievementDate: e.target.value })}
@@ -81,8 +86,9 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-outline">What Happened?</label>
+        <label htmlFor="achievement-story" className="text-xs font-bold uppercase tracking-widest text-outline">What Happened?</label>
         <textarea
+          id="achievement-story"
           required
           minLength={24}
           value={formData.story}
@@ -94,8 +100,9 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-outline">Why Did It Matter?</label>
+        <label htmlFor="achievement-impact" className="text-xs font-bold uppercase tracking-widest text-outline">Why Did It Matter?</label>
         <textarea
+          id="achievement-impact"
           required
           minLength={20}
           value={formData.impact}
