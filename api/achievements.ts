@@ -1,6 +1,13 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import crypto from 'crypto';
-import firebaseConfig from '../firebase-applet-config.json';
+import { readFileSync } from 'fs';
+
+const firebaseConfig = JSON.parse(
+  readFileSync(new URL('../firebase-applet-config.json', import.meta.url), 'utf8')
+) as {
+  projectId: string;
+  firestoreDatabaseId: string;
+};
 
 type JsonBody = {
   achievement?: {
@@ -18,7 +25,15 @@ type JsonBody = {
   };
 };
 
-function readBody(req: IncomingMessage) {
+async function readBody(req: IncomingMessage & { body?: unknown }) {
+  if (typeof req.body === 'string') {
+    return req.body;
+  }
+
+  if (req.body && typeof req.body === 'object') {
+    return JSON.stringify(req.body);
+  }
+
   return new Promise<string>((resolve, reject) => {
     let data = '';
     req.on('data', (chunk) => {
@@ -57,7 +72,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   try {
-    const rawBody = await readBody(req);
+    const rawBody = await readBody(req as IncomingMessage & { body?: unknown });
     const body = JSON.parse(rawBody || '{}') as JsonBody;
     const achievement = body.achievement;
     const auth = body.auth;
