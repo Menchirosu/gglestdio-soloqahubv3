@@ -250,24 +250,49 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
   };
 
   const addAchievement = async (achievement: Omit<Achievement, 'id' | 'date' | 'author'>) => {
-    const achievementRef = doc(collection(db, 'achievements'));
-    const author = auth.currentUser?.displayName || 'Anonymous';
-    const payload = {
-      ...achievement,
-      id: achievementRef.id,
-      author,
-      authorId: auth.currentUser?.uid || null,
-      authorPhotoURL: auth.currentUser?.photoURL || null,
-      date: 'Just now',
-      createdAt: serverTimestamp(),
-    };
+    const idToken = await auth.currentUser?.getIdToken();
+
+    if (!idToken) {
+      throw new Error('Missing authenticated user token for achievement submit.');
+    }
+
     console.info('Achievement create attempt', {
       firebase: getFirebaseDebugInfo(),
       uid: auth.currentUser?.uid || null,
-      path: `achievements/${achievementRef.id}`,
-      payload,
+      path: 'api/achievements',
+      payload: achievement,
     });
-    await setDoc(achievementRef, payload);
+
+    const response = await fetch('/api/achievements', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        achievement,
+        auth: {
+          idToken,
+          uid: auth.currentUser?.uid || null,
+          displayName: auth.currentUser?.displayName || null,
+          photoURL: auth.currentUser?.photoURL || null,
+        },
+      }),
+    });
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      console.error('Achievement proxy create failed', result);
+      throw new Error(
+        JSON.stringify({
+          error: result?.error || 'Achievement proxy create failed',
+          operationType: OperationType.CREATE,
+          path: result?.path || 'api/achievements',
+          firebase: getFirebaseDebugInfo(),
+          proxy: result,
+        })
+      );
+    }
   };
 
   const reactToBug = async (bugId: string, emoji: string, currentUserName?: string) => {
