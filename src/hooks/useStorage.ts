@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BugStory, Tip, Proposal, Notification, Comment, Achievement } from '../types';
-import { db, auth, createBugStory, updateBugReactions, updateTipReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType } from '../firebase';
+import { db, auth, createBugStory, updateBugReactions, updateTipReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType, getFirebaseDebugInfo } from '../firebase';
 import { collection, onSnapshot, query, orderBy, where, writeBatch, doc, setDoc, serverTimestamp, updateDoc, deleteDoc, collectionGroup } from 'firebase/firestore';
 import { sendBroadcastEmail, sendUserEmail } from '../utils/emailNotifier';
 import { useAuth } from '../AuthContext';
@@ -252,7 +252,7 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
   const addAchievement = async (achievement: Omit<Achievement, 'id' | 'date' | 'author'>) => {
     const achievementRef = doc(collection(db, 'achievements'));
     const author = auth.currentUser?.displayName || 'Anonymous';
-    await setDoc(achievementRef, {
+    const payload = {
       ...achievement,
       id: achievementRef.id,
       author,
@@ -260,7 +260,14 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
       authorPhotoURL: auth.currentUser?.photoURL || null,
       date: 'Just now',
       createdAt: serverTimestamp(),
+    };
+    console.info('Achievement create attempt', {
+      firebase: getFirebaseDebugInfo(),
+      uid: auth.currentUser?.uid || null,
+      path: `achievements/${achievementRef.id}`,
+      payload,
     });
+    await setDoc(achievementRef, payload);
   };
 
   const reactToBug = async (bugId: string, emoji: string, currentUserName?: string) => {

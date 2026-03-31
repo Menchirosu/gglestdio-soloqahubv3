@@ -208,6 +208,15 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       showToast('Achievement captured successfully!');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      try {
+        const parsed = JSON.parse(message);
+        if (parsed?.path === 'achievements') {
+          showToast(`Achievement save blocked on ${parsed.path}. Check console for Firebase debug info.`, 'error');
+          return;
+        }
+      } catch {
+        // Ignore non-JSON error payloads and fall back to legacy handling.
+      }
       if (message.includes('permission') || message.includes('Missing or insufficient permissions')) {
         showToast('Permission denied. Please ensure you are logged in and approved.', 'error');
         return;

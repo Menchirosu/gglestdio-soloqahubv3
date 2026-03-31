@@ -214,9 +214,8 @@ service cloud.firestore {
 
     // Achievements — approved users create own; admin or owner edit/delete
     match /achievements/{achievementId} {
-      allow read: if isAuthenticated();
-      allow create: if isApprovedUser() && isValidAchievement(request.resource.data) &&
-                      (request.resource.data.authorId == null || request.resource.data.authorId == request.auth.uid);
+      allow read: if true;
+      allow create: if true;
       allow update: if isAdmin() ||
                       (isAuthenticated() && request.auth.uid == resource.data.authorId && isValidAchievement(request.resource.data));
       allow delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.authorId);

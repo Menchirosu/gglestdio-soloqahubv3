@@ -84,8 +84,14 @@ export enum OperationType {
 
 export interface FirestoreErrorInfo {
   error: string;
+  code?: string;
   operationType: OperationType;
   path: string | null;
+  firebase: {
+    projectId: string | undefined;
+    configuredDatabaseId: string | undefined;
+    activeDatabaseId: string | undefined;
+  };
   authInfo: {
     userId: string | undefined;
     email: string | null;
@@ -101,9 +107,23 @@ export interface FirestoreErrorInfo {
   }
 }
 
+export function getFirebaseDebugInfo() {
+  const activeDatabaseId =
+    (db as { _databaseId?: { database?: string } })._databaseId?.database ||
+    firebaseConfig.firestoreDatabaseId;
+
+  return {
+    projectId: app.options.projectId,
+    configuredDatabaseId: firebaseConfig.firestoreDatabaseId,
+    activeDatabaseId,
+  };
+}
+
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
+    code: typeof error === 'object' && error !== null && 'code' in error ? String((error as { code: unknown }).code) : undefined,
+    firebase: getFirebaseDebugInfo(),
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -122,6 +142,11 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
+}
+
+if (typeof window !== 'undefined') {
+  (window as Window & { __QAHUB_FIREBASE_DEBUG__?: ReturnType<typeof getFirebaseDebugInfo> }).__QAHUB_FIREBASE_DEBUG__ =
+    getFirebaseDebugInfo();
 }
 
 // Firestore Helpers
