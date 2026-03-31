@@ -3,6 +3,7 @@ import { BugStory, Tip, Proposal, Notification, Comment, Achievement } from '../
 import { db, auth, createBugStory, updateBugReactions, updateTipReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType } from '../firebase';
 import { collection, onSnapshot, query, orderBy, where, writeBatch, doc, setDoc, serverTimestamp, updateDoc, deleteDoc, collectionGroup } from 'firebase/firestore';
 import { sendBroadcastEmail, sendUserEmail } from '../utils/emailNotifier';
+import { useAuth } from '../AuthContext';
 
 function toDate(ts: any): number {
   if (!ts) return 0;
@@ -12,6 +13,7 @@ function toDate(ts: any): number {
 }
 
 export function useStorage() {
+  const { user, loading } = useAuth();
   const [bugs, setBugs] = useState<BugStory[]>([]);
   const [tips, setTips] = useState<Tip[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -20,113 +22,144 @@ export function useStorage() {
 
   // Real-time listeners
   useEffect(() => {
-    if (!auth.currentUser) {
+    let unsubscribers: Array<() => void> = [];
+    let cancelled = false;
+
+    if (loading) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!user) {
       setBugs([]);
       setTips([]);
       setProposals([]);
       setAchievements([]);
       setNotifications([]);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
-    const bugsQuery = query(collection(db, 'bugs'), orderBy('createdAt', 'desc'));
-    const unsubscribeBugs = onSnapshot(bugsQuery, (snapshot) => {
-      const bugsData = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return { ...data, id: doc.id, comments: data.comments || [] } as BugStory;
-      });
-      setBugs(prevBugs => {
-        return bugsData.map(bug => {
-          const existingBug = prevBugs.find(b => b.id === bug.id);
-          // We'll merge subcollection comments later in the comments listener
-          return { ...bug, comments: existingBug?.comments || bug.comments || [] };
-        });
-      });
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'bugs'));
+    const startListeners = async () => {
+      try {
+        await user.getIdToken();
+      } catch (error) {
+        if (!cancelled) {
+          handleFirestoreError(error, OperationType.GET, 'auth-token');
+        }
+        return;
+      }
 
-    // Listen to all comments across all bugs
-    const commentsQuery = query(collectionGroup(db, 'comments'));
-    const unsubscribeComments = onSnapshot(commentsQuery, (snapshot) => {
-      const allComments = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as any));
-      
-      setBugs(prevBugs => {
-        return prevBugs.map(bug => {
-          const subComments = allComments.filter(c => c.bugId === bug.id);
-          // Merge with legacy comments if any, using ID to avoid duplicates
-          const legacyComments = bug.comments?.filter(c => !subComments.find(sc => sc.id === c.id)) || [];
-          return { ...bug, comments: [...legacyComments, ...subComments].sort((a, b) =>
-            toDate(a.createdAt || a.date) - toDate(b.createdAt || b.date)
-          ) };
-        });
-      });
-    }, (error) => {
-      console.error("Collection group query error (comments):", error);
-      handleFirestoreError(error, OperationType.GET, 'all-comments');
-    });
+      if (cancelled) return;
 
-    // Listen to all replies across all comments and bugs
-    const repliesQuery = query(collectionGroup(db, 'replies'));
-    const unsubscribeReplies = onSnapshot(repliesQuery, (snapshot) => {
-      const allReplies = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as any));
-      
-      setBugs(prevBugs => {
-        return prevBugs.map(bug => {
-          if (!bug.comments) return bug;
-          const updatedComments = bug.comments.map(comment => {
-            const subReplies = allReplies.filter(r => r.commentId === comment.id);
-            // Merge with legacy replies if any
-            const legacyReplies = comment.replies?.filter(r => !subReplies.find(sr => sr.id === r.id)) || [];
-            return { ...comment, replies: [...legacyReplies, ...subReplies].sort((a, b) =>
+      const bugsQuery = query(collection(db, 'bugs'), orderBy('createdAt', 'desc'));
+      const unsubscribeBugs = onSnapshot(bugsQuery, (snapshot) => {
+        const bugsData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return { ...data, id: doc.id, comments: data.comments || [] } as BugStory;
+        });
+        setBugs(prevBugs => {
+          return bugsData.map(bug => {
+            const existingBug = prevBugs.find(b => b.id === bug.id);
+            // We'll merge subcollection comments later in the comments listener
+            return { ...bug, comments: existingBug?.comments || bug.comments || [] };
+          });
+        });
+      }, (error) => handleFirestoreError(error, OperationType.GET, 'bugs'));
+
+      // Listen to all comments across all bugs
+      const commentsQuery = query(collectionGroup(db, 'comments'));
+      const unsubscribeComments = onSnapshot(commentsQuery, (snapshot) => {
+        const allComments = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as any));
+        
+        setBugs(prevBugs => {
+          return prevBugs.map(bug => {
+            const subComments = allComments.filter(c => c.bugId === bug.id);
+            // Merge with legacy comments if any, using ID to avoid duplicates
+            const legacyComments = bug.comments?.filter(c => !subComments.find(sc => sc.id === c.id)) || [];
+            return { ...bug, comments: [...legacyComments, ...subComments].sort((a, b) =>
               toDate(a.createdAt || a.date) - toDate(b.createdAt || b.date)
             ) };
           });
-          return { ...bug, comments: updatedComments };
         });
+      }, (error) => {
+        console.error("Collection group query error (comments):", error);
+        handleFirestoreError(error, OperationType.GET, 'all-comments');
       });
-    }, (error) => {
-      console.error("Collection group query error (replies):", error);
-      handleFirestoreError(error, OperationType.GET, 'all-replies');
-    });
 
-    const tipsQuery = query(collection(db, 'tips'), orderBy('createdAt', 'desc'));
-    const unsubscribeTips = onSnapshot(tipsQuery, (snapshot) => {
-      const tipsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Tip));
-      setTips(tipsData);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'tips'));
+      // Listen to all replies across all comments and bugs
+      const repliesQuery = query(collectionGroup(db, 'replies'));
+      const unsubscribeReplies = onSnapshot(repliesQuery, (snapshot) => {
+        const allReplies = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as any));
+        
+        setBugs(prevBugs => {
+          return prevBugs.map(bug => {
+            if (!bug.comments) return bug;
+            const updatedComments = bug.comments.map(comment => {
+              const subReplies = allReplies.filter(r => r.commentId === comment.id);
+              // Merge with legacy replies if any
+              const legacyReplies = comment.replies?.filter(r => !subReplies.find(sr => sr.id === r.id)) || [];
+              return { ...comment, replies: [...legacyReplies, ...subReplies].sort((a, b) =>
+                toDate(a.createdAt || a.date) - toDate(b.createdAt || b.date)
+              ) };
+            });
+            return { ...bug, comments: updatedComments };
+          });
+        });
+      }, (error) => {
+        console.error("Collection group query error (replies):", error);
+        handleFirestoreError(error, OperationType.GET, 'all-replies');
+      });
 
-const proposalsQuery = query(collection(db, 'proposals'), orderBy('createdAt', 'desc'));
-    const unsubscribeProposals = onSnapshot(proposalsQuery, (snapshot) => {
-      const proposalsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Proposal));
-      setProposals(proposalsData);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'proposals'));
+      const tipsQuery = query(collection(db, 'tips'), orderBy('createdAt', 'desc'));
+      const unsubscribeTips = onSnapshot(tipsQuery, (snapshot) => {
+        const tipsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Tip));
+        setTips(tipsData);
+      }, (error) => handleFirestoreError(error, OperationType.GET, 'tips'));
 
-    const achievementsQuery = query(collection(db, 'achievements'), orderBy('createdAt', 'desc'));
-    const unsubscribeAchievements = onSnapshot(achievementsQuery, (snapshot) => {
-      const achievementsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Achievement));
-      setAchievements(achievementsData);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'achievements'));
+      const proposalsQuery = query(collection(db, 'proposals'), orderBy('createdAt', 'desc'));
+      const unsubscribeProposals = onSnapshot(proposalsQuery, (snapshot) => {
+        const proposalsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Proposal));
+        setProposals(proposalsData);
+      }, (error) => handleFirestoreError(error, OperationType.GET, 'proposals'));
 
-    const notifQuery = query(
-      collection(db, 'notifications'),
-      where('recipientId', 'in', [auth.currentUser.uid, 'all']),
-      orderBy('createdAt', 'desc')
-    );
+      const achievementsQuery = query(collection(db, 'achievements'), orderBy('createdAt', 'desc'));
+      const unsubscribeAchievements = onSnapshot(achievementsQuery, (snapshot) => {
+        const achievementsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Achievement));
+        setAchievements(achievementsData);
+      }, (error) => handleFirestoreError(error, OperationType.GET, 'achievements'));
 
-    const unsubscribeNotifs = onSnapshot(notifQuery, (snapshot) => {
-      const notifsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Notification));
-      setNotifications(notifsData);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'notifications'));
+      const notifQuery = query(
+        collection(db, 'notifications'),
+        where('recipientId', 'in', [user.uid, 'all']),
+        orderBy('createdAt', 'desc')
+      );
+
+      const unsubscribeNotifs = onSnapshot(notifQuery, (snapshot) => {
+        const notifsData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Notification));
+        setNotifications(notifsData);
+      }, (error) => handleFirestoreError(error, OperationType.GET, 'notifications'));
+
+      unsubscribers = [
+        unsubscribeBugs,
+        unsubscribeComments,
+        unsubscribeReplies,
+        unsubscribeTips,
+        unsubscribeProposals,
+        unsubscribeAchievements,
+        unsubscribeNotifs,
+      ];
+    };
+
+    startListeners();
 
     return () => {
-      unsubscribeBugs();
-      unsubscribeComments();
-      unsubscribeReplies();
-      unsubscribeTips();
-      unsubscribeProposals();
-      unsubscribeAchievements();
-      unsubscribeNotifs();
+      cancelled = true;
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  }, [auth.currentUser]);
+  }, [loading, user?.uid]);
 
   const addBug = async (bug: Omit<BugStory, 'id' | 'date' | 'reactions' | 'comments'>) => {
     const bugId = await createBugStory({
