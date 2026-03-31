@@ -1,8 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import crypto from 'crypto';
 import { readFileSync } from 'fs';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, Timestamp } from 'firebase/firestore';
 
 const firebaseConfig = JSON.parse(
   readFileSync(new URL('../firebase-applet-config.json', import.meta.url), 'utf8')
@@ -15,19 +13,6 @@ const firebaseConfig = JSON.parse(
   storageBucket: string;
   messagingSenderId: string;
 };
-
-const firebaseApp =
-  getApps().find((app) => app.options.projectId === firebaseConfig.projectId) ||
-  initializeApp({
-    apiKey: firebaseConfig.apiKey,
-    projectId: firebaseConfig.projectId,
-    appId: firebaseConfig.appId,
-    authDomain: firebaseConfig.authDomain,
-    storageBucket: firebaseConfig.storageBucket,
-    messagingSenderId: firebaseConfig.messagingSenderId,
-  });
-
-const firestore = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
 type JsonBody = {
   achievement?: {
@@ -43,6 +28,12 @@ type JsonBody = {
     photoURL?: string | null;
   };
 };
+
+type FirestoreDocument = {
+  name?: string;
+};
+
+const firestoreBaseUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseConfig.firestoreDatabaseId}/documents`;
 
 async function readBody(req: IncomingMessage & { body?: unknown }) {
   if (typeof req.body === 'string') {
@@ -69,6 +60,15 @@ function json(res: ServerResponse, status: number, payload: unknown) {
   res.end(JSON.stringify(payload));
 }
 
+function extractBearerToken(req: IncomingMessage) {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) {
+    return null;
+  }
+
+  return header.slice('Bearer '.length).trim() || null;
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -85,6 +85,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return json(res, 400, { error: 'Missing achievement payload' });
     }
 
+    const idToken = extractBearerToken(req);
+    if (!idToken) {
+      return json(res, 401, {
+        error: 'Missing Firebase ID token',
+        path: 'api/achievements',
+      });
+    }
+
     if (
       !achievement.title ||
       !achievement.category ||
@@ -95,28 +103,55 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
 
     const docId = crypto.randomUUID();
-    const achievementRef = doc(collection(firestore, 'achievements'), docId);
-    const payload: Record<string, unknown> = {
-      id: docId,
-      title: achievement.title,
-      category: achievement.category,
-      story: achievement.story,
-      impact: achievement.impact,
-      author: auth?.displayName || 'Anonymous',
-      authorId: auth?.uid ?? null,
-      authorPhotoURL: auth?.photoURL ?? null,
-      date: 'Just now',
-      createdAt: Timestamp.now(),
+    const payload = {
+      fields: {
+        id: { stringValue: docId },
+        title: { stringValue: achievement.title },
+        category: { stringValue: achievement.category },
+        story: { stringValue: achievement.story },
+        impact: { stringValue: achievement.impact },
+        author: { stringValue: auth?.displayName || 'Anonymous' },
+        authorId: auth?.uid ? { stringValue: auth.uid } : { nullValue: null },
+        authorPhotoURL: auth?.photoURL ? { stringValue: auth.photoURL } : { nullValue: null },
+        date: { stringValue: 'Just now' },
+        createdAt: { timestampValue: new Date().toISOString() },
+        ...(achievement.achievementDate
+          ? {
+              achievementDate: {
+                stringValue: achievement.achievementDate,
+              },
+            }
+          : {}),
+      },
     };
 
-    if (achievement.achievementDate) {
-      payload.achievementDate = achievement.achievementDate;
+    const firestoreResponse = await fetch(`${firestoreBaseUrl}/achievements/${docId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+        'X-Goog-Api-Key': firebaseConfig.apiKey,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!firestoreResponse.ok) {
+      const errorText = await firestoreResponse.text();
+      console.error('Achievement API failure', errorText);
+      return json(res, firestoreResponse.status, {
+        error: 'Achievement proxy write failed',
+        details: errorText,
+        path: 'achievements',
+        projectId: firebaseConfig.projectId,
+        databaseId: firebaseConfig.firestoreDatabaseId,
+      });
     }
 
-    await setDoc(achievementRef, payload);
+    const created = (await firestoreResponse.json()) as FirestoreDocument;
 
     return json(res, 200, {
       id: docId,
+      name: created.name,
       projectId: firebaseConfig.projectId,
       databaseId: firebaseConfig.firestoreDatabaseId,
     });

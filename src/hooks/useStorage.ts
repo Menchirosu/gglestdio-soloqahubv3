@@ -250,10 +250,13 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
   };
 
   const addAchievement = async (achievement: Omit<Achievement, 'id' | 'date' | 'author'>) => {
+    const idToken = await auth.currentUser?.getIdToken();
+
     console.info('Achievement create attempt', {
       firebase: getFirebaseDebugInfo(),
       uid: auth.currentUser?.uid || null,
       path: 'api/achievements',
+      hasIdToken: Boolean(idToken),
       payload: achievement,
     });
 
@@ -261,6 +264,7 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
       },
       body: JSON.stringify({
         achievement,
