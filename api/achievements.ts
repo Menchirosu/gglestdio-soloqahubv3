@@ -1,18 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import crypto from 'crypto';
 import { readFileSync } from 'fs';
-
-const firebaseConfig = JSON.parse(
-  readFileSync(new URL('../firebase-applet-config.json', import.meta.url), 'utf8')
-) as {
-  apiKey: string;
-  projectId: string;
-  appId: string;
-  authDomain: string;
-  firestoreDatabaseId: string;
-  storageBucket: string;
-  messagingSenderId: string;
-};
+import { initializeApp, cert, getApps, type App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
 type JsonBody = {
   achievement?: {
@@ -29,11 +20,46 @@ type JsonBody = {
   };
 };
 
-type FirestoreDocument = {
-  name?: string;
+type ServiceAccountJson = {
+  project_id: string;
+  client_email: string;
+  private_key: string;
 };
 
-const firestoreBaseUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseConfig.firestoreDatabaseId}/documents`;
+const firebaseConfig = JSON.parse(
+  readFileSync(new URL('../firebase-applet-config.json', import.meta.url), 'utf8')
+) as {
+  firestoreDatabaseId: string;
+};
+
+function readServiceAccount(): ServiceAccountJson {
+  const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64;
+  if (!base64) {
+    throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON_BASE64');
+  }
+
+  return JSON.parse(Buffer.from(base64, 'base64').toString('utf8')) as ServiceAccountJson;
+}
+
+function getAdminApp(): App {
+  const serviceAccount = readServiceAccount();
+  const appName = `achievements-proxy-${serviceAccount.project_id}`;
+
+  return (
+    getApps().find((app) => app.name === appName) ||
+    initializeApp(
+      {
+        credential: cert({
+          projectId: serviceAccount.project_id,
+          clientEmail: serviceAccount.client_email,
+          privateKey: serviceAccount.private_key,
+        }),
+        projectId: serviceAccount.project_id,
+      },
+      appName
+    )
+  );
+}
 
 async function readBody(req: IncomingMessage & { body?: unknown }) {
   if (typeof req.body === 'string') {
@@ -79,7 +105,6 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const rawBody = await readBody(req as IncomingMessage & { body?: unknown });
     const body = JSON.parse(rawBody || '{}') as JsonBody;
     const achievement = body.achievement;
-    const auth = body.auth;
 
     if (!achievement) {
       return json(res, 400, { error: 'Missing achievement payload' });
@@ -102,65 +127,43 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return json(res, 400, { error: 'Missing required achievement fields' });
     }
 
+    const adminApp = getAdminApp();
+    const decodedToken = await getAuth(adminApp).verifyIdToken(idToken);
+    const firestore = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+
     const docId = crypto.randomUUID();
-    const payload = {
-      fields: {
-        id: { stringValue: docId },
-        title: { stringValue: achievement.title },
-        category: { stringValue: achievement.category },
-        story: { stringValue: achievement.story },
-        impact: { stringValue: achievement.impact },
-        author: { stringValue: auth?.displayName || 'Anonymous' },
-        authorId: auth?.uid ? { stringValue: auth.uid } : { nullValue: null },
-        authorPhotoURL: auth?.photoURL ? { stringValue: auth.photoURL } : { nullValue: null },
-        date: { stringValue: 'Just now' },
-        createdAt: { timestampValue: new Date().toISOString() },
-        ...(achievement.achievementDate
-          ? {
-              achievementDate: {
-                stringValue: achievement.achievementDate,
-              },
-            }
-          : {}),
-      },
-    };
+    const authorName =
+      decodedToken.name || body.auth?.displayName || decodedToken.email || 'Anonymous';
+    const authorPhotoURL =
+      typeof decodedToken.picture === 'string'
+        ? decodedToken.picture
+        : body.auth?.photoURL || null;
 
-    const firestoreResponse = await fetch(`${firestoreBaseUrl}/achievements/${docId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`,
-        'X-Goog-Api-Key': firebaseConfig.apiKey,
-      },
-      body: JSON.stringify(payload),
+    await firestore.collection('achievements').doc(docId).set({
+      id: docId,
+      title: achievement.title,
+      category: achievement.category,
+      story: achievement.story,
+      impact: achievement.impact,
+      author: authorName,
+      authorId: decodedToken.uid,
+      authorPhotoURL,
+      date: 'Just now',
+      createdAt: FieldValue.serverTimestamp(),
+      ...(achievement.achievementDate
+        ? { achievementDate: achievement.achievementDate }
+        : {}),
     });
-
-    if (!firestoreResponse.ok) {
-      const errorText = await firestoreResponse.text();
-      console.error('Achievement API failure', errorText);
-      return json(res, firestoreResponse.status, {
-        error: 'Achievement proxy write failed',
-        details: errorText,
-        path: 'achievements',
-        projectId: firebaseConfig.projectId,
-        databaseId: firebaseConfig.firestoreDatabaseId,
-      });
-    }
-
-    const created = (await firestoreResponse.json()) as FirestoreDocument;
 
     return json(res, 200, {
       id: docId,
-      name: created.name,
-      projectId: firebaseConfig.projectId,
-      databaseId: firebaseConfig.firestoreDatabaseId,
+      uid: decodedToken.uid,
     });
   } catch (error) {
     console.error('Achievement API failure', error);
     return json(res, 500, {
       error: error instanceof Error ? error.message : String(error),
-      projectId: firebaseConfig.projectId,
-      databaseId: firebaseConfig.firestoreDatabaseId,
+      path: 'api/achievements',
     });
   }
 }

@@ -24,6 +24,7 @@
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "firebase": "^12.11.0",
+    "firebase-admin": "^13.7.0",
     "howler": "^2.2.4",
     "linkify-react": "^4.3.2",
     "linkifyjs": "^4.3.2",
