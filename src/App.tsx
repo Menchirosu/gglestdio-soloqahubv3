@@ -572,7 +572,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             transition={{ duration: 0.22, ease: 'easeOut' }}
             className="max-w-7xl mx-auto"
           >
-            {currentScreen === 'dashboard' && <DashboardScreen onNavigate={navigateTo} bugs={bugs} tips={tips} proposals={proposals} searchQuery={searchQuery} activeUsers={activeUsers} />}
+            {currentScreen === 'dashboard' && <DashboardScreen onNavigate={navigateTo} bugs={bugs} tips={tips} proposals={proposals} achievements={achievements} searchQuery={searchQuery} activeUsers={activeUsers} />}
             {currentScreen === 'bug-wall' && (
               <BugWallScreen 
                 bugs={bugs} 

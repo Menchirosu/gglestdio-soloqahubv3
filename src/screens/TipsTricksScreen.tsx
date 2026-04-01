@@ -88,12 +88,17 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
               </>
             )}
           </div>
-          <button 
-            onClick={onAddTip}
-            className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full text-sm font-semibold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
-          >
-            Contribute Tip
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <button 
+              onClick={onAddTip}
+              className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full text-sm font-semibold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+            >
+              Contribute Tip
+            </button>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+              Share a tip to boost your QA rank.
+            </p>
+          </div>
         </div>
       </section>
 
