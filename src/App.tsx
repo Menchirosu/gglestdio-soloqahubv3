@@ -278,7 +278,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
   };
 
   return (
-    <div className="min-h-screen bg-background text-on-surface">
+    <div className="app-wash min-h-screen text-on-surface">
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -287,29 +287,35 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+            className="fixed inset-0 z-40 bg-background/70 backdrop-blur-md md:hidden"
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-full w-64 bg-surface border-r border-outline-variant/10 flex flex-col py-6 z-50 transition-transform duration-300 md:translate-x-0 dot-grid ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="px-8 mb-10 flex items-center justify-between">
+      <aside className={`dot-grid fixed left-0 top-0 z-50 flex h-full w-72 flex-col border-r border-white/30 bg-white/65 px-5 py-6 shadow-2xl shadow-primary/10 backdrop-blur-2xl transition-transform duration-300 md:translate-x-0 dark:border-white/10 dark:bg-black/15 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="mb-8 flex items-center justify-between px-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[1.25rem] bg-primary text-white shadow-lg shadow-primary/25">
               <LayoutDashboard size={18} />
             </div>
             <div>
-              <h1 className="text-lg font-black text-primary leading-none font-headline">QA Solo Hub</h1>
-              <p className="text-[10px] uppercase tracking-widest text-tertiary mt-1 font-bold">QA Community Hub</p>
+              <h1 className="font-headline text-lg font-black leading-none text-primary">QA Solo Hub</h1>
+              <p className="mt-1 text-[11px] font-medium text-on-surface-variant">Warm support for solo testers</p>
             </div>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 hover:bg-surface-container-low rounded-full" aria-label="Close menu">
+          <button onClick={() => setIsSidebarOpen(false)} className="rounded-full p-2 hover:bg-surface-container-low md:hidden" aria-label="Close menu">
             <X size={20} />
           </button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2">
+        <div className="mb-6 rounded-[1.75rem] bg-white/70 p-4 shadow-sm dark:bg-white/5">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Today&apos;s mood</p>
+          <p className="mt-2 text-lg font-bold text-on-surface">Supportive and in motion</p>
+          <p className="mt-1 text-sm leading-6 text-on-surface-variant">Keep the room useful with one good note, one good catch, or one kind reply.</p>
+        </div>
+
+        <nav className="flex-1 space-y-2">
           {navItems.map((item, idx) => (
             <button
               key={item.id}
@@ -320,35 +326,37 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                 setSelectedItemId(null);
                 setIsSearchResultsOpen(false);
               }}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-full transition-all active:scale-95 group/nav focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+              className={`group/nav flex w-full items-center gap-4 rounded-[1.25rem] px-4 py-3.5 text-left transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
                 currentScreen === item.id
-                  ? item.id === 'achievements'
-                    ? 'bg-emerald-700 text-white shadow-lg shadow-emerald-950/10'
-                    : 'bg-primary text-white shadow-lg shadow-primary/20'
-                  : 'text-tertiary hover:text-primary hover:bg-surface-container-high'
+                  ? 'warm-ring bg-white text-on-surface dark:bg-white/10'
+                  : 'text-on-surface-variant hover:bg-white/65 hover:text-on-surface dark:hover:bg-white/6'
               }`}
             >
-              <item.icon size={20} />
-              <span className="font-headline font-medium text-sm flex-1 text-left">{item.label}</span>
-              <span className={`text-[9px] font-mono transition-opacity ${
-                currentScreen === item.id ? 'opacity-50 text-white' : 'opacity-0 group-hover/nav:opacity-40 text-outline'
-              }`}>{idx + 1}</span>
+              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-colors ${
+                currentScreen === item.id ? 'bg-primary/12 text-primary' : 'bg-surface-container-low text-on-surface-variant group-hover/nav:bg-surface-container-high'
+              }`}>
+                <item.icon size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="block font-headline text-sm font-semibold">{item.label}</span>
+                <span className="block text-xs text-muted-foreground">{idx === 0 ? 'Welcome and pulse' : idx === 1 ? 'Stories from the trenches' : idx === 2 ? 'Practical shortcuts' : idx === 3 ? 'Guides and ideas' : idx === 4 ? 'Celebrate wins' : idx === 5 ? 'Reset and breathe' : 'Admin tools'}</span>
+              </div>
             </button>
           ))}
         </nav>
 
-        <div className="px-4 mt-auto space-y-3">
+        <div className="mt-auto space-y-3 pt-4">
           <button
             onClick={() => setActiveModal({ type: 'selector' })}
-            className="w-full bg-primary text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           >
             <PlusCircle size={20} />
-            New Entry
+            Share something
           </button>
 
           {/* User identity footer */}
-          <div className="flex items-center gap-3 px-2 py-3 rounded-2xl hover:bg-surface-container-high transition-colors cursor-pointer" onClick={() => setActiveModal({ type: 'profile' })}>
-            <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-outline-variant/20 shrink-0">
+          <div className="flex cursor-pointer items-center gap-3 rounded-[1.5rem] bg-white/65 px-3 py-3 transition-colors hover:bg-white/80 dark:bg-white/5 dark:hover:bg-white/8" onClick={() => setActiveModal({ type: 'profile' })}>
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-white/70">
               <img
                 src={profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`}
                 alt="Profile"
@@ -357,9 +365,9 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
               />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-on-surface truncate leading-tight">{profile?.displayName || 'You'}</p>
-              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
-                profile?.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-tertiary'
+              <p className="truncate text-sm font-semibold leading-tight text-on-surface">{profile?.displayName || 'You'}</p>
+              <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
+                profile?.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-on-surface-variant'
               }`}>
                 {profile?.role === 'admin' ? 'Admin' : 'QA'}
               </span>
@@ -382,7 +390,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55]"
+            className="fixed inset-0 z-[55] bg-black/30 backdrop-blur-sm"
             onClick={() => {
               setIsSearchResultsOpen(false);
               setSearchQuery('');
@@ -392,9 +400,9 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       </AnimatePresence>
 
       {/* TopBar */}
-      <header className={`fixed top-0 right-0 left-0 md:left-64 h-16 bg-background/70 backdrop-blur-xl border-b border-outline-variant/10 flex items-center justify-between px-8 transition-all duration-300 ${isSearchResultsOpen ? 'z-[60]' : 'z-30'}`}>
-        <div className="flex items-center gap-4 flex-1 max-w-md">
-          <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 hover:bg-surface-container-low rounded-full" aria-label="Open menu">
+      <header className={`glass fixed left-0 right-0 top-0 z-30 flex h-20 items-center justify-between border-b border-white/25 px-4 sm:px-6 md:left-72 md:px-8 ${isSearchResultsOpen ? 'z-[60]' : 'z-30'}`}>
+        <div className="flex max-w-xl flex-1 items-center gap-4">
+          <button onClick={() => setIsSidebarOpen(true)} className="rounded-full p-2 hover:bg-surface-container-low md:hidden" aria-label="Open menu">
             <Menu size={20} />
           </button>
           <form onSubmit={handleSearch} className="relative w-full">
@@ -416,8 +424,8 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                   setIsSearchResultsOpen(true);
                 }
               }}
-              placeholder="Search wisdom, bugs, or tips..." 
-              className="w-full bg-surface-container-low border-none rounded-full py-2 pl-11 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 transition-all"
+              placeholder="Search stories, tips, wins, or people..." 
+              className="w-full rounded-full border-none bg-white/80 py-3 pl-11 pr-10 text-sm text-on-surface shadow-sm transition-all focus:ring-2 focus:ring-primary/20 dark:bg-white/10"
             />
             {searchQuery && (
               <button 
@@ -427,7 +435,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                   setSelectedItemId(null);
                   setIsSearchResultsOpen(false);
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-surface-container-high rounded-full text-outline hover:text-on-surface transition-all"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-outline transition-all hover:bg-surface-container-high hover:text-on-surface"
               >
                 <X size={14} />
               </button>
@@ -445,10 +453,10 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
           </form>
         </div>
 
-        <div className="flex items-center gap-4 md:gap-6">
+        <div className="flex items-center gap-3 md:gap-4">
           <button
             onClick={toggleDarkMode}
-            className="p-2 text-outline hover:bg-surface-container-low rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="rounded-full bg-white/70 p-2.5 text-outline transition-all hover:bg-white dark:bg-white/8 dark:hover:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
@@ -457,12 +465,12 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
           <div className="relative">
             <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="relative p-2 text-outline hover:bg-surface-container-low rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              className="relative rounded-full bg-white/70 p-2.5 text-outline transition-colors hover:bg-white dark:bg-white/8 dark:hover:bg-white/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               aria-label="Notifications"
             >
               <Bell size={20} />
               {notifications.some(n => !n.isRead) && (
-                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-secondary rounded-full border-2 border-background animate-pulse"></span>
+                <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary animate-pulse"></span>
               )}
             </button>
             <AnimatePresence>
@@ -473,13 +481,13 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 mt-2 w-80 bg-surface rounded-2xl shadow-2xl border border-outline-variant/10 overflow-hidden z-20"
+                    className="absolute right-0 z-20 mt-2 w-80 overflow-hidden rounded-[1.75rem] border border-white/60 bg-white/90 shadow-2xl shadow-primary/10 backdrop-blur-xl dark:border-white/10 dark:bg-[#2a211f]/90"
                   >
-                    <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between">
-                      <h4 className="font-bold text-sm">Notifications</h4>
+                    <div className="flex items-center justify-between border-b border-outline-variant/10 p-4">
+                      <h4 className="text-sm font-bold">Notifications</h4>
                         <button 
                           onClick={markAllNotificationsAsRead}
-                          className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-full"
+                          className="rounded-full text-[10px] font-bold uppercase tracking-widest text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                         >
                           Mark all as read
                       </button>
@@ -503,7 +511,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                                 setIsNotificationsOpen(false);
                               }
                             }}
-                            className={`p-4 hover:bg-surface-container-low transition-colors cursor-pointer border-b border-outline-variant/5 relative ${!n.isRead ? 'bg-primary/5' : ''}`}
+                            className={`relative cursor-pointer border-b border-outline-variant/5 p-4 transition-colors hover:bg-surface-container-low ${!n.isRead ? 'bg-primary/5' : ''}`}
                           >
                             {!n.isRead && (
                               <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-full"></div>
@@ -515,7 +523,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
                         ))
                       )}
                     </div>
-                    <div className="p-3 text-center bg-surface-container-low">
+                    <div className="bg-surface-container-low p-3 text-center">
                       <p className="text-xs text-outline italic">Showing latest {notifications.length} notification{notifications.length !== 1 ? 's' : ''}</p>
                     </div>
                   </motion.div>
@@ -523,12 +531,12 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
               )}
             </AnimatePresence>
           </div>
-          <div className="flex items-center gap-3 pl-4 border-l border-outline-variant/30">
+          <div className="hidden items-center gap-3 rounded-full bg-white/65 px-2 py-1.5 shadow-sm dark:bg-white/7 sm:flex">
             <div className="text-right hidden sm:block">
-              <p className="text-xs font-bold text-on-surface leading-none">{profile?.displayName}</p>
-              <p className="text-[10px] text-tertiary font-bold uppercase tracking-wider">{profile?.role === 'admin' ? 'Administrator' : 'Solo QA Architect'}</p>
+              <p className="text-xs font-bold leading-none text-on-surface">{profile?.displayName}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{profile?.role === 'admin' ? 'Administrator' : 'Solo QA'}</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden border-2 border-white shadow-sm cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setActiveModal({ type: 'profile' })}>
+            <div className="h-10 w-10 cursor-pointer overflow-hidden rounded-full border-2 border-white bg-surface-container-high shadow-sm transition-opacity hover:opacity-80" onClick={() => setActiveModal({ type: 'profile' })}>
               <img 
                 src={profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`} 
                 alt="Profile" 
@@ -538,14 +546,14 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             </div>
             <button 
               onClick={() => setActiveModal({ type: 'profile' })}
-              className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              className="rounded-full p-2 text-outline transition-all hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               title="Profile Settings"
             >
               <User size={20} />
             </button>
             <button 
               onClick={logout}
-              className="p-2 text-outline hover:text-error hover:bg-error/10 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/30"
+              className="rounded-full p-2 text-outline transition-all hover:bg-error/10 hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/30"
               title="Logout"
             >
               <LogOut size={20} />
@@ -555,7 +563,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
       </header>
 
       {/* Main Content */}
-      <main className={`pt-24 pb-12 px-6 md:pl-72 min-h-screen relative ${
+      <main className={`relative min-h-screen px-4 pb-12 pt-24 sm:px-6 md:pl-80 md:pr-8 md:pt-28 ${
         currentScreen === 'bug-wall' ? 'page-glow-bug' :
         currentScreen === 'tips-tricks' ? 'page-glow-tips' :
         currentScreen === 'knowledge-sharing' ? 'page-glow-knowledge' :
@@ -570,7 +578,7 @@ function MainApp({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDark
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: navDirection * -32 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="max-w-7xl mx-auto"
+            className="mx-auto max-w-7xl"
           >
             {currentScreen === 'dashboard' && <DashboardScreen onNavigate={navigateTo} bugs={bugs} tips={tips} proposals={proposals} achievements={achievements} searchQuery={searchQuery} activeUsers={activeUsers} />}
             {currentScreen === 'bug-wall' && (
