@@ -66,25 +66,36 @@ return (
           <SpinWheel members={allMembers} />
         </div>
 
-        <div className="lg:col-span-4 bg-surface-container-low rounded-lg p-8 flex flex-col">
-          <h3 className="text-xl font-bold text-on-surface mb-6">Members</h3>
-          <div className="space-y-4 flex-1 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
+        <div className="lg:col-span-4 bg-surface-container-low rounded-lg p-6 flex flex-col">
+          <h3 className="text-[15px] text-on-surface mb-4" style={{ fontWeight: 590, letterSpacing: '-0.01em' }}>Members</h3>
+          <div className="space-y-1 flex-1 overflow-y-auto max-h-[500px] pr-1 custom-scrollbar">
             {allMembers.map((member, i) => (
-              <div key={member.uid || member.name} className="flex items-center gap-4 p-3 hover:bg-surface-container-lowest rounded-lg transition-all group">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high ring-2 ring-transparent group-hover:ring-secondary/30 transition-all">
-                  <img 
-                    src={(member as any).photoURL || `https://picsum.photos/seed/pioneer${i}/100/100`} 
-                    alt={member.name} 
-                    className="w-full h-full object-cover" 
-                    referrerPolicy="no-referrer" 
+              <motion.div
+                key={member.uid || member.name}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: i * 0.04, ease: 'easeOut' }}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-input transition-all duration-150 hover:-translate-y-0.5 hover:shadow-sm group cursor-default"
+              >
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-surface-container-high ring-1 ring-border group-hover:ring-primary/20 transition-all shrink-0">
+                  <img
+                    src={(member as any).photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name}`}
+                    alt={member.name}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
                   />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-on-surface">{member.name}</p>
-                  <p className="text-[11px] text-tertiary font-medium">{member.role}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] text-on-surface truncate" style={{ fontWeight: 510 }}>{member.name}</p>
                 </div>
-                {(member as any).active && <div className="ml-auto w-2 h-2 rounded-full bg-secondary-fixed-dim wellness-pulse"></div>}
-              </div>
+                <span className={`shrink-0 rounded-[4px] px-2 py-0.5 text-[10px] tracking-wide ${
+                  member.role === 'Admin'
+                    ? 'bg-primary/10 text-primary'
+                    : 'bg-input text-muted-foreground border border-border'
+                }`} style={{ fontWeight: 510 }}>
+                  {member.role === 'Admin' ? 'Admin' : 'QA'}
+                </span>
+              </motion.div>
             ))}
           </div>
         </div>
