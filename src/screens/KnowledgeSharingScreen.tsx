@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Rocket, Bug, BookOpen, Lightbulb, Edit3, Send, PlusCircle, MoreHorizontal, Trash2, X, Trophy } from 'lucide-react';
-import { Screen, Proposal } from '../types';
+import { Proposal } from '../types';
 import { useAuth } from '../AuthContext';
 import { timeAgo } from '../utils/timeAgo';
 import { SpinWheel } from '../components/SpinWheel';
 import { getAllUsers, getCurrentPresenter, UserProfile } from '../firebase';
 
 interface KnowledgeSharingProps {
-  onNavigate: (screen: Screen) => void;
   proposals: Proposal[];
   onAddProposal: () => void;
   onDeleteProposal: (proposalId: string) => void;
@@ -19,7 +18,7 @@ interface KnowledgeSharingProps {
 }
 
 
-export function KnowledgeSharingScreen({ onNavigate, proposals, onAddProposal, onDeleteProposal, onEditProposal, searchQuery, selectedItemId, onClearSelection }: KnowledgeSharingProps) {
+export function KnowledgeSharingScreen({ proposals, onAddProposal, onDeleteProposal, onEditProposal, searchQuery, selectedItemId, onClearSelection }: KnowledgeSharingProps) {
   const { profile } = useAuth();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [realUsers, setRealUsers] = useState<UserProfile[]>([]);

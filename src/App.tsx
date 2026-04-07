@@ -577,10 +577,7 @@ function MainApp({
                             onClick={() => {
                               markNotificationAsRead(n.id);
                               if (n.targetScreen) {
-                                setCurrentScreen(n.targetScreen);
-                                setIsNotificationsOpen(false);
-                              } else if (n.targetId) {
-                                setCurrentScreen('bug-wall');
+                                navigateTo(n.targetScreen);
                                 setIsNotificationsOpen(false);
                               }
                             }}
@@ -674,6 +671,7 @@ function MainApp({
               {currentScreen === 'dashboard' && (
                 <DashboardScreen
                   onNavigate={navigateTo}
+                  onShare={() => setActiveModal({ type: 'selector' })}
                   bugs={bugs}
                   tips={tips}
                   proposals={proposals}
@@ -716,7 +714,6 @@ function MainApp({
               )}
               {currentScreen === 'knowledge-sharing' && (
                 <KnowledgeSharingScreen
-                  onNavigate={setCurrentScreen}
                   proposals={proposals}
                   onAddProposal={() => setActiveModal({ type: 'proposal' })}
                   onDeleteProposal={deleteProposal}

@@ -74,6 +74,7 @@ function TypewriterText({ text, delayMs = 0, speedMs = 18 }: { text: string; del
 
 interface DashboardProps {
   onNavigate: (screen: Screen) => void;
+  onShare?: () => void;
   bugs: BugStory[];
   tips: Tip[];
   proposals: Proposal[];
@@ -89,7 +90,7 @@ function getGreeting() {
   return 'Good evening';
 }
 
-export function DashboardScreen({ onNavigate, bugs, tips, proposals, achievements, activeUsers = [] }: DashboardProps) {
+export function DashboardScreen({ onNavigate, onShare, bugs, tips, proposals, achievements, activeUsers = [] }: DashboardProps) {
   const { profile } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
 
@@ -126,7 +127,7 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, achievement
       icon: Bug,
       iconClass: 'text-primary',
       iconBg: 'bg-primary/10',
-      chipClass: 'bg-primary/10 text-primary',
+      chipClass: 'bg-input text-muted-foreground',
       screen: 'bug-wall' as Screen,
     })),
     ...tips.map((tip) => ({
@@ -138,7 +139,7 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, achievement
       icon: Lightbulb,
       iconClass: 'text-primary',
       iconBg: 'bg-primary/10',
-      chipClass: 'bg-primary/10 text-primary',
+      chipClass: 'bg-input text-muted-foreground',
       screen: 'tips-tricks' as Screen,
     })),
     ...proposals.map((proposal) => ({
@@ -150,7 +151,7 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, achievement
       icon: BookOpen,
       iconClass: 'text-primary',
       iconBg: 'bg-primary/10',
-      chipClass: 'bg-primary/10 text-primary',
+      chipClass: 'bg-input text-muted-foreground',
       screen: 'knowledge-sharing' as Screen,
     })),
   ]
@@ -226,7 +227,7 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, achievement
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
-                  onClick={() => onNavigate('bug-wall')}
+                  onClick={() => onShare?.()}
                   className="inline-flex items-center justify-center gap-2 rounded-[6px] bg-primary px-4 py-2.5 text-sm text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   style={{ fontWeight: 510 }}
                 >
@@ -431,7 +432,7 @@ export function DashboardScreen({ onNavigate, bugs, tips, proposals, achievement
               className="inline-flex items-center gap-2 rounded-[6px] border border-border bg-input px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-surface-container-low"
               style={{ fontWeight: 510 }}
             >
-              Browse everything
+              Browse Knowledge Sharing
               <ArrowRight size={16} />
             </button>
           </div>

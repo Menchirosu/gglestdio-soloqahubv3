@@ -54,7 +54,7 @@ export function SearchResultsPopup({ isOpen, onClose, results, onResultClick, se
                   >
                     <div className={`p-2 rounded-lg ${
                       result.type === 'bug' ? 'bg-error/10 text-error' :
-                      result.type === 'tip' ? 'bg-primary/10 text-primary' :
+                      result.type === 'tip' ? 'bg-input text-muted-foreground' :
                       'bg-secondary/10 text-secondary'
                     }`}>
                       {result.type === 'bug' && <Bug size={16} />}
