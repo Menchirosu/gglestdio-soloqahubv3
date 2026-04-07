@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, RefreshCw, Volume2, VolumeX, Quote, Droplets, Waves, Flame, Leaf, Wind } from 'lucide-react';
+import { motion, useAnimation } from 'motion/react';
+import { Play, Square, RefreshCw, Volume2, VolumeX, Quote, Droplets, Waves, Flame, Leaf, Wind } from 'lucide-react';
 import { BreathingGuide } from '../components/BreathingGuide';
 import { SoundGenerator } from '../services/soundGenerator';
 
@@ -63,7 +64,19 @@ export function FocusZoneScreen() {
     };
   }, []);
 
-  const toggleTimer = () => setIsActive(!isActive);
+  const playBtnControls = useAnimation();
+
+  const toggleTimer = () => {
+    if (!isActive) {
+      // Starting — spring pop on the button
+      playBtnControls.start({
+        scale: [1, 1.1, 0.95, 1],
+        transition: { duration: 0.4, ease: 'easeOut' },
+      });
+    }
+    setIsActive(prev => !prev);
+  };
+
   const resetTimer = () => {
     setIsActive(false);
     setTimeLeft(mode === 'focus' ? 25 * 60 : 5 * 60);
@@ -80,11 +93,11 @@ export function FocusZoneScreen() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-4">
       <section className="text-center space-y-2">
-        <h2 className="text-4xl font-black tracking-tighter font-headline">The Focus Zone</h2>
+        <h2 className="text-4xl font-black tracking-tighter">The Focus Zone</h2>
         <p className="text-tertiary text-base">Silence the noise. Sharpen the mind. Ship the quality.</p>
       </section>
 
-      <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant/10 max-w-2xl mx-auto flex flex-col items-center justify-center gap-6">
+      <div className="bg-surface-container-lowest p-8 rounded-[12px] shadow-sm border border-outline-variant/10 max-w-2xl mx-auto flex flex-col items-center justify-center gap-6">
         {/* SVG Circular Progress Ring */}
         <div className="relative w-56 h-56 flex items-center justify-center">
           {(() => {
@@ -111,52 +124,62 @@ export function FocusZoneScreen() {
             );
           })()}
           <div className="text-center relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-tertiary mb-1">{mode} session</p>
-            <h3 className="text-6xl font-black font-mono tracking-tighter">{formatTime(timeLeft)}</h3>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-1" style={{ fontWeight: 510 }}>{mode} session</p>
+            <h3 className="text-6xl font-mono tracking-tighter tabular-nums" style={{ fontWeight: 590 }}>{formatTime(timeLeft)}</h3>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <button
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            transition={{ duration: 0.1 }}
             onClick={resetTimer}
             aria-label="Reset timer"
-            className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-all"
+            className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-colors"
           >
             <RefreshCw size={20} />
-          </button>
-          <button
+          </motion.button>
+
+          <motion.button
+            animate={playBtnControls}
+            whileTap={{ scale: 0.94 }}
             onClick={toggleTimer}
-            aria-label={isActive ? 'Pause timer' : 'Start timer'}
-            className="w-20 h-20 rounded-full bg-primary text-white flex items-center justify-center shadow-2xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all"
+            aria-label={isActive ? 'Stop timer' : 'Start timer'}
+            className="w-20 h-20 rounded-full bg-primary text-white flex items-center justify-center shadow-xl shadow-primary/30 hover:bg-primary/90 transition-colors"
           >
-            {isActive ? <div className="w-5 h-5 bg-white rounded-sm"></div> : <Play size={28} fill="currentColor" />}
-          </button>
-          <button
+            {isActive
+              ? <Square size={22} fill="currentColor" />
+              : <Play size={28} fill="currentColor" />}
+          </motion.button>
+
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            transition={{ duration: 0.1 }}
             onClick={toggleMute}
             aria-label={isMuted ? 'Unmute' : 'Mute'}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
               isMuted ? 'bg-error/10 text-error' : 'bg-surface-container-low text-outline hover:text-primary hover:bg-surface-container-high'
             }`}
           >
             {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-          </button>
+          </motion.button>
         </div>
       </div>
 
       {/* Breathing Guide Section */}
-      <section className="bg-surface-container-lowest p-6 rounded-3xl shadow-sm border border-outline-variant/10 max-w-2xl mx-auto">
+      <section className="bg-surface-container-lowest p-6 rounded-[12px] shadow-sm border border-outline-variant/10 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-primary/10 rounded-xl text-primary">
+          <div className="p-2 bg-primary/10 rounded-[8px] text-primary">
             <Wind size={20} />
           </div>
-          <h4 className="text-xl font-black font-headline">Breathing Guide</h4>
+          <h4 className="text-xl font-black">Breathing Guide</h4>
         </div>
         <BreathingGuide isActive={isActive} />
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
         <div className="bg-surface-container-lowest p-6 rounded-lg shadow-sm space-y-4">
-          <h4 className="text-base font-bold flex items-center gap-2 font-headline">
+          <h4 className="text-base font-bold flex items-center gap-2">
             <Quote size={18} className="text-secondary" />
             Mindful Mantra
           </h4>
@@ -172,7 +195,7 @@ export function FocusZoneScreen() {
         </div>
 
         <div className="bg-surface-container-lowest p-6 rounded-lg shadow-sm space-y-4">
-          <h4 className="text-base font-bold font-headline">Soundscapes</h4>
+          <h4 className="text-base font-bold">Soundscapes</h4>
           <div className="grid grid-cols-2 gap-3">
             {[
               { id: 'rain', name: 'Rainfall', icon: Droplets, color: 'text-blue-400' },
@@ -183,7 +206,7 @@ export function FocusZoneScreen() {
               <button 
                 key={s.id}
                 onClick={() => setSound(sound === s.id ? 'none' : s.id)}
-                className={`p-3 rounded-xl border-2 flex items-center gap-2 transition-all ${
+                className={`p-3 rounded-[8px] border-2 flex items-center gap-2 transition-all ${
                   sound === s.id ? 'border-primary bg-primary/5' : 'border-surface-container-high hover:border-outline-variant'
                 }`}
               >

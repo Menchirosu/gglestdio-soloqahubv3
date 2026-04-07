@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Sparkles, PlusCircle } from 'lucide-react';
+import { Sparkles, Check } from 'lucide-react';
 import { Achievement } from '../types';
+import { ConfettiCelebration } from './ConfettiCelebration';
 
 interface AchievementFormProps {
   onSubmit: (achievement: any) => Promise<void> | void;
@@ -17,9 +18,12 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
     achievementDate: initialData?.achievementDate || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [celebrating, setCelebrating] = useState(false);
+  const [celebrationTitle, setCelebrationTitle] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.title.trim()) return;
     setIsSubmitting(true);
 
     try {
@@ -27,7 +31,13 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
         ...formData,
         achievementDate: formData.achievementDate || undefined,
       });
-      onClose();
+      // Only celebrate on new achievements, not edits
+      if (!initialData) {
+        setCelebrationTitle(formData.title);
+        setCelebrating(true);
+      } else {
+        onClose();
+      }
     } catch (error) {
       console.error('Failed to submit achievement form', error);
     } finally {
@@ -36,6 +46,16 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
   };
 
   return (
+    <>
+      {celebrating && (
+        <ConfettiCelebration
+          title={celebrationTitle}
+          onDone={() => {
+            setCelebrating(false);
+            onClose();
+          }}
+        />
+      )}
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2 md:col-span-2">
@@ -130,17 +150,18 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
       <button
         disabled={isSubmitting}
         type="submit"
-        className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
+        className="w-full py-3 bg-primary text-white text-sm font-[590] rounded-[6px] transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isSubmitting ? (
-          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         ) : (
           <>
-            <PlusCircle size={20} />
+            <Check size={15} />
             Save Achievement
           </>
         )}
       </button>
     </form>
+    </>
   );
 }

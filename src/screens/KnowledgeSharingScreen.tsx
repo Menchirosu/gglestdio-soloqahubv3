@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Rocket, Bug, BookOpen, Lightbulb, Edit3, Send, PlusCircle, MoreHorizontal, Trash2, X, Trophy } from 'lucide-react';
 import { Screen, Proposal } from '../types';
 import { useAuth } from '../AuthContext';
@@ -45,15 +46,15 @@ export function KnowledgeSharingScreen({ onNavigate, proposals, onAddProposal, o
 return (
     <div className="space-y-12">
       <header>
-        <h1 className="text-5xl font-extrabold text-on-surface tracking-tight mb-2 font-headline">Knowledge Sharing</h1>
-        <p className="text-tertiary text-lg max-w-xl">A sanctuary for team wisdom. Where testing rigor meets architectural mindfulness.</p>
+        <h1 className="mb-2 text-foreground" style={{ fontSize: '1.75rem', fontWeight: 590, letterSpacing: '-0.03em', lineHeight: 1.2 }}>Knowledge Sharing</h1>
+        <p className="max-w-xl text-[15px] leading-relaxed text-muted-foreground">A space for team wisdom — testing rigor, guides, and architectural mindfulness.</p>
       </header>
 
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 bg-surface-container-lowest rounded-lg p-8 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-xl font-bold text-on-surface font-headline">Presenter Picker</h3>
+              <h3 className="text-xl font-bold text-on-surface">Presenter Picker</h3>
               <p className="text-xs text-tertiary">Spin the wheel to choose this week's knowledge sharer.</p>
             </div>
             {currentPresenter && (
@@ -67,7 +68,7 @@ return (
         </div>
 
         <div className="lg:col-span-4 bg-surface-container-low rounded-lg p-8 flex flex-col">
-          <h3 className="text-xl font-bold text-on-surface mb-6 font-headline">Members</h3>
+          <h3 className="text-xl font-bold text-on-surface mb-6">Members</h3>
           <div className="space-y-4 flex-1 overflow-y-auto max-h-[500px] pr-2 custom-scrollbar">
             {allMembers.map((member, i) => (
               <div key={member.uid || member.name} className="flex items-center gap-4 p-3 hover:bg-surface-container-lowest rounded-lg transition-all group">
@@ -80,7 +81,7 @@ return (
                   />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-on-surface font-headline">{member.name}</p>
+                  <p className="text-sm font-bold text-on-surface">{member.name}</p>
                   <p className="text-[11px] text-tertiary font-medium">{member.role}</p>
                 </div>
                 {(member as any).active && <div className="ml-auto w-2 h-2 rounded-full bg-secondary-fixed-dim wellness-pulse"></div>}
@@ -93,12 +94,12 @@ return (
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-primary p-8 rounded-lg shadow-xl shadow-primary/10 flex flex-col justify-between text-on-primary col-span-full">
           <div>
-            <h3 className="text-xl font-bold mb-2 font-headline">Plant a Seed</h3>
+            <h3 className="text-xl font-bold mb-2">Plant a Seed</h3>
             <p className="text-primary-fixed-dim text-xs mb-8">Suggest a topic you want to hear or share about.</p>
             <div className="space-y-4">
               <button 
                 onClick={() => onAddProposal()}
-                className="mt-4 w-full py-8 bg-white/10 border-2 border-dashed border-white/20 text-white font-bold rounded-xl hover:bg-white/20 transition-all flex flex-col items-center justify-center gap-3 group"
+                className="mt-4 w-full py-8 bg-white/10 border-2 border-dashed border-white/20 text-white font-bold rounded-[8px] hover:bg-white/20 transition-all flex flex-col items-center justify-center gap-3 group"
               >
                 <div className="p-3 bg-white text-primary rounded-full group-hover:scale-110 transition-transform">
                   <PlusCircle size={24} />
@@ -129,14 +130,42 @@ return (
             </button>
           </div>
         )}
+        {filteredProposals.length === 0 && (
+          <div className="flex flex-col items-center gap-4 rounded-[12px] border border-border bg-card px-6 py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[8px] border border-border bg-input text-muted-foreground">
+              <BookOpen size={22} strokeWidth={1.5} />
+            </div>
+            <div className="max-w-xs">
+              <h3 className="text-[15px] text-foreground" style={{ fontWeight: 590 }}>No posts here yet</h3>
+              <p className="mt-1 text-[13px] text-muted-foreground">Submit a guide, proposal, or playbook for the team.</p>
+            </div>
+            <button
+              onClick={onAddProposal}
+              className="inline-flex items-center gap-2 rounded-[6px] bg-primary px-4 py-2 text-[13px] text-white transition-colors hover:bg-primary/90"
+              style={{ fontWeight: 510 }}
+            >
+              <PlusCircle size={14} />
+              Submit first post
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <AnimatePresence mode="wait" key="proposals">
           {filteredProposals.map((item, i) => (
-            <div key={item.id} className={`bg-surface-container-low p-8 rounded-lg group hover:bg-surface-container-lowest hover:shadow-lg transition-all border-b-4 border-secondary`}>
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.28, delay: i * 0.06, ease: [0.25, 0, 0, 1] }}
+              whileHover={{ y: -4, boxShadow: '0 10px 28px rgba(113,112,255,0.13)' }}
+              className="bg-surface-container-low p-8 rounded-lg group border-b-4 border-secondary"
+            >
               <div className="flex justify-between items-start mb-6">
                 <span className={`px-3 py-1 bg-secondary-container text-on-surface text-[10px] font-bold rounded-full uppercase tracking-tighter`}>{timeAgo(item.createdAt || item.date)}</span>
                 <Rocket size={20} className="opacity-40" />
               </div>
-              <h4 className="text-lg font-bold text-on-surface mb-3 group-hover:text-primary transition-colors font-headline">{item.title}</h4>
+              <h4 className="text-lg font-bold text-on-surface mb-3 group-hover:text-primary transition-colors">{item.title}</h4>
               <p className="text-xs text-tertiary leading-relaxed mb-6">{item.scope}</p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -159,7 +188,7 @@ return (
                           className="fixed inset-0 z-10" 
                           onClick={() => setMenuOpenId(null)}
                         ></div>
-                        <div className="absolute right-0 mt-1 w-32 bg-surface-container-highest border border-outline-variant/20 rounded-xl shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                        <div className="absolute right-0 mt-1 w-32 bg-surface-container-highest border border-outline-variant/20 rounded-[8px] shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                           <button 
                             onClick={() => {
                               onEditProposal(item);
@@ -188,8 +217,9 @@ return (
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
+          </AnimatePresence>
         </div>
       </section>
     </div>

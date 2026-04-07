@@ -138,105 +138,105 @@ export const AdminDashboard: React.FC = () => {
 
         {topQa ? (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-6">
-            <div className="rounded-[2rem] border border-amber-500/20 bg-gradient-to-br from-amber-500/12 via-surface-container-low to-surface p-6 shadow-lg shadow-amber-950/5">
+            <div className="rounded-[12px] border border-primary/15 bg-surface-container-low p-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/15 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">
-                    <Trophy size={14} />
+                  <div className="inline-flex items-center gap-1.5 rounded-[4px] bg-primary/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-primary" style={{ fontWeight: 590 }}>
+                    <Trophy size={12} />
                     Rank #1
                   </div>
                   <div className="flex items-center gap-4">
                     <img
                       src={topQa.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${topQa.user.uid}`}
                       alt={topQa.user.displayName}
-                      className="w-16 h-16 rounded-2xl object-cover border border-white/40"
+                      className="w-16 h-16 rounded-[8px] object-cover border border-border"
                       referrerPolicy="no-referrer"
                     />
                     <div>
-                      <h3 className="text-2xl font-black text-on-surface">{topQa.user.displayName}</h3>
+                      <h3 className="text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.user.displayName}</h3>
                       <p className="text-sm text-on-surface-variant">{topQa.user.email}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-outline">Total Score</p>
-                  <p className="text-5xl font-black text-on-surface">{topQa.totalScore}</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-on-surface-variant" style={{ fontWeight: 510 }}>Total Score</p>
+                  <p className="text-5xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.totalScore}</p>
                 </div>
               </div>
 
               <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="rounded-2xl bg-surface-container-high/60 px-4 py-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-outline">Bugs</p>
-                  <p className="mt-2 text-2xl font-black text-on-surface">{topQa.bugStories}</p>
+                <div className="rounded-[8px] bg-surface-container px-4 py-3">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-on-surface-variant" style={{ fontWeight: 510 }}>Bugs</p>
+                  <p className="mt-1.5 text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.bugStories}</p>
                 </div>
-                <div className="rounded-2xl bg-surface-container-high/60 px-4 py-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-outline">Tips</p>
-                  <p className="mt-2 text-2xl font-black text-on-surface">{topQa.tips}</p>
+                <div className="rounded-[8px] bg-surface-container px-4 py-3">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-on-surface-variant" style={{ fontWeight: 510 }}>Tips</p>
+                  <p className="mt-1.5 text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.tips}</p>
                 </div>
-                <div className="rounded-2xl bg-surface-container-high/60 px-4 py-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-outline">Knowledge</p>
-                  <p className="mt-2 text-2xl font-black text-on-surface">{topQa.knowledgeProposals}</p>
+                <div className="rounded-[8px] bg-surface-container px-4 py-3">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-on-surface-variant" style={{ fontWeight: 510 }}>Knowledge</p>
+                  <p className="mt-1.5 text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.knowledgeProposals}</p>
                 </div>
-                <div className="rounded-2xl bg-surface-container-high/60 px-4 py-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-outline">Work Wins</p>
-                  <p className="mt-2 text-2xl font-black text-on-surface">{topQa.workAchievements}</p>
+                <div className="rounded-[8px] bg-surface-container px-4 py-3">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-on-surface-variant" style={{ fontWeight: 510 }}>Work Wins</p>
+                  <p className="mt-1.5 text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.workAchievements}</p>
                 </div>
-                <div className="rounded-2xl bg-surface-container-high/60 px-4 py-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-outline">Personal</p>
-                  <p className="mt-2 text-2xl font-black text-on-surface">{topQa.personalAchievements}</p>
+                <div className="rounded-[8px] bg-surface-container px-4 py-3">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-on-surface-variant" style={{ fontWeight: 510 }}>Personal</p>
+                  <p className="mt-1.5 text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.personalAchievements}</p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-outline-variant/10 bg-surface-container-low p-6">
+            <div className="rounded-[12px] border border-border bg-surface-container-low p-6">
               <div className="flex items-center gap-2">
-                <Sparkles size={18} className="text-primary" />
-                <h3 className="text-lg font-black text-on-surface">Top 5 Members</h3>
+                <Sparkles size={16} className="text-primary" />
+                <h3 className="text-sm text-on-surface" style={{ fontWeight: 590 }}>Top 5 Members</h3>
               </div>
 
-              <div className="mt-5 space-y-3">
+              <div className="mt-4 space-y-2">
                 {leaderboard.map((entry, index) => (
-                  <div key={entry.user.uid} className="rounded-2xl border border-outline-variant/10 bg-surface px-4 py-4">
+                  <div key={entry.user.uid} className="rounded-[8px] border border-border bg-surface px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <img
                           src={entry.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.user.uid}`}
                           alt={entry.user.displayName}
-                          className="w-11 h-11 rounded-xl object-cover"
+                          className="w-10 h-10 rounded-[6px] object-cover"
                           referrerPolicy="no-referrer"
                         />
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-on-surface">#{index + 1} {entry.user.displayName}</p>
-                          <p className="truncate text-[11px] text-outline">{entry.user.email}</p>
+                          <p className="truncate text-sm text-on-surface" style={{ fontWeight: 510 }}>#{index + 1} {entry.user.displayName}</p>
+                          <p className="truncate text-[11px] text-on-surface-variant">{entry.user.email}</p>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <p className="text-2xl font-black text-on-surface">{entry.totalScore}</p>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-outline">Score</p>
+                        <p className="text-xl text-on-surface" style={{ fontWeight: 590 }}>{entry.totalScore}</p>
+                        <p className="text-[10px] uppercase tracking-[0.14em] text-on-surface-variant" style={{ fontWeight: 510 }}>Score</p>
                       </div>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-bold">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-error/10 px-3 py-1.5 text-error">
-                        <Bug size={12} />
+                    <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
+                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-primary/10 px-2 py-1 text-primary" style={{ fontWeight: 510 }}>
+                        <Bug size={11} />
                         {entry.bugStories} bugs
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-primary">
-                        <Lightbulb size={12} />
+                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-primary/10 px-2 py-1 text-primary" style={{ fontWeight: 510 }}>
+                        <Lightbulb size={11} />
                         {entry.tips} tips
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 px-3 py-1.5 text-violet-600 dark:text-violet-300">
-                        <BookOpen size={12} />
+                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-primary/10 px-2 py-1 text-primary" style={{ fontWeight: 510 }}>
+                        <BookOpen size={11} />
                         {entry.knowledgeProposals} knowledge
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1.5 text-emerald-700 dark:text-emerald-300">
-                        <BriefcaseBusiness size={12} />
+                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-primary/10 px-2 py-1 text-primary" style={{ fontWeight: 510 }}>
+                        <BriefcaseBusiness size={11} />
                         {entry.workAchievements} work wins
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-3 py-1.5 text-sky-700 dark:text-sky-300">
-                        <Sparkles size={12} />
+                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-primary/10 px-2 py-1 text-primary" style={{ fontWeight: 510 }}>
+                        <Sparkles size={11} />
                         {entry.personalAchievements} personal
                       </span>
                     </div>

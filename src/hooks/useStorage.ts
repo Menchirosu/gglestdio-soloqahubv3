@@ -12,7 +12,7 @@ function toDate(ts: any): number {
   return new Date(ts).getTime() || 0;
 }
 
-export function useStorage() {
+export function useStorage(activeScreen?: string) {
   const { user, loading } = useAuth();
   const [bugs, setBugs] = useState<BugStory[]>([]);
   const [tips, setTips] = useState<Tip[]>([]);
@@ -84,55 +84,10 @@ export function useStorage() {
         setBugs(prevBugs => {
           return bugsData.map(bug => {
             const existingBug = prevBugs.find(b => b.id === bug.id);
-            // We'll merge subcollection comments later in the comments listener
             return { ...bug, comments: existingBug?.comments || bug.comments || [] };
           });
         });
       }, (error) => handleFirestoreError(error, OperationType.GET, 'bugs'));
-
-      // Listen to all comments across all bugs
-      const commentsQuery = query(collectionGroup(db, 'comments'));
-      const unsubscribeComments = onSnapshot(commentsQuery, (snapshot) => {
-        const allComments = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as any));
-        
-        setBugs(prevBugs => {
-          return prevBugs.map(bug => {
-            const subComments = allComments.filter(c => c.bugId === bug.id);
-            // Merge with legacy comments if any, using ID to avoid duplicates
-            const legacyComments = bug.comments?.filter(c => !subComments.find(sc => sc.id === c.id)) || [];
-            return { ...bug, comments: [...legacyComments, ...subComments].sort((a, b) =>
-              toDate(a.createdAt || a.date) - toDate(b.createdAt || b.date)
-            ) };
-          });
-        });
-      }, (error) => {
-        console.error("Collection group query error (comments):", error);
-        handleFirestoreError(error, OperationType.GET, 'all-comments');
-      });
-
-      // Listen to all replies across all comments and bugs
-      const repliesQuery = query(collectionGroup(db, 'replies'));
-      const unsubscribeReplies = onSnapshot(repliesQuery, (snapshot) => {
-        const allReplies = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as any));
-        
-        setBugs(prevBugs => {
-          return prevBugs.map(bug => {
-            if (!bug.comments) return bug;
-            const updatedComments = bug.comments.map(comment => {
-              const subReplies = allReplies.filter(r => r.commentId === comment.id);
-              // Merge with legacy replies if any
-              const legacyReplies = comment.replies?.filter(r => !subReplies.find(sr => sr.id === r.id)) || [];
-              return { ...comment, replies: [...legacyReplies, ...subReplies].sort((a, b) =>
-                toDate(a.createdAt || a.date) - toDate(b.createdAt || b.date)
-              ) };
-            });
-            return { ...bug, comments: updatedComments };
-          });
-        });
-      }, (error) => {
-        console.error("Collection group query error (replies):", error);
-        handleFirestoreError(error, OperationType.GET, 'all-replies');
-      });
 
       const tipsQuery = query(collection(db, 'tips'), orderBy('createdAt', 'desc'));
       const unsubscribeTips = onSnapshot(tipsQuery, (snapshot) => {
@@ -159,8 +114,6 @@ export function useStorage() {
 
       unsubscribers = [
         unsubscribeBugs,
-        unsubscribeComments,
-        unsubscribeReplies,
         unsubscribeTips,
         unsubscribeProposals,
         unsubscribeNotifs,
@@ -176,6 +129,64 @@ export function useStorage() {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
   }, [loading, user?.uid]);
+
+  // Deferred: comments + replies collectionGroup listeners — only active on bug-wall
+  // These are the most expensive queries (fan-out across all documents) so we defer
+  // them until the user actually navigates to the Bug Wall screen.
+  useEffect(() => {
+    if (!user || loading || activeScreen !== 'bug-wall') return;
+
+    const unsubscribers: Array<() => void> = [];
+
+    const commentsQuery = query(collectionGroup(db, 'comments'));
+    const unsubscribeComments = onSnapshot(commentsQuery, (snapshot) => {
+      const allComments = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as any));
+      setBugs(prevBugs =>
+        prevBugs.map(bug => {
+          const subComments = allComments.filter(c => c.bugId === bug.id);
+          const legacyComments = bug.comments?.filter(c => !subComments.find(sc => sc.id === c.id)) || [];
+          return {
+            ...bug,
+            comments: [...legacyComments, ...subComments].sort(
+              (a, b) => toDate(a.createdAt || a.date) - toDate(b.createdAt || b.date)
+            ),
+          };
+        })
+      );
+    }, (error) => {
+      console.error('Collection group query error (comments):', error);
+      handleFirestoreError(error, OperationType.GET, 'all-comments');
+    });
+
+    const repliesQuery = query(collectionGroup(db, 'replies'));
+    const unsubscribeReplies = onSnapshot(repliesQuery, (snapshot) => {
+      const allReplies = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as any));
+      setBugs(prevBugs =>
+        prevBugs.map(bug => {
+          if (!bug.comments) return bug;
+          return {
+            ...bug,
+            comments: bug.comments.map(comment => {
+              const subReplies = allReplies.filter(r => r.commentId === comment.id);
+              const legacyReplies = comment.replies?.filter(r => !subReplies.find(sr => sr.id === r.id)) || [];
+              return {
+                ...comment,
+                replies: [...legacyReplies, ...subReplies].sort(
+                  (a, b) => toDate(a.createdAt || a.date) - toDate(b.createdAt || b.date)
+                ),
+              };
+            }),
+          };
+        })
+      );
+    }, (error) => {
+      console.error('Collection group query error (replies):', error);
+      handleFirestoreError(error, OperationType.GET, 'all-replies');
+    });
+
+    unsubscribers.push(unsubscribeComments, unsubscribeReplies);
+    return () => unsubscribers.forEach(u => u());
+  }, [user?.uid, loading, activeScreen]);
 
   const addBug = async (bug: Omit<BugStory, 'id' | 'date' | 'reactions' | 'comments'>) => {
     const bugId = await createBugStory({

@@ -139,11 +139,11 @@ export function AchievementsScreen({
 
   return (
     <div className="space-y-8 pb-4">
-      <section className="rounded-[2rem] border border-outline-variant/10 bg-surface-container-lowest px-6 py-6 shadow-xl shadow-black/[0.03] md:px-8 md:py-7">
+      <section className="rounded-[12px] border border-outline-variant/10 bg-surface-container-lowest px-6 py-6 shadow-xl shadow-black/[0.03] md:px-8 md:py-7">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-300">Achievements</p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight text-on-surface md:text-5xl font-headline">
+            <h1 className="mt-3 text-4xl font-black tracking-tight text-on-surface md:text-5xl">
               Keep the wins in one place.
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-on-surface-variant md:text-[15px]">
@@ -166,22 +166,22 @@ export function AchievementsScreen({
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-[1.4rem] border border-outline-variant/10 bg-surface px-5 py-4">
+          <div className="rounded-[8px] border border-outline-variant/10 bg-surface px-5 py-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-outline">Work</p>
             <p className="mt-3 text-3xl font-black text-on-surface">{stats.workCount}</p>
           </div>
-          <div className="rounded-[1.4rem] border border-outline-variant/10 bg-surface px-5 py-4">
+          <div className="rounded-[8px] border border-outline-variant/10 bg-surface px-5 py-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-outline">Personal</p>
             <p className="mt-3 text-3xl font-black text-on-surface">{stats.personalCount}</p>
           </div>
-          <div className="rounded-[1.4rem] border border-outline-variant/10 bg-surface px-5 py-4">
+          <div className="rounded-[8px] border border-outline-variant/10 bg-surface px-5 py-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-outline">Mine</p>
             <p className="mt-3 text-3xl font-black text-on-surface">{stats.mineCount}</p>
           </div>
         </div>
       </section>
 
-      <section className="sticky top-20 z-20 rounded-[1.7rem] border border-outline-variant/10 bg-background/90 px-4 py-4 backdrop-blur-xl md:px-5">
+      <section className="sticky top-20 z-20 rounded-[12px] border border-outline-variant/10 bg-background/90 px-4 py-4 backdrop-blur-xl md:px-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-full bg-surface-container-low px-3 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-outline">
@@ -239,41 +239,40 @@ export function AchievementsScreen({
       <section className="grid gap-8 xl:grid-cols-[minmax(0,1.45fr)_340px]">
         <div className="space-y-4">
           {filteredAchievements.length === 0 ? (
-            <div className="rounded-[2rem] border border-outline-variant/10 bg-surface-container-lowest px-6 py-8 md:px-8">
-              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
-                <div>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
-                    <Sparkles size={26} strokeWidth={1.8} />
-                  </div>
-                  <h2 className="mt-5 text-3xl font-black tracking-tight text-on-surface font-headline">Nothing here yet.</h2>
-                  <p className="mt-3 max-w-xl text-sm leading-7 text-on-surface-variant">
-                    Start with one real entry. A release you saved, a flaky path you fixed, a cert you finished, a hard week you got through. It does not need polish.
+            <div className="rounded-[12px] border border-border bg-card px-6 py-12 md:px-8">
+              <div className="flex flex-col items-start gap-5 md:flex-row md:items-center">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[8px] border border-border bg-input text-muted-foreground">
+                  <Sparkles size={20} strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-[15px] text-foreground" style={{ fontWeight: 590 }}>Nothing here yet.</h2>
+                  <p className="mt-1 max-w-md text-[13px] leading-relaxed text-muted-foreground">
+                    Start with one real entry — a release you saved, a flaky path you fixed, or a hard week you got through.
                   </p>
-
-                  <div className="mt-6 flex flex-wrap gap-3">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       onClick={onAddAchievement}
-                      className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all hover:opacity-95 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="inline-flex items-center gap-2 rounded-[6px] bg-primary px-4 py-2 text-[13px] text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      style={{ fontWeight: 510 }}
                     >
-                      <PlusCircle size={18} />
+                      <PlusCircle size={14} />
                       Add the first one
                     </button>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-outline-variant/10 bg-surface px-4 py-3 text-xs font-semibold text-on-surface-variant">
-                      <FolderOpen size={14} />
+                    <div className="inline-flex items-center gap-2 rounded-[9999px] border border-border bg-input px-3 py-1.5 text-[12px] text-muted-foreground">
+                      <FolderOpen size={13} />
                       Work and personal notes can live side by side
                     </div>
                   </div>
                 </div>
-
-                <div className="rounded-[1.6rem] border border-outline-variant/10 bg-surface px-5 py-5">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-outline">Good first entries</p>
-                  <div className="mt-4 space-y-3">
-                    {starterPrompts.map((prompt) => (
-                      <div key={prompt} className="rounded-2xl bg-surface-container-low px-4 py-3 text-sm leading-6 text-on-surface">
-                        {prompt}
-                      </div>
-                    ))}
-                  </div>
+              </div>
+              <div className="mt-6 rounded-[8px] border border-border bg-input px-5 py-4">
+                <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground" style={{ fontWeight: 510 }}>Good first entries</p>
+                <div className="mt-3 space-y-2">
+                  {starterPrompts.map((prompt) => (
+                    <div key={prompt} className="rounded-[6px] bg-surface-container-low px-3 py-2 text-[13px] leading-relaxed text-foreground">
+                      {prompt}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -292,7 +291,7 @@ export function AchievementsScreen({
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.04, duration: 0.22 }}
-                    className="rounded-[1.8rem] border border-outline-variant/10 bg-surface-container-lowest shadow-lg shadow-black/[0.02]"
+                    className="rounded-[12px] border border-outline-variant/10 bg-surface-container-lowest shadow-lg shadow-black/[0.02]"
                   >
                     <div className="flex items-start justify-between gap-3 px-5 pt-5 md:px-6">
                       <div className="flex flex-wrap items-center gap-2">
@@ -324,7 +323,7 @@ export function AchievementsScreen({
                           {menuOpenId === achievement.id && (
                             <>
                               <div className="fixed inset-0 z-10" onClick={() => setMenuOpenId(null)}></div>
-                              <div className="absolute right-0 z-20 mt-2 w-36 overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface shadow-2xl">
+                              <div className="absolute right-0 z-20 mt-2 w-36 overflow-hidden rounded-[8px] border border-outline-variant/20 bg-surface shadow-2xl">
                                 <button
                                   onClick={() => {
                                     onEditAchievement(achievement);
@@ -358,7 +357,7 @@ export function AchievementsScreen({
                       onClick={() => setActiveAchievementId(achievement.id)}
                       className="block w-full px-5 pb-5 pt-3 text-left transition-colors hover:bg-surface-container-low/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-inset md:px-6"
                     >
-                      <h2 className="text-2xl font-black tracking-tight text-on-surface font-headline">
+                      <h2 className="text-2xl font-black tracking-tight text-on-surface">
                         {achievement.title}
                       </h2>
 
@@ -412,7 +411,7 @@ export function AchievementsScreen({
         </div>
 
         <div className="space-y-5 xl:sticky xl:top-40 xl:self-start">
-          <section className="rounded-[1.8rem] border border-outline-variant/10 bg-surface px-6 py-6">
+          <section className="rounded-[12px] border border-outline-variant/10 bg-surface px-6 py-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-outline">What belongs here</p>
             <div className="mt-5 space-y-4">
               <div className="flex gap-3">
@@ -431,18 +430,18 @@ export function AchievementsScreen({
           </section>
 
           {isAdmin && (
-            <section className="rounded-[1.8rem] border border-outline-variant/10 bg-surface px-6 py-6">
+            <section className="rounded-[12px] border border-outline-variant/10 bg-surface px-6 py-6">
               <button
                 onClick={() => setIsAdminPanelOpen((value) => !value)}
-                className="flex w-full items-center justify-between gap-4 rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                className="flex w-full items-center justify-between gap-4 rounded-[8px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               >
                 <div className="flex items-center gap-3">
-                  <div className="rounded-2xl bg-amber-500/12 p-3 text-amber-700 dark:text-amber-300">
+                  <div className="rounded-[8px] bg-amber-500/12 p-3 text-amber-700 dark:text-amber-300">
                     <ShieldCheck size={18} />
                   </div>
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-outline">Admin only</p>
-                    <h3 className="text-lg font-black text-on-surface font-headline">Review notes</h3>
+                    <h3 className="text-lg font-black text-on-surface">Review notes</h3>
                   </div>
                 </div>
                 <ChevronDown size={18} className={`text-outline transition-transform ${isAdminPanelOpen ? 'rotate-180' : ''}`} />
@@ -466,7 +465,7 @@ export function AchievementsScreen({
                         adminCandidates.map((candidate) => (
                           <div
                             key={candidate.id}
-                            className="flex items-center justify-between rounded-2xl border border-outline-variant/10 bg-surface-container-low px-4 py-3"
+                            className="flex items-center justify-between rounded-[8px] border border-outline-variant/10 bg-surface-container-low px-4 py-3"
                           >
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
@@ -506,7 +505,7 @@ export function AchievementsScreen({
               initial={{ opacity: 0, y: 18, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 18, scale: 0.97 }}
-              className="relative z-10 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] border border-outline-variant/10 bg-surface-container-lowest shadow-2xl"
+              className="relative z-10 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[12px] border border-outline-variant/10 bg-surface-container-lowest shadow-2xl"
             >
               <div className="flex items-start justify-between border-b border-outline-variant/10 bg-surface px-6 py-6 md:px-8">
                 <div className="max-w-2xl">
@@ -519,7 +518,7 @@ export function AchievementsScreen({
                   >
                     {selectedAchievement.category}
                   </span>
-                  <h2 className="mt-4 text-3xl font-black tracking-tight text-on-surface font-headline">{selectedAchievement.title}</h2>
+                  <h2 className="mt-4 text-3xl font-black tracking-tight text-on-surface">{selectedAchievement.title}</h2>
                 </div>
                 <button
                   onClick={() => setActiveAchievementId(null)}

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bug, MoreHorizontal, PlusCircle, MessageCircle, Heart, Shield, Trash2, Clock, Edit3, Image as ImageIcon, Smile, Share2, CornerDownRight, AlertCircle, Zap, Send, Search, X, Repeat } from 'lucide-react';
+import { ReactionButton } from '../components/ReactionButton';
 import { BugStory } from '../types';
 import { useAuth } from '../AuthContext';
 import { timeAgo } from '../utils/timeAgo';
@@ -326,13 +327,13 @@ export function BugWallScreen({
             className="max-w-xl"
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 bg-primary/10 rounded-xl">
+              <div className="p-2.5 bg-primary/10 rounded-[8px]">
                 <Bug className="text-primary" size={28} />
               </div>
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">Bug Archive</span>
             </div>
-            <h2 className="text-6xl md:text-7xl font-black text-on-surface tracking-tighter font-headline leading-[0.9]">
-              Freedom <span className="text-primary italic">Wall</span>
+            <h2 className="text-6xl md:text-7xl font-black text-on-surface tracking-tighter leading-[0.9]">
+              Freedom <span className="text-primary">Wall</span>
             </h2>
             <p className="text-on-surface-variant text-lg mt-6 leading-relaxed font-medium opacity-80">
               A living archive of the bugs that tested our patience, the ones that made us laugh, and the lessons they left behind.
@@ -348,7 +349,7 @@ export function BugWallScreen({
       {/* Inline Post Composer */}
       <motion.div 
         layout
-        className="bg-surface border border-outline-variant/10 rounded-2xl p-4 mb-8 shadow-sm"
+        className="bg-surface border border-outline-variant/10 rounded-[8px] p-4 mb-8 shadow-sm"
       >
         {!isComposingInline ? (
           <div 
@@ -414,14 +415,22 @@ export function BugWallScreen({
 
       <div className="flex flex-col gap-6 max-w-2xl mx-auto">
         {filteredBugs.length === 0 && (
-          <div className="text-center py-20 flex flex-col items-center justify-center space-y-4">
-            <div className="w-16 h-16 bg-surface-container-low rounded-full flex items-center justify-center text-outline">
-              <Bug size={32} strokeWidth={1.5} />
+          <div className="flex flex-col items-center gap-4 rounded-[12px] border border-border bg-card px-6 py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[8px] border border-border bg-input text-muted-foreground">
+              <Bug size={22} strokeWidth={1.5} />
             </div>
-            <div className="space-y-1">
-              <h3 className="text-lg font-black font-headline text-on-surface">No stories here yet</h3>
-              <p className="text-sm text-on-surface-variant opacity-70">Be the first to share one, or try a different filter.</p>
+            <div>
+              <h3 className="text-[15px] text-foreground" style={{ fontWeight: 590 }}>No stories here yet</h3>
+              <p className="mt-1 text-[13px] text-muted-foreground">Be the first to share one, or try a different filter.</p>
             </div>
+            <button
+              onClick={onAddBug}
+              className="inline-flex items-center gap-2 rounded-[6px] bg-primary px-4 py-2 text-[13px] text-white transition-colors hover:bg-primary/90"
+              style={{ fontWeight: 510 }}
+            >
+              <PlusCircle size={14} />
+              Post a bug story
+            </button>
           </div>
         )}
         <AnimatePresence mode="popLayout">
@@ -484,7 +493,7 @@ export function BugWallScreen({
                               initial={{ opacity: 0, scale: 0.95, y: -10 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                              className="absolute right-0 mt-2 w-48 bg-surface rounded-2xl shadow-2xl border border-outline-variant/20 z-40 py-2 overflow-hidden"
+                              className="absolute right-0 mt-2 w-48 bg-surface rounded-[8px] shadow-2xl border border-outline-variant/20 z-40 py-2 overflow-hidden"
                             >
                               <button 
                                 onClick={() => {
@@ -519,7 +528,7 @@ export function BugWallScreen({
                     <motion.div 
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
-                      className="bg-error/5 border border-error/20 rounded-2xl p-4 flex items-center justify-between"
+                      className="bg-error/5 border border-error/20 rounded-[8px] p-4 flex items-center justify-between"
                     >
                       <span className="text-xs font-black uppercase tracking-widest text-error">Delete permanently?</span>
                       <div className="flex gap-2">
@@ -528,13 +537,13 @@ export function BugWallScreen({
                             onDeleteBug(bug.id);
                             setDeletingId(null);
                           }}
-                          className="px-4 py-2 bg-error text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-error-dark transition-all shadow-lg shadow-error/20"
+                          className="px-4 py-2 bg-error text-white text-[10px] font-black uppercase tracking-widest rounded-[8px] hover:bg-error-dark transition-all shadow-lg shadow-error/20"
                         >
                           Confirm
                         </button>
                         <button 
                           onClick={() => setDeletingId(null)}
-                          className="px-4 py-2 bg-surface-container-high text-on-surface-variant text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-surface-container-highest transition-all"
+                          className="px-4 py-2 bg-surface-container-high text-on-surface-variant text-[10px] font-black uppercase tracking-widest rounded-[8px] hover:bg-surface-container-highest transition-all"
                         >
                           Cancel
                         </button>
@@ -545,7 +554,7 @@ export function BugWallScreen({
                   {/* Title + severity badges */}
                   <div className="space-y-1.5 mt-1">
                     {bug.title && (
-                      <h3 className="text-base font-bold text-on-surface font-headline leading-snug">{bug.title}</h3>
+                      <h3 className="text-base font-bold text-on-surface leading-snug">{bug.title}</h3>
                     )}
                     <div className="flex flex-wrap items-center gap-1.5">
                       {bug.impact && (
@@ -582,7 +591,7 @@ export function BugWallScreen({
                               key={i} 
                               src={url} 
                               alt="" 
-                              className="w-full aspect-square object-cover rounded-xl border border-outline-variant/10 shadow-sm cursor-pointer" 
+                              className="w-full aspect-square object-cover rounded-[8px] border border-outline-variant/10 shadow-sm cursor-pointer" 
                             />
                           ))
                         ) : bug.imageUrl && (
@@ -590,7 +599,7 @@ export function BugWallScreen({
                             whileHover={{ opacity: 0.9 }}
                             src={bug.imageUrl} 
                             alt="" 
-                            className="w-full h-auto max-h-[400px] object-contain rounded-xl border border-outline-variant/10 shadow-sm cursor-pointer" 
+                            className="w-full h-auto max-h-[400px] object-contain rounded-[8px] border border-outline-variant/10 shadow-sm cursor-pointer" 
                           />
                         )}
                         {bug.gifUrl && (
@@ -598,7 +607,7 @@ export function BugWallScreen({
                             whileHover={{ opacity: 0.9 }}
                             src={bug.gifUrl} 
                             alt="" 
-                            className="w-full h-auto max-h-[400px] object-contain rounded-xl border border-outline-variant/10 shadow-sm cursor-pointer" 
+                            className="w-full h-auto max-h-[400px] object-contain rounded-[8px] border border-outline-variant/10 shadow-sm cursor-pointer" 
                           />
                         )}
                       </div>
@@ -607,21 +616,14 @@ export function BugWallScreen({
 
                   {/* Interaction Bar */}
                   <div className="pt-2 flex items-center gap-4">
-                    <motion.button 
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => {
+                    <ReactionButton
+                      count={bug.reactions?.['❤️'] || 0}
+                      isReacted={!!bug.reactions?.['❤️']}
+                      onReact={(e) => {
                         e.stopPropagation();
                         onReact(bug.id, '❤️', profile?.displayName);
                       }}
-                      className={`flex items-center gap-1.5 transition-all ${
-                        bug.reactions?.['❤️'] ? 'text-error' : 'text-outline/60 hover:text-error'
-                      }`}
-                    >
-                      <Heart size={20} />
-                      <span className="text-xs font-medium">
-                        {bug.reactions?.['❤️'] || '0'}
-                      </span>
-                    </motion.button>
+                    />
                     
                     <motion.button 
                       whileTap={{ scale: 0.9 }}
@@ -654,7 +656,7 @@ export function BugWallScreen({
                       >
                         {bug.comments?.map((comment) => (
                           <div key={comment.id} className="flex gap-3 group/comment relative">
-                            <div className="w-8 h-8 rounded-xl bg-surface-container-high overflow-hidden flex-shrink-0 border border-outline-variant/10">
+                            <div className="w-8 h-8 rounded-[8px] bg-surface-container-high overflow-hidden flex-shrink-0 border border-outline-variant/10">
                               <img 
                                 src={getAvatarUrl(comment)} 
                                 alt={comment.isAnonymous ? 'Anonymous' : comment.author} 
@@ -694,7 +696,7 @@ export function BugWallScreen({
                                             initial={{ opacity: 0, scale: 0.95, y: -5 }}
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                                            className="absolute right-0 mt-1 w-32 bg-surface rounded-xl shadow-xl border border-outline-variant/20 z-40 py-1 overflow-hidden"
+                                            className="absolute right-0 mt-1 w-32 bg-surface rounded-[8px] shadow-xl border border-outline-variant/20 z-40 py-1 overflow-hidden"
                                           >
                                             <button 
                                               onClick={() => {
@@ -731,7 +733,7 @@ export function BugWallScreen({
                                     autoFocus
                                     value={editCommentText}
                                     onChange={(e) => setEditCommentText(e.target.value)}
-                                    className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none font-medium"
+                                    className="w-full bg-surface-container-low border border-outline-variant/20 rounded-[8px] p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none font-medium"
                                     rows={2}
                                   />
                                   <div className="flex justify-end gap-2">
@@ -767,14 +769,14 @@ export function BugWallScreen({
                                   {comment.imageUrls && comment.imageUrls.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                       {comment.imageUrls.map((url, idx) => (
-                                        <img key={idx} src={url} alt="" className="max-w-full h-auto rounded-xl max-h-64 object-contain border border-outline-variant/10 shadow-sm" />
+                                        <img key={idx} src={url} alt="" className="max-w-full h-auto rounded-[8px] max-h-64 object-contain border border-outline-variant/10 shadow-sm" />
                                       ))}
                                     </div>
                                   ) : comment.imageUrl && (
-                                    <img src={comment.imageUrl} alt="" className="max-w-full h-auto rounded-xl max-h-64 object-contain border border-outline-variant/10 shadow-sm" />
+                                    <img src={comment.imageUrl} alt="" className="max-w-full h-auto rounded-[8px] max-h-64 object-contain border border-outline-variant/10 shadow-sm" />
                                   )}
                                   {comment.gifUrl && (
-                                    <img src={comment.gifUrl} alt="" className="max-w-full h-auto rounded-xl max-h-64 object-contain border border-outline-variant/10 shadow-sm" />
+                                    <img src={comment.gifUrl} alt="" className="max-w-full h-auto rounded-[8px] max-h-64 object-contain border border-outline-variant/10 shadow-sm" />
                                   )}
                                   
                                   <div className="flex items-center gap-4 mt-2">
@@ -864,7 +866,7 @@ export function BugWallScreen({
                                             value={replyText}
                                             onChange={(e) => setReplyText(e.target.value)}
                                             placeholder="Write a reply..."
-                                            className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl p-2 text-xs focus:ring-2 focus:ring-primary/20 transition-all resize-none font-medium pr-10"
+                                            className="w-full bg-surface-container-low border border-outline-variant/20 rounded-[8px] p-2 text-xs focus:ring-2 focus:ring-primary/20 transition-all resize-none font-medium pr-10"
                                             rows={1}
                                           />
                                           <button 
@@ -981,7 +983,7 @@ export function BugWallScreen({
                                               initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                               animate={{ opacity: 1, y: 0, scale: 1 }}
                                               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                              className="gif-picker-container absolute z-50 bottom-full mb-2 left-0 bg-surface rounded-xl shadow-2xl border border-outline-variant/20 w-64 h-80 flex flex-col overflow-hidden"
+                                              className="gif-picker-container absolute z-50 bottom-full mb-2 left-0 bg-surface rounded-[8px] shadow-2xl border border-outline-variant/20 w-64 h-80 flex flex-col overflow-hidden"
                                               onClick={(e) => e.stopPropagation()}
                                             >
                                               <div className="p-3 border-b border-outline-variant/10 flex items-center justify-between bg-surface-container-low">
@@ -1046,7 +1048,7 @@ export function BugWallScreen({
                             className="flex gap-3 pt-4 border-t border-outline-variant/5"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <div className="w-8 h-8 rounded-xl bg-surface-container-high overflow-hidden flex-shrink-0 border border-outline-variant/10">
+                            <div className="w-8 h-8 rounded-[8px] bg-surface-container-high overflow-hidden flex-shrink-0 border border-outline-variant/10">
                               <img 
                                 src={isCommentAnonymous ? `https://api.dicebear.com/7.x/bottts/svg?seed=new` : (profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`)} 
                                 alt="Me" 
@@ -1062,13 +1064,13 @@ export function BugWallScreen({
                                   onChange={(e) => setCommentText(e.target.value)}
                                   onPaste={handlePaste}
                                   placeholder="Add a comment..."
-                                  className="w-full bg-surface-container-low border border-outline-variant/20 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none font-medium pr-12"
+                                  className="w-full bg-surface-container-low border border-outline-variant/20 rounded-[8px] p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none font-medium pr-12"
                                   rows={2}
                                 />
                                 <button 
                                   onClick={() => handleCommentSubmit(bug.id)}
                                   disabled={(!commentText.trim() && commentImages.length === 0 && !commentGif) || isUploading}
-                                  className="absolute right-3 bottom-3 p-2 bg-primary text-white rounded-xl disabled:opacity-50 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
+                                  className="absolute right-3 bottom-3 p-2 bg-primary text-white rounded-[8px] disabled:opacity-50 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
                                 >
                                   <Send size={18} />
                                 </button>
@@ -1084,7 +1086,7 @@ export function BugWallScreen({
                                   >
                                     {commentImages.map((file, idx) => (
                                       <div key={idx} className="relative group/img">
-                                        <img src={URL.createObjectURL(file)} alt="Preview" className="h-24 w-24 object-cover rounded-xl border border-outline-variant/20 shadow-sm" />
+                                        <img src={URL.createObjectURL(file)} alt="Preview" className="h-24 w-24 object-cover rounded-[8px] border border-outline-variant/20 shadow-sm" />
                                         <button 
                                           onClick={() => setCommentImages(prev => prev.filter((_, i) => i !== idx))} 
                                           className="absolute -top-2 -right-2 bg-error text-white rounded-full p-1 shadow-lg opacity-0 group-hover/img:opacity-100 transition-opacity"
@@ -1096,7 +1098,7 @@ export function BugWallScreen({
                                     
                                     {commentGif && (
                                       <div className="relative group/gif">
-                                        <img src={commentGif} alt="GIF Preview" className="h-24 w-24 object-cover rounded-xl border border-outline-variant/20 shadow-sm" />
+                                        <img src={commentGif} alt="GIF Preview" className="h-24 w-24 object-cover rounded-[8px] border border-outline-variant/20 shadow-sm" />
                                         <button 
                                           onClick={() => setCommentGif(null)} 
                                           className="absolute -top-2 -right-2 bg-error text-white rounded-full p-1 shadow-lg opacity-0 group-hover/gif:opacity-100 transition-opacity"
@@ -1113,7 +1115,7 @@ export function BugWallScreen({
                                 <div className="flex items-center gap-1">
                                   <button 
                                     onClick={() => setIsCommentAnonymous(!isCommentAnonymous)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all border ${
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] transition-all border ${
                                       isCommentAnonymous ? 'bg-primary/10 border-primary/20 text-primary' : 'text-outline/60 hover:text-on-surface border-transparent hover:bg-surface-container-high'
                                     }`}
                                   >
@@ -1138,7 +1140,7 @@ export function BugWallScreen({
                                     />
                                     <label 
                                       htmlFor={`comment-image-upload-${bug.id}`} 
-                                      className="p-2 rounded-xl text-outline/60 hover:text-primary hover:bg-primary/5 transition-all cursor-pointer flex items-center"
+                                      className="p-2 rounded-[8px] text-outline/60 hover:text-primary hover:bg-primary/5 transition-all cursor-pointer flex items-center"
                                       title="Add Images"
                                     >
                                       <ImageIcon size={18} />
@@ -1151,7 +1153,7 @@ export function BugWallScreen({
                                       e.stopPropagation();
                                       setShowGifPicker(!showGifPicker);
                                     }}
-                                    className={`gif-button-trigger p-2 rounded-xl transition-all ${showGifPicker ? 'text-primary bg-primary/5' : 'text-outline/60 hover:text-primary hover:bg-primary/5'}`}
+                                    className={`gif-button-trigger p-2 rounded-[8px] transition-all ${showGifPicker ? 'text-primary bg-primary/5' : 'text-outline/60 hover:text-primary hover:bg-primary/5'}`}
                                     title="Add GIF"
                                   >
                                     <Smile size={18} />
@@ -1178,7 +1180,7 @@ export function BugWallScreen({
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="gif-picker-container absolute z-50 bottom-full mb-4 left-0 bg-surface rounded-2xl shadow-2xl border border-outline-variant/20 w-72 h-96 flex flex-col overflow-hidden"
+                                    className="gif-picker-container absolute z-50 bottom-full mb-4 left-0 bg-surface rounded-[8px] shadow-2xl border border-outline-variant/20 w-72 h-96 flex flex-col overflow-hidden"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between bg-surface-container-low">
@@ -1193,7 +1195,7 @@ export function BugWallScreen({
                                         placeholder="Search GIFs..."
                                         value={gifSearchTerm}
                                         onChange={(e) => setGifSearchTerm(e.target.value)}
-                                        className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                                        className="w-full bg-surface-container-low border border-outline-variant/20 rounded-[8px] p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all font-medium"
                                       />
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
@@ -1244,14 +1246,14 @@ export function BugWallScreen({
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-32 bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant/10"
+          className="text-center py-32 bg-surface-container-low rounded-[12px] border-2 border-dashed border-outline-variant/10"
         >
           <Bug className="mx-auto text-outline/20 mb-6" size={64} />
           <p className="text-on-surface-variant font-bold text-lg">No stories found for this filter.</p>
           <p className="text-outline text-sm mt-2">Try adjusting your filters or start a new story.</p>
           <button 
             onClick={onAddBug}
-            className="mt-8 px-8 py-3 bg-primary text-white rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-primary/20"
+            className="mt-8 px-8 py-3 bg-primary text-white rounded-[8px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-primary/20"
           >
             Start a Story
           </button>

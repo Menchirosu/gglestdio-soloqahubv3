@@ -48,31 +48,35 @@ export function BreathingGuide({ isActive }: BreathingGuideProps) {
   return (
     <div className="flex flex-col items-center justify-center gap-6 py-4">
       <div className="relative flex items-center justify-center w-40 h-40">
-        {/* Outer Ring for reference */}
-        <div className="absolute inset-0 rounded-full border-4 border-surface-container-highest/30" />
-        
-        {/* Breathing Circle */}
+        {/* Animated glow ring — only when active */}
+        {isActive && (
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-primary/30"
+            animate={{ scale: currentPhase.scale * 1.15, opacity: [0.5, 0.15, 0.5] }}
+            transition={{ duration: 4, ease: 'easeInOut', repeat: Infinity }}
+          />
+        )}
+
+        {/* Static reference ring */}
+        <div className="absolute inset-0 rounded-full border border-border" />
+
+        {/* Breathing circle */}
         <motion.div
-          animate={{
-            scale: isActive ? currentPhase.scale : 1,
-          }}
-          transition={{
-            duration: isActive ? 4 : 0.5,
-            ease: "easeInOut",
-          }}
-          className="w-24 h-24 rounded-full bg-primary flex items-center justify-center shadow-xl shadow-primary/20"
+          animate={{ scale: isActive ? currentPhase.scale : 1 }}
+          transition={{ duration: isActive ? 4 : 0.5, ease: 'easeInOut' }}
+          className="w-24 h-24 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/15"
         >
-          <span className="text-white text-3xl font-black font-mono">
-            {isActive ? state.timeLeft : ""}
+          <span className="text-white text-2xl font-[590] font-mono tabular-nums">
+            {isActive ? state.timeLeft : ''}
           </span>
         </motion.div>
       </div>
-      
+
       <div className="text-center space-y-1">
-        <h4 className="text-xl font-black uppercase tracking-widest text-primary h-6">
-          {isActive ? currentPhase.name : "Focus Breathing"}
+        <h4 className="text-sm font-[590] uppercase tracking-[0.18em] text-primary h-5">
+          {isActive ? currentPhase.name : 'Focus Breathing'}
         </h4>
-        <p className="text-tertiary text-[10px] font-bold uppercase tracking-[0.2em]">
+        <p className="text-on-surface-variant text-[10px] uppercase tracking-[0.2em]" style={{ fontWeight: 510 }}>
           Box Pattern: 4s • 4s • 4s • 4s
         </p>
       </div>

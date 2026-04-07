@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, MoreHorizontal, Edit3, Trash2, X, Lightbulb, ArrowUpDown, Heart, Calendar } from 'lucide-react';
-import { motion } from 'motion/react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Edit3, Trash2, X, Lightbulb, ArrowUpDown, Heart, Calendar, PlusCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Tip } from '../types';
 import { useAuth } from '../AuthContext';
 import { timeAgo } from '../utils/timeAgo';
@@ -48,15 +48,16 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
     <div className="space-y-12">
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="max-w-2xl">
-          <span className="text-xs font-bold tracking-[0.2em] text-secondary uppercase mb-3 block">Knowledge Base</span>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-on-surface tracking-tighter mb-4 leading-none font-headline">Tips & Tricks</h1>
-          <p className="text-lg text-on-surface-variant font-body leading-relaxed opacity-80">Refine your craft with architectural insights from the community. A curated collection for the solo quality engineer.</p>
+          <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 510 }}>Knowledge Base</span>
+          <h1 className="mb-3 text-foreground" style={{ fontSize: '1.75rem', fontWeight: 590, letterSpacing: '-0.03em', lineHeight: 1.2 }}>Tips & Tricks</h1>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">Refine your craft with practical insights from the community. A curated collection for the solo quality engineer.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsSortOpen(!isSortOpen)}
-              className="flex items-center gap-2 bg-surface-container-low px-6 py-3 rounded-full text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              className="flex items-center gap-2 rounded-[6px] border border-border bg-input px-3 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-surface-container-low hover:text-foreground"
+              style={{ fontWeight: 510 }}
             >
               <ArrowUpDown size={16} />
               {sortBy === 'newest' ? 'Newest First' : 'Oldest First'}
@@ -65,7 +66,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
             {isSortOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsSortOpen(false)}></div>
-                <div className="absolute right-0 mt-2 w-48 bg-surface-container-highest border border-outline-variant/20 rounded-2xl shadow-2xl z-20 py-2 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-48 bg-surface-container-highest border border-outline-variant/20 rounded-[8px] shadow-2xl z-20 py-2 overflow-hidden">
                   <button 
                     onClick={() => {
                       setSortBy('newest');
@@ -89,15 +90,14 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
             )}
           </div>
           <div className="flex flex-col items-end gap-2">
-            <button 
+            <button
               onClick={onAddTip}
-              className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full text-sm font-semibold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+              className="flex items-center gap-2 rounded-[6px] bg-primary px-3 py-1.5 text-[13px] text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              style={{ fontWeight: 510 }}
             >
+              <PlusCircle size={14} />
               Contribute Tip
             </button>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-              Share a tip to boost your QA rank.
-            </p>
           </div>
         </div>
       </section>
@@ -109,7 +109,8 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
               onClick={() => {
                 if (onClearSelection) onClearSelection();
               }}
-              className="px-6 py-2.5 rounded-full text-xs font-bold tracking-wide transition-all bg-primary text-white shadow-md shadow-primary/10 flex items-center gap-2"
+              className="flex items-center gap-2 rounded-[9999px] border border-border bg-input px-4 py-1.5 text-[12px] text-foreground transition-colors hover:bg-surface-container-low"
+              style={{ fontWeight: 510 }}
             >
               <X size={14} />
               Clear Search
@@ -119,11 +120,12 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
             <button 
               key={idx} 
               onClick={() => setActiveCat(cat)}
-              className={`px-6 py-2.5 rounded-full text-xs font-bold tracking-wide transition-all ${
-                activeCat === cat 
-                  ? 'bg-primary text-white shadow-md shadow-primary/10' 
+              className={`px-4 py-1.5 rounded-[6px] text-xs transition-all ${
+                activeCat === cat
+                  ? 'bg-primary text-white'
                   : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
               }`}
+              style={{ fontWeight: activeCat === cat ? 590 : 510 }}
             >
               {cat}
             </button>
@@ -132,11 +134,17 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 items-stretch">
+        <AnimatePresence mode="wait" key={`${activeCat}-${currentPage}`}>
         {paginatedTips.map((tip, idx) => (
-          <article 
-            key={tip.id} 
+          <motion.article
+            key={tip.id}
             onClick={() => setSelectedTipId(tip.id)}
-            className={`p-8 rounded-lg shadow-sm transition-all duration-300 flex flex-col h-full group relative overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 ${
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.28, delay: idx * 0.06, ease: [0.25, 0, 0, 1] }}
+            whileHover={{ y: -4, boxShadow: '0 10px 28px rgba(113,112,255,0.13)' }}
+            className={`p-8 rounded-lg shadow-sm flex flex-col h-full group relative overflow-hidden cursor-pointer ${
               tip.highlight ? 'bg-primary text-white' : 'bg-surface-container-lowest'
             }`}
           >
@@ -147,7 +155,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
                 {tip.cat}
               </span>
             </div>
-            <h3 className={`text-2xl font-bold leading-tight mb-4 group-hover:text-primary transition-colors font-headline ${tip.highlight ? 'group-hover:text-secondary-fixed' : ''}`}>
+            <h3 className={`text-2xl font-bold leading-tight mb-4 group-hover:text-primary transition-colors ${tip.highlight ? 'group-hover:text-secondary-fixed' : ''}`}>
               {tip.title}
             </h3>
             <p className={`leading-relaxed text-sm mb-6 line-clamp-3 ${tip.highlight ? 'text-white/80' : 'text-on-surface-variant'}`}>
@@ -196,7 +204,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
                           className="fixed inset-0 z-10" 
                           onClick={() => setMenuOpenId(null)}
                         ></div>
-                        <div className="absolute right-0 mt-1 w-32 bg-surface-container-highest border border-outline-variant/20 rounded-xl shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                        <div className="absolute right-0 mt-1 w-32 bg-surface-container-highest border border-outline-variant/20 rounded-[8px] shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                           <button 
                             onClick={() => {
                               onEditTip(tip);
@@ -226,25 +234,28 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
                 )}
               </div>
             </div>
-          </article>
+          </motion.article>
         ))}
+        </AnimatePresence>
       </div>
 
       {filteredTips.length === 0 && (
-        <div className="text-center py-24 bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant/20 flex flex-col items-center justify-center space-y-6">
-          <div className="w-20 h-20 bg-surface-container-high rounded-full flex items-center justify-center text-primary shadow-inner">
-            <Lightbulb size={40} strokeWidth={1.5} />
+        <div className="flex flex-col items-center gap-4 rounded-[12px] border border-border bg-card px-6 py-16 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-[8px] border border-border bg-input text-muted-foreground">
+            <Lightbulb size={22} strokeWidth={1.5} />
           </div>
-          <div className="space-y-2 max-w-sm mx-auto">
-            <h3 className="text-2xl font-black font-headline tracking-tight text-on-surface">No tips here yet</h3>
-            <p className="text-on-surface-variant font-medium leading-relaxed opacity-70">
-              Be the first to share what you know. Help the community grow by contributing your expertise.
+          <div className="max-w-xs">
+            <h3 className="text-[15px] text-foreground" style={{ fontWeight: 590 }}>No tips here yet</h3>
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              Be the first to share what you know. Help the community grow.
             </p>
           </div>
-          <button 
+          <button
             onClick={onAddTip}
-            className="flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-full text-sm font-black shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all uppercase tracking-widest"
+            className="inline-flex items-center gap-2 rounded-[6px] bg-primary px-4 py-2 text-[13px] text-white transition-colors hover:bg-primary/90"
+            style={{ fontWeight: 510 }}
           >
+            <PlusCircle size={14} />
             Contribute a Tip
           </button>
         </div>
@@ -286,13 +297,13 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
       {selectedTip && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
           <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedTipId(null)}></div>
-          <div className="bg-surface-container-lowest w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-surface-container-lowest w-full max-w-2xl rounded-[12px] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 md:p-8 border-b border-outline-variant/10 flex items-center justify-between bg-surface">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                <div className="p-2 bg-primary/10 rounded-[8px] text-primary">
                   <Lightbulb size={24} />
                 </div>
-                <h2 className="text-2xl font-black font-headline tracking-tight">Tip Details</h2>
+                <h2 className="text-2xl font-black tracking-tight">Tip Details</h2>
               </div>
               <button 
                 onClick={() => setSelectedTipId(null)}
@@ -307,7 +318,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
                 <span className="px-3 py-1 bg-secondary-container text-on-secondary-container text-[10px] font-black uppercase tracking-widest rounded-md">
                   {selectedTip.cat}
                 </span>
-                <h3 className="text-3xl font-black font-headline leading-tight text-on-surface">
+                <h3 className="text-3xl font-black leading-tight text-on-surface">
                   {selectedTip.title}
                 </h3>
               </div>
@@ -319,7 +330,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
                 </p>
               </div>
 
-              <div className="p-6 bg-surface-container-low rounded-2xl border-l-4 border-primary space-y-3">
+              <div className="p-6 bg-surface-container-low rounded-[8px] border-l-4 border-primary space-y-3">
                 <h4 className="text-xs font-black uppercase tracking-widest text-primary">Real-World Scenario</h4>
                 <p className="text-base italic text-on-surface leading-relaxed">
                   "{selectedTip.scenario}"
