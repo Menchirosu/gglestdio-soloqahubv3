@@ -43,14 +43,15 @@ export function KnowledgeSharingScreen({ proposals, onAddProposal, onDeletePropo
   });
 
 return (
-    <div className="space-y-12">
-      <header>
-        <h1 className="mb-2 text-foreground" style={{ fontSize: '1.75rem', fontWeight: 590, letterSpacing: '-0.03em', lineHeight: 1.2 }}>Knowledge Sharing</h1>
+    <div className="space-y-10">
+      <header className="page-hero px-6 py-6 md:px-8">
+        <p className="page-kicker">Shared Knowledge</p>
+        <h1 className="page-title mt-3">Knowledge Sharing</h1>
         <p className="max-w-xl text-[15px] leading-relaxed text-muted-foreground">A space for team wisdom — testing rigor, guides, and architectural mindfulness.</p>
       </header>
 
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 bg-surface-container-lowest rounded-lg p-8 shadow-sm relative overflow-hidden group">
+        <div className="page-panel lg:col-span-8 p-8 relative overflow-hidden group">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="text-xl font-bold text-on-surface">Presenter Picker</h3>
@@ -66,7 +67,7 @@ return (
           <SpinWheel members={allMembers} />
         </div>
 
-        <div className="lg:col-span-4 bg-surface-container-low rounded-lg p-6 flex flex-col">
+        <div className="page-panel-muted lg:col-span-4 p-6 flex flex-col">
           <h3 className="text-[15px] text-on-surface mb-4" style={{ fontWeight: 590, letterSpacing: '-0.01em' }}>Members</h3>
           <div className="space-y-1 flex-1 overflow-y-auto max-h-[500px] pr-1 custom-scrollbar">
             {allMembers.map((member, i) => (
@@ -102,7 +103,7 @@ return (
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-primary p-8 rounded-lg shadow-xl shadow-primary/10 flex flex-col justify-between text-on-primary col-span-full">
+        <div className="page-panel lg:col-span-2 bg-primary p-8 flex flex-col justify-between text-on-primary col-span-full border-primary/20">
           <div>
             <h3 className="text-xl font-bold mb-2">Plant a Seed</h3>
             <p className="text-primary-fixed-dim text-xs mb-8">Suggest a topic you want to hear or share about.</p>
@@ -141,7 +142,7 @@ return (
           </div>
         )}
         {filteredProposals.length === 0 && (
-          <div className="flex flex-col items-center gap-4 rounded-[12px] border border-border bg-card px-6 py-16 text-center">
+          <div className="page-empty flex flex-col items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-[8px] border border-border bg-input text-muted-foreground">
               <BookOpen size={22} strokeWidth={1.5} />
             </div>
@@ -169,7 +170,7 @@ return (
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.28, delay: i * 0.06, ease: [0.25, 0, 0, 1] }}
               whileHover={{ y: -4, boxShadow: '0 10px 28px rgba(113,112,255,0.13)' }}
-              className="bg-surface-container-low p-8 rounded-lg group border-b-4 border-secondary"
+              className="page-panel-muted p-7 group"
             >
               <div className="flex justify-between items-start mb-6">
                 <span className={`px-3 py-1 bg-secondary-container text-on-surface text-[10px] font-bold rounded-full uppercase tracking-tighter`}>{timeAgo(item.createdAt || item.date)}</span>

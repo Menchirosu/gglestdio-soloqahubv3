@@ -45,18 +45,18 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
   const paginatedTips = filteredTips.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div className="space-y-12">
-      <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="space-y-10">
+      <section className="page-hero flex flex-col gap-6 px-6 py-6 md:flex-row md:items-end md:justify-between md:px-8">
         <div className="max-w-2xl">
-          <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 510 }}>Knowledge Base</span>
-          <h1 className="mb-3 text-foreground" style={{ fontSize: '1.75rem', fontWeight: 590, letterSpacing: '-0.03em', lineHeight: 1.2 }}>Tips & Tricks</h1>
-          <p className="text-[15px] leading-relaxed text-muted-foreground">Refine your craft with practical insights from the community. A curated collection for the solo quality engineer.</p>
+          <span className="page-kicker mb-2 block">Knowledge Base</span>
+          <h1 className="page-title mb-3">Tips & Tricks</h1>
+          <p className="page-subtitle">Practical notes, shortcuts, and working habits from people solving quality problems on their own.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <button
               onClick={() => setIsSortOpen(!isSortOpen)}
-              className="flex items-center gap-2 rounded-[6px] border border-border bg-input px-3 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-surface-container-low hover:text-foreground"
+              className="flex items-center gap-2 rounded-[8px] border border-border/80 bg-input/80 px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-surface-container-low hover:text-foreground"
               style={{ fontWeight: 510 }}
             >
               <ArrowUpDown size={16} />
@@ -92,7 +92,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
           <div className="flex flex-col items-end gap-2">
             <button
               onClick={onAddTip}
-              className="flex items-center gap-2 rounded-[6px] bg-primary px-3 py-1.5 text-[13px] text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-[13px] text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               style={{ fontWeight: 510 }}
             >
               <PlusCircle size={14} />
@@ -102,7 +102,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
         </div>
       </section>
 
-      <section className="overflow-x-auto pb-4 scrollbar-hide">
+      <section className="page-toolbar overflow-x-auto px-4 py-3 scrollbar-hide">
         <div className="flex gap-3 min-w-max">
           {selectedItemId && (
             <button 
@@ -133,7 +133,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
         </div>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 items-stretch">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 items-stretch">
         <AnimatePresence mode="wait" key={`${activeCat}-${currentPage}`}>
         {paginatedTips.map((tip, idx) => (
           <motion.article
@@ -144,8 +144,8 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.28, delay: idx * 0.06, ease: [0.25, 0, 0, 1] }}
             whileHover={{ y: -4, boxShadow: '0 10px 28px rgba(113,112,255,0.13)' }}
-            className={`p-8 rounded-lg shadow-sm flex flex-col h-full group relative overflow-hidden cursor-pointer ${
-              tip.highlight ? 'bg-primary text-white' : 'bg-surface-container-lowest'
+            className={`page-panel p-7 flex flex-col h-full group relative overflow-hidden cursor-pointer ${
+              tip.highlight ? 'bg-primary text-white border-primary/20' : ''
             }`}
           >
             <div className="mb-6">
@@ -240,7 +240,7 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
       </div>
 
       {filteredTips.length === 0 && (
-        <div className="flex flex-col items-center gap-4 rounded-[12px] border border-border bg-card px-6 py-16 text-center">
+        <div className="page-empty flex flex-col items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-[8px] border border-border bg-input text-muted-foreground">
             <Lightbulb size={22} strokeWidth={1.5} />
           </div>

@@ -318,8 +318,8 @@ export function BugWallScreen({
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12 pb-20 px-4">
-      <header className="relative py-12 overflow-hidden">
+    <div className="max-w-5xl mx-auto space-y-10 pb-20 px-4">
+      <header className="page-hero relative overflow-hidden px-6 py-10 md:px-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 relative z-10">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
@@ -330,7 +330,7 @@ export function BugWallScreen({
               <div className="p-2.5 bg-primary/10 rounded-[8px]">
                 <Bug className="text-primary" size={28} />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">Bug Archive</span>
+              <span className="page-kicker text-primary/70">Bug Archive</span>
             </div>
             <h2 className="text-6xl md:text-7xl font-black text-on-surface tracking-tighter leading-[0.9]">
               Freedom <span className="text-primary">Wall</span>
@@ -349,7 +349,7 @@ export function BugWallScreen({
       {/* Inline Post Composer */}
       <motion.div 
         layout
-        className="bg-surface border border-outline-variant/10 rounded-[8px] p-4 mb-8 shadow-sm"
+        className="page-panel p-4 mb-8"
       >
         {!isComposingInline ? (
           <div 
@@ -385,7 +385,7 @@ export function BugWallScreen({
         )}
       </motion.div>
 
-      <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar sticky top-0 z-20 bg-background/80 backdrop-blur-xl py-2 -mx-4 px-4 border-b border-outline-variant/5 mb-4">
+      <div className="page-toolbar flex gap-2 overflow-x-auto pb-3 no-scrollbar sticky top-20 z-20 py-3 -mx-4 px-4 mb-4">
         {selectedItemId && (
           <button 
             onClick={() => {
@@ -415,7 +415,7 @@ export function BugWallScreen({
 
       <div className="flex flex-col gap-6 max-w-2xl mx-auto">
         {filteredBugs.length === 0 && (
-          <div className="flex flex-col items-center gap-4 rounded-[12px] border border-border bg-card px-6 py-16 text-center">
+          <div className="page-empty flex flex-col items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-[8px] border border-border bg-input text-muted-foreground">
               <Bug size={22} strokeWidth={1.5} />
             </div>

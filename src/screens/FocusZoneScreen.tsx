@@ -92,12 +92,13 @@ export function FocusZoneScreen() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-4">
-      <section className="text-center space-y-2">
+      <section className="page-hero px-6 py-8 text-center space-y-2">
+        <p className="page-kicker">Focus</p>
         <h2 className="text-4xl font-black tracking-tighter">The Focus Zone</h2>
-        <p className="text-tertiary text-base">Silence the noise. Sharpen the mind. Ship the quality.</p>
+        <p className="page-subtitle mx-auto text-base">Silence the noise. Sharpen the mind. Ship the quality.</p>
       </section>
 
-      <div className="bg-surface-container-lowest p-8 rounded-[12px] shadow-sm border border-outline-variant/10 max-w-2xl mx-auto flex flex-col items-center justify-center gap-6">
+      <div className="page-panel p-8 max-w-2xl mx-auto flex flex-col items-center justify-center gap-6">
         {/* SVG Circular Progress Ring */}
         <div className="relative w-56 h-56 flex items-center justify-center">
           {(() => {
@@ -167,7 +168,7 @@ export function FocusZoneScreen() {
       </div>
 
       {/* Breathing Guide Section */}
-      <section className="bg-surface-container-lowest p-6 rounded-[12px] shadow-sm border border-outline-variant/10 max-w-2xl mx-auto">
+      <section className="page-panel max-w-2xl mx-auto p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-primary/10 rounded-[8px] text-primary">
             <Wind size={20} />
@@ -178,7 +179,7 @@ export function FocusZoneScreen() {
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-        <div className="bg-surface-container-lowest p-6 rounded-lg shadow-sm space-y-4">
+        <div className="page-panel-muted p-6 space-y-4">
           <h4 className="text-base font-bold flex items-center gap-2">
             <Quote size={18} className="text-secondary" />
             Mindful Mantra
@@ -194,7 +195,7 @@ export function FocusZoneScreen() {
           </div>
         </div>
 
-        <div className="bg-surface-container-lowest p-6 rounded-lg shadow-sm space-y-4">
+        <div className="page-panel-muted p-6 space-y-4">
           <h4 className="text-base font-bold">Soundscapes</h4>
           <div className="grid grid-cols-2 gap-3">
             {[

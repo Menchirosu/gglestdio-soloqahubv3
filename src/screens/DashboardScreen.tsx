@@ -195,31 +195,49 @@ export function DashboardScreen({ onNavigate, onShare, bugs, tips, proposals, ac
   const topContributors = ranking.slice(0, 3);
   const firstName = profile?.displayName?.split(' ')[0] || 'QA';
 
+  const heroMetrics = [
+    {
+      label: 'Active now',
+      value: String(activeUsers.length),
+      detail: activeUsers.length > 0 ? 'People in the room right now' : 'Quiet right now',
+    },
+    {
+      label: 'Shared this cycle',
+      value: String(totalContributionCount),
+      detail: 'Stories, tips, notes, and wins',
+    },
+    {
+      label: 'Support lane',
+      value: 'Open',
+      detail: 'Leave the next tester one useful breadcrumb',
+    },
+  ];
+
   return (
     <div className="space-y-8 lg:space-y-10">
-      <section className="grid gap-6 xl:grid-cols-[1.5fr_0.85fr]">
+      <section className="grid gap-6 xl:grid-cols-[1.65fr_0.78fr]">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="sunrise-card warm-ring relative overflow-hidden rounded-[12px] px-6 py-7 sm:px-8 sm:py-8"
+          className="sunrise-card warm-ring relative overflow-hidden rounded-[12px] px-6 py-7 sm:px-8 sm:py-9"
         >
           <div className="pointer-events-none absolute -left-16 top-0 h-44 w-44 rounded-full bg-primary/18 blur-3xl" />
           <div className="pointer-events-none absolute right-0 top-10 h-36 w-36 rounded-full bg-secondary/40 blur-3xl" />
           <div className="pointer-events-none absolute bottom-0 left-1/3 h-28 w-28 rounded-full bg-accent/40 blur-2xl" />
 
-          <div className="relative flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-2xl">
+          <div className="relative flex flex-col gap-8 xl:flex-row xl:items-stretch xl:justify-between">
+            <div className="max-w-[38rem]">
               <div className="surface-hero-chip mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold text-primary shadow-sm dark:bg-white/10">
                 <HeartHandshake size={14} />
                 {getGreeting()}, {firstName}
               </div>
-              <h1 className="max-w-2xl text-3xl text-foreground sm:text-4xl" style={{ fontWeight: 590, letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-                Your solo QA corner for sharing wins, trading lessons, and staying in motion.
+              <h1 className="max-w-[14ch] text-3xl text-foreground sm:text-4xl lg:text-[2.65rem]" style={{ fontWeight: 590, letterSpacing: '-0.04em', lineHeight: 1.06 }}>
+                A quieter place to share lessons, unblock work, and keep quality moving.
               </h1>
-              <p className="mt-4 max-w-xl text-sm leading-7 text-on-surface-variant sm:text-base">
+              <p className="mt-4 max-w-lg text-sm leading-7 text-on-surface-variant sm:text-base">
                 <TypewriterText
-                  text="Drop a bug story, celebrate a small victory, or leave the next tester a tip that saves their day."
+                  text="Post one useful thing: a bug story, a hard-won fix, or a note the next tester can actually use."
                   delayMs={320}
                   speedMs={13}
                 />
@@ -240,35 +258,21 @@ export function DashboardScreen({ onNavigate, onShare, bugs, tips, proposals, ac
                   style={{ fontWeight: 510 }}
                 >
                   <BookOpen size={16} />
-                  Explore community notes
+                  Browse community notes
                 </button>
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3 xl:w-[22rem] xl:grid-cols-1">
-              <div className="surface-primary-card rounded-[12px] p-4 shadow-sm dark:bg-white/8">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Pulse</p>
-                <div className="mt-2 flex items-end gap-2">
-                  <CountUpNumber value={activeUsers.length} className="text-3xl font-[590] text-on-surface" />
-                  <p className="pb-1 text-sm text-on-surface-variant">active now</p>
+            <div className="space-y-2.5 xl:w-[19rem] xl:pt-1">
+              {heroMetrics.map(metric => (
+                <div key={metric.label} className="rounded-[10px] border border-border/80 bg-background/35 px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{metric.label}</p>
+                    <p className="text-lg text-on-surface" style={{ fontWeight: 590 }}>{metric.value}</p>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-on-surface-variant">{metric.detail}</p>
                 </div>
-                <p className="mt-2 text-sm text-on-surface-variant">Someone is probably debugging, documenting, or cheering on a teammate right now.</p>
-              </div>
-
-              <div className="surface-nested-card rounded-[12px] p-4 shadow-sm dark:bg-white/6">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Momentum</p>
-                <div className="mt-2 flex items-end gap-2">
-                  <CountUpNumber value={totalContributionCount} className="text-3xl font-[590] text-on-surface" />
-                  <p className="pb-1 text-sm text-on-surface-variant">shared moments</p>
-                </div>
-                <p className="mt-2 text-sm text-on-surface-variant">Bug stories, tips, knowledge posts, and wins are all part of the same shared memory.</p>
-              </div>
-
-              <div className="rounded-[12px] bg-secondary/60 p-4 shadow-sm dark:bg-secondary/25">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary-foreground/70">Support lane</p>
-                <p className="mt-2 text-lg font-bold text-secondary-foreground">Leave the next tester a breadcrumb.</p>
-                <p className="mt-1 text-sm text-secondary-foreground/80">Small notes compound faster than perfect documentation.</p>
-              </div>
+              ))}
             </div>
           </div>
         </motion.div>
@@ -376,7 +380,7 @@ export function DashboardScreen({ onNavigate, onShare, bugs, tips, proposals, ac
         </motion.aside>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-3 lg:grid-cols-3">
         {contributionHighlights.map((stat, index) => (
           <motion.button
             key={stat.label}
@@ -384,26 +388,26 @@ export function DashboardScreen({ onNavigate, onShare, bugs, tips, proposals, ac
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.35, delay: 0.1 + index * 0.09, ease: [0.25, 0, 0, 1] }}
             onClick={() => onNavigate(stat.screen)}
-            className="surface-primary-card rounded-[12px] p-5 text-left transition-all hover:-translate-y-0.5"
+            className="surface-primary-card rounded-[12px] px-4 py-4 text-left transition-all hover:-translate-y-0.5"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-on-surface">{stat.label}</p>
-                <p className="mt-1 text-sm text-on-surface-variant">{stat.helper}</p>
-              </div>
-              <div className={`flex h-12 w-12 items-center justify-center rounded-[8px] ${stat.iconBg} ${stat.iconClass}`}>
-                <stat.icon size={20} />
-              </div>
-            </div>
-
-            <div className="mt-6 flex items-end justify-between gap-3">
-              <div>
-                <CountUpNumber value={stat.value} className="text-3xl font-[590] text-on-surface" />
-                <p className="mt-1 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
                   <CountUpNumber value={stat.mine} /> from you
                 </p>
               </div>
-              <ArrowRight size={18} className="text-muted-foreground" />
+              <div className={`flex h-10 w-10 items-center justify-center rounded-[8px] ${stat.iconBg} ${stat.iconClass}`}>
+                <stat.icon size={18} />
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-end justify-between gap-3">
+              <div className="flex items-end gap-2">
+                <CountUpNumber value={stat.value} className="text-2xl font-[590] text-on-surface" />
+                <p className="pb-0.5 text-sm text-on-surface-variant">{stat.helper}</p>
+              </div>
+              <ArrowRight size={16} className="text-muted-foreground" />
             </div>
           </motion.button>
         ))}
@@ -446,7 +450,7 @@ export function DashboardScreen({ onNavigate, onShare, bugs, tips, proposals, ac
               </p>
             </div>
           ) : (
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="mt-6 grid gap-3">
               {latestActivity.map((entry, index) => (
                 <motion.button
                   key={`${entry.typeLabel}-${entry.id}`}
@@ -454,11 +458,11 @@ export function DashboardScreen({ onNavigate, onShare, bugs, tips, proposals, ac
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + index * 0.05, duration: 0.25 }}
                   onClick={() => onNavigate(entry.screen)}
-                  className="surface-nested-card group rounded-[12px] p-5 text-left transition-all hover:-translate-y-0.5 hover:bg-surface-container-high"
+                  className="group rounded-[12px] border border-border/70 bg-background/20 p-4 text-left transition-all hover:-translate-y-0.5 hover:bg-surface-container-low"
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] ${entry.iconBg} ${entry.iconClass}`}>
-                      <entry.icon size={18} />
+                    <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] ${entry.iconBg} ${entry.iconClass}`}>
+                      <entry.icon size={16} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-3">
@@ -467,10 +471,10 @@ export function DashboardScreen({ onNavigate, onShare, bugs, tips, proposals, ac
                         </span>
                         <span className="text-xs text-muted-foreground">{timeAgo(entry.createdAt)}</span>
                       </div>
-                      <h4 className="mt-3 text-base font-bold text-on-surface transition-colors group-hover:text-primary">
+                      <h4 className="mt-3 text-[15px] font-bold text-on-surface transition-colors group-hover:text-primary">
                         {entry.title}
                       </h4>
-                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-on-surface-variant">{entry.description}</p>
+                      <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-on-surface-variant">{entry.description}</p>
                     </div>
                   </div>
                 </motion.button>

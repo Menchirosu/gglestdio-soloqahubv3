@@ -139,10 +139,10 @@ export function AchievementsScreen({
 
   return (
     <div className="space-y-8 pb-4">
-      <section className="rounded-[12px] border border-outline-variant/10 bg-surface-container-lowest px-6 py-6 shadow-xl shadow-black/[0.03] md:px-8 md:py-7">
+      <section className="page-hero px-6 py-6 md:px-8 md:py-7">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-300">Achievements</p>
+            <p className="page-kicker text-emerald-700 dark:text-emerald-300">Achievements</p>
             <h1 className="mt-3 text-4xl font-black tracking-tight text-on-surface md:text-5xl">
               Keep the wins in one place.
             </h1>
@@ -181,7 +181,7 @@ export function AchievementsScreen({
         </div>
       </section>
 
-      <section className="sticky top-20 z-20 rounded-[12px] border border-outline-variant/10 bg-background/90 px-4 py-4 backdrop-blur-xl md:px-5">
+      <section className="page-toolbar sticky top-24 z-20 px-4 py-4 md:px-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-full bg-surface-container-low px-3 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-outline">
@@ -239,7 +239,7 @@ export function AchievementsScreen({
       <section className="grid gap-8 xl:grid-cols-[minmax(0,1.45fr)_340px]">
         <div className="space-y-4">
           {filteredAchievements.length === 0 ? (
-            <div className="rounded-[12px] border border-border bg-card px-6 py-12 md:px-8">
+            <div className="page-empty text-left md:px-8">
               <div className="flex flex-col items-start gap-5 md:flex-row md:items-center">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[8px] border border-border bg-input text-muted-foreground">
                   <Sparkles size={20} strokeWidth={1.5} />
@@ -252,7 +252,7 @@ export function AchievementsScreen({
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       onClick={onAddAchievement}
-                      className="inline-flex items-center gap-2 rounded-[6px] bg-primary px-4 py-2 text-[13px] text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="inline-flex items-center gap-2 rounded-[8px] bg-primary px-4 py-2 text-[13px] text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                       style={{ fontWeight: 510 }}
                     >
                       <PlusCircle size={14} />
@@ -291,7 +291,7 @@ export function AchievementsScreen({
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.04, duration: 0.22 }}
-                    className="rounded-[12px] border border-outline-variant/10 bg-surface-container-lowest shadow-lg shadow-black/[0.02]"
+                    className="page-panel"
                   >
                     <div className="flex items-start justify-between gap-3 px-5 pt-5 md:px-6">
                       <div className="flex flex-wrap items-center gap-2">
@@ -411,7 +411,7 @@ export function AchievementsScreen({
         </div>
 
         <div className="space-y-5 xl:sticky xl:top-40 xl:self-start">
-          <section className="rounded-[12px] border border-outline-variant/10 bg-surface px-6 py-6">
+          <section className="page-panel-muted px-6 py-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-outline">What belongs here</p>
             <div className="mt-5 space-y-4">
               <div className="flex gap-3">
@@ -430,7 +430,7 @@ export function AchievementsScreen({
           </section>
 
           {isAdmin && (
-            <section className="rounded-[12px] border border-outline-variant/10 bg-surface px-6 py-6">
+            <section className="page-panel-muted px-6 py-6">
               <button
                 onClick={() => setIsAdminPanelOpen((value) => !value)}
                 className="flex w-full items-center justify-between gap-4 rounded-[8px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"

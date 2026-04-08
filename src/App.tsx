@@ -191,6 +191,10 @@ function MainApp({
     navItems.push({ id: 'admin-dashboard', label: 'Admin Panel', icon: ShieldCheck });
   }
 
+  const primaryNavItems = navItems.filter(item => !['focus-zone', 'admin-dashboard'].includes(item.id));
+  const secondaryNavItems = navItems.filter(item => item.id === 'focus-zone');
+  const adminNavItems = navItems.filter(item => item.id === 'admin-dashboard');
+
   const navigateTo = (screen: Screen) => {
     const currentIdx = navItems.findIndex(n => n.id === currentScreen);
     const nextIdx = navItems.findIndex(n => n.id === screen);
@@ -324,26 +328,29 @@ function MainApp({
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-full w-60 flex-col border-r border-border bg-panel px-4 py-5 transition-transform duration-200 md:translate-x-0 ${
+        className={`shell-sidebar fixed left-0 top-0 z-50 flex h-full w-64 flex-col px-4 py-5 transition-transform duration-200 md:translate-x-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo */}
-        <div className="mb-6 flex items-center justify-between px-1">
+        <div className="mb-8 flex items-center justify-between px-1">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-[6px] bg-primary text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-primary/14 text-primary">
               <LayoutDashboard size={14} />
             </div>
-            <span
-              className="text-[15px] text-foreground"
-              style={{ fontWeight: 590, letterSpacing: '-0.02em' }}
-            >
-              QA Solo Hub
-            </span>
+            <div className="space-y-0.5">
+              <span className="block text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Workspace</span>
+              <span
+                className="block text-[15px] text-foreground"
+                style={{ fontWeight: 590, letterSpacing: '-0.02em' }}
+              >
+                QA Solo Hub
+              </span>
+            </div>
           </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="rounded-[6px] p-1.5 text-muted-foreground hover:bg-input hover:text-foreground md:hidden"
+            className="shell-utility-button md:hidden"
             aria-label="Close menu"
           >
             <X size={16} />
@@ -351,52 +358,124 @@ function MainApp({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-0.5">
-          {navItems.map(item => (
-            <motion.button
-              key={item.id}
-              whileTap={{ scale: 0.96 }}
-              transition={{ duration: 0.1 }}
-              onClick={() => {
-                navigateTo(item.id as Screen);
-                setIsSidebarOpen(false);
-                setSearchQuery('');
-                setSelectedItemId(null);
-                setIsSearchResultsOpen(false);
-              }}
-              className={`group/nav relative flex w-full items-center gap-3 rounded-[6px] px-2.5 py-2 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
-                currentScreen === item.id
-                  ? 'bg-accent text-primary'
-                  : 'text-muted-foreground hover:bg-input hover:text-foreground'
-              }`}
-            >
-              {/* Active left-border indicator */}
-              {currentScreen === item.id && (
-                <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
-              )}
-              <div
-                className={`flex h-7 w-7 items-center justify-center rounded-[6px] transition-colors ${
-                  currentScreen === item.id
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground group-hover/nav:text-foreground'
-                }`}
+        <nav className="flex-1 space-y-6">
+          <div className="space-y-1">
+            <p className="px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Core</p>
+            {primaryNavItems.map(item => (
+              <motion.button
+                key={item.id}
+                whileTap={{ scale: 0.96 }}
+                transition={{ duration: 0.1 }}
+                onClick={() => {
+                  navigateTo(item.id as Screen);
+                  setIsSidebarOpen(false);
+                  setSearchQuery('');
+                  setSelectedItemId(null);
+                  setIsSearchResultsOpen(false);
+                }}
+                className={`group/nav shell-nav-item ${currentScreen === item.id ? 'shell-nav-item-active' : ''}`}
               >
-                <item.icon size={15} />
-              </div>
-              <span className="text-[13px]" style={{ fontWeight: 510 }}>
-                {item.label}
-              </span>
-            </motion.button>
-          ))}
+                {currentScreen === item.id && (
+                  <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+                )}
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-[8px] transition-colors ${
+                    currentScreen === item.id
+                      ? 'bg-primary/16 text-primary'
+                      : 'text-muted-foreground group-hover/nav:text-foreground'
+                  }`}
+                >
+                  <item.icon size={15} />
+                </div>
+                <span className="text-[13px]" style={{ fontWeight: 510 }}>
+                  {item.label}
+                </span>
+              </motion.button>
+            ))}
+          </div>
+
+          {secondaryNavItems.length > 0 && (
+            <div className="space-y-1">
+              <p className="px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Secondary</p>
+              {secondaryNavItems.map(item => (
+                <motion.button
+                  key={item.id}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ duration: 0.1 }}
+                  onClick={() => {
+                    navigateTo(item.id as Screen);
+                    setIsSidebarOpen(false);
+                    setSearchQuery('');
+                    setSelectedItemId(null);
+                    setIsSearchResultsOpen(false);
+                  }}
+                  className={`group/nav shell-nav-item ${currentScreen === item.id ? 'shell-nav-item-active' : ''}`}
+                >
+                  {currentScreen === item.id && (
+                    <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+                  )}
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-[8px] transition-colors ${
+                      currentScreen === item.id
+                        ? 'bg-primary/16 text-primary'
+                        : 'text-muted-foreground group-hover/nav:text-foreground'
+                    }`}
+                  >
+                    <item.icon size={15} />
+                  </div>
+                  <span className="text-[13px]" style={{ fontWeight: 510 }}>
+                    {item.label}
+                  </span>
+                </motion.button>
+              ))}
+            </div>
+          )}
+
+          {adminNavItems.length > 0 && (
+            <div className="space-y-1">
+              <p className="px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
+              {adminNavItems.map(item => (
+                <motion.button
+                  key={item.id}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ duration: 0.1 }}
+                  onClick={() => {
+                    navigateTo(item.id as Screen);
+                    setIsSidebarOpen(false);
+                    setSearchQuery('');
+                    setSelectedItemId(null);
+                    setIsSearchResultsOpen(false);
+                  }}
+                  className={`group/nav shell-nav-item ${currentScreen === item.id ? 'shell-nav-item-active' : ''}`}
+                >
+                  {currentScreen === item.id && (
+                    <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+                  )}
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-[8px] transition-colors ${
+                      currentScreen === item.id
+                        ? 'bg-primary/16 text-primary'
+                        : 'text-muted-foreground group-hover/nav:text-foreground'
+                    }`}
+                  >
+                    <item.icon size={15} />
+                  </div>
+                  <span className="text-[13px]" style={{ fontWeight: 510 }}>
+                    {item.label}
+                  </span>
+                </motion.button>
+              ))}
+            </div>
+          )}
         </nav>
 
         {/* Bottom actions */}
-        <div className="mt-auto space-y-2 pt-4">
+        <div className="mt-auto space-y-3 pt-5">
           <motion.button
             whileTap={{ scale: 0.96 }}
             transition={{ duration: 0.1 }}
             onClick={() => setActiveModal({ type: 'selector' })}
-            className="flex w-full items-center justify-center gap-2 rounded-[6px] bg-primary py-2.5 text-[13px] text-white transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="flex w-full items-center justify-center gap-2 rounded-[8px] bg-primary py-2.5 text-[13px] text-white transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             style={{ fontWeight: 510 }}
           >
             <PlusCircle size={15} />
@@ -405,7 +484,7 @@ function MainApp({
 
           {/* User footer */}
           <div
-            className="flex cursor-pointer items-center gap-2.5 rounded-[6px] border border-border bg-input px-2.5 py-2 transition-colors hover:bg-surface-container-low"
+            className="flex cursor-pointer items-center gap-2.5 rounded-[10px] border border-border/80 bg-input/80 px-3 py-2.5 transition-colors hover:bg-surface-container-low"
             onClick={() => setActiveModal({ type: 'profile' })}
           >
             <div className="relative h-7 w-7 shrink-0">
@@ -430,7 +509,7 @@ function MainApp({
             </div>
             <button
               onClick={e => { e.stopPropagation(); logout(); }}
-              className="shrink-0 rounded-[4px] p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="shrink-0 rounded-[6px] p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               title="Sign out"
             >
               <LogOut size={13} />
@@ -455,14 +534,14 @@ function MainApp({
 
       {/* Topbar */}
       <header
-        className={`glass fixed left-0 right-0 top-0 flex h-14 items-center justify-between px-4 sm:px-5 md:left-60 md:px-6 ${
+        className={`glass fixed left-0 right-0 top-0 flex h-16 items-center justify-between px-4 sm:px-5 md:left-64 md:px-7 ${
           isSearchResultsOpen ? 'z-[60]' : 'z-30'
         }`}
       >
-        <div className="flex max-w-md flex-1 items-center gap-3">
+        <div className="flex max-w-xl flex-1 items-center gap-3">
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="rounded-[6px] p-1.5 text-muted-foreground hover:bg-input hover:text-foreground md:hidden"
+            className="shell-utility-button md:hidden"
             aria-label="Open menu"
           >
             <Menu size={18} />
@@ -471,7 +550,7 @@ function MainApp({
           {/* Cmd+K palette trigger — desktop */}
           <button
             onClick={() => setIsCommandPaletteOpen(true)}
-            className="hidden items-center gap-2 rounded-[6px] border border-border bg-input px-3 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-surface-container-low md:flex"
+            className="shell-command-anchor hidden md:flex"
           >
             <Search size={13} />
             <span>Search or jump to…</span>
@@ -516,7 +595,7 @@ function MainApp({
           <div className="group relative">
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className="rounded-[6px] border border-border bg-input p-1.5 text-muted-foreground transition-colors hover:bg-surface-container-low hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="shell-utility-button"
               aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
@@ -530,7 +609,7 @@ function MainApp({
           <div className="group relative">
             <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="relative rounded-[6px] border border-border bg-input p-1.5 text-muted-foreground transition-colors hover:bg-surface-container-low hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="shell-utility-button relative"
               aria-label="Notifications"
             >
               <Bell size={15} />
@@ -609,7 +688,7 @@ function MainApp({
           </div>
 
           {/* User chip — desktop only */}
-          <div className="hidden items-center gap-2 rounded-[6px] border border-border bg-input px-2 py-1.5 sm:flex">
+          <div className="hidden items-center gap-2 rounded-[10px] border border-border/80 bg-input/80 px-2.5 py-1.5 sm:flex">
             <div className="text-right">
               <p className="text-[12px] text-foreground" style={{ fontWeight: 510 }}>
                 {profile?.displayName}
@@ -631,14 +710,14 @@ function MainApp({
             </div>
             <button
               onClick={() => setActiveModal({ type: 'profile' })}
-              className="rounded-[4px] p-1 text-muted-foreground transition-colors hover:bg-surface-container-low hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="rounded-[6px] p-1 text-muted-foreground transition-colors hover:bg-surface-container-low hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               title="Profile Settings"
             >
               <User size={14} />
             </button>
             <button
               onClick={logout}
-              className="rounded-[4px] p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="rounded-[6px] p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               title="Logout"
             >
               <LogOut size={14} />
@@ -649,7 +728,7 @@ function MainApp({
 
       {/* Main content */}
       <main
-        className={`relative min-h-screen px-4 pb-24 pt-20 sm:px-6 md:pb-12 md:pl-64 md:pr-8 md:pt-[5.5rem] ${
+        className={`shell-canvas relative min-h-screen px-4 pb-24 pt-22 sm:px-6 md:pb-12 md:pl-[17.5rem] md:pr-8 md:pt-[6.25rem] ${
           currentScreen === 'bug-wall' ? 'page-glow-bug' :
           currentScreen === 'tips-tricks' ? 'page-glow-tips' :
           currentScreen === 'knowledge-sharing' ? 'page-glow-knowledge' :
@@ -665,7 +744,7 @@ function MainApp({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: navDirection * -24 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="mx-auto max-w-7xl"
+            className="mx-auto max-w-[76rem]"
           >
             <Suspense fallback={<ScreenLoader />}>
               {currentScreen === 'dashboard' && (

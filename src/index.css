@@ -95,7 +95,139 @@
 @layer utilities {
   /* Flat canvas — replaces warm radial gradient wash */
   .app-wash {
-    background: var(--background);
+    background:
+      radial-gradient(ellipse 42% 28% at 14% 0%, rgba(113, 112, 255, 0.08) 0%, transparent 72%),
+      radial-gradient(ellipse 28% 22% at 88% 8%, rgba(113, 112, 255, 0.05) 0%, transparent 70%),
+      var(--background);
+  }
+
+  .shell-sidebar {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%),
+      var(--panel);
+    border-right: 1px solid var(--border);
+  }
+
+  .shell-nav-item {
+    position: relative;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0.625rem;
+    padding: 0.55rem 0.65rem;
+    text-align: left;
+    color: var(--muted-foreground);
+    transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+
+  .shell-nav-item:hover {
+    background: var(--input);
+    color: var(--foreground);
+  }
+
+  .shell-nav-item-active {
+    background: rgba(113, 112, 255, 0.12);
+    color: var(--primary);
+  }
+
+  .shell-command-anchor {
+    width: min(32rem, 100%);
+    align-items: center;
+    gap: 0.625rem;
+    border-radius: 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.035);
+    padding: 0.7rem 0.8rem;
+    color: var(--muted-foreground);
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+
+  .shell-command-anchor:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(113, 112, 255, 0.18);
+    color: var(--foreground);
+  }
+
+  .shell-utility-button {
+    border-radius: 0.625rem;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.4rem;
+    color: var(--muted-foreground);
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+
+  .shell-utility-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(113, 112, 255, 0.16);
+    color: var(--foreground);
+  }
+
+  .shell-canvas {
+    max-width: 100vw;
+  }
+
+  .page-hero {
+    border-radius: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.025);
+    box-shadow:
+      rgba(0, 0, 0, 0.18) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.24) 0px 12px 32px;
+  }
+
+  .page-kicker {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .page-title {
+    color: var(--foreground);
+    font-size: 1.9rem;
+    font-weight: 590;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+  }
+
+  .page-subtitle {
+    max-width: 42rem;
+    color: var(--muted-foreground);
+    font-size: 0.95rem;
+    line-height: 1.8;
+  }
+
+  .page-toolbar {
+    border-radius: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(8, 9, 10, 0.78);
+    backdrop-filter: blur(18px);
+  }
+
+  .page-panel {
+    border-radius: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow:
+      rgba(0, 0, 0, 0.16) 0px 0px 0px 1px,
+      rgba(0, 0, 0, 0.22) 0px 10px 28px;
+  }
+
+  .page-panel-muted {
+    border-radius: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .page-empty {
+    border-radius: 0.875rem;
+    border: 1px solid var(--border);
+    background: var(--card);
+    padding: 3rem 1.5rem;
+    text-align: center;
   }
 
   /* Linear-style card surface */
@@ -109,8 +241,9 @@
 
   /* Solid panel surface — replaces glassmorphism */
   .glass {
-    background-color: var(--panel);
+    background-color: rgba(15, 16, 17, 0.82);
     border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(18px);
   }
 
   /* Linear card with layered elevation */

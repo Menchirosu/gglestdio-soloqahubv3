@@ -92,8 +92,9 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="page-hero flex items-center justify-between px-6 py-6">
         <div className="space-y-1">
+          <p className="page-kicker">Admin</p>
           <h1 className="text-3xl font-bold text-on-surface">Admin Control Center</h1>
           <p className="text-on-surface-variant">Manage user access and see who is carrying the strongest QA signal this month.</p>
         </div>
@@ -104,21 +105,21 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-surface-container-low p-6 rounded-3xl border border-outline-variant/10 space-y-2">
+        <div className="page-panel-muted p-6 rounded-[14px] space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-outline uppercase tracking-widest">Pending</span>
             <Clock size={16} className="text-primary" />
           </div>
           <p className="text-4xl font-bold text-on-surface">{pendingUsers.length}</p>
         </div>
-        <div className="bg-surface-container-low p-6 rounded-3xl border border-outline-variant/10 space-y-2">
+        <div className="page-panel-muted p-6 rounded-[14px] space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-outline uppercase tracking-widest">Approved</span>
             <UserCheck size={16} className="text-emerald-500" />
           </div>
           <p className="text-4xl font-bold text-on-surface">{allUsers.filter((user) => user.status === 'approved').length}</p>
         </div>
-        <div className="bg-surface-container-low p-6 rounded-3xl border border-outline-variant/10 space-y-2">
+        <div className="page-panel-muted p-6 rounded-[14px] space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-outline uppercase tracking-widest">Total Users</span>
             <Users size={16} className="text-on-surface" />
@@ -138,7 +139,7 @@ export const AdminDashboard: React.FC = () => {
 
         {topQa ? (
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-6">
-            <div className="rounded-[12px] border border-primary/15 bg-surface-container-low p-6">
+            <div className="page-panel p-6 border-primary/15">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-3">
                   <div className="inline-flex items-center gap-1.5 rounded-[4px] bg-primary/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-primary" style={{ fontWeight: 590 }}>
@@ -189,7 +190,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-[12px] border border-border bg-surface-container-low p-6">
+            <div className="page-panel-muted p-6">
               <div className="flex items-center gap-2">
                 <Sparkles size={16} className="text-primary" />
                 <h3 className="text-sm text-on-surface" style={{ fontWeight: 590 }}>Top 5 Members</h3>
