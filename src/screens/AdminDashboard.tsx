@@ -12,6 +12,7 @@ export const AdminDashboard: React.FC = () => {
   const [proposals, setProposals] = useState<RankActivityItem[]>([]);
   const [achievements, setAchievements] = useState<RankActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
@@ -20,28 +21,55 @@ export const AdminDashboard: React.FC = () => {
     const proposalsQuery = query(collection(db, 'proposals'), orderBy('createdAt', 'desc'));
     const achievementsQuery = query(collection(db, 'achievements'), orderBy('createdAt', 'desc'));
 
-    const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
-      const users = snapshot.docs.map((doc) => doc.data() as UserProfile);
-      setAllUsers(users);
-      setPendingUsers(users.filter((user) => user.status === 'pending'));
+    const handleSnapshotError = (label: string, error: unknown) => {
+      console.error(`Error loading admin ${label}:`, error);
+      setLoadError(`Failed to load admin ${label}. Check Firestore permissions and indexes.`);
       setLoading(false);
-    });
+    };
 
-    const unsubscribeBugs = onSnapshot(bugsQuery, (snapshot) => {
-      setBugs(snapshot.docs.map((doc) => doc.data() as RankActivityItem));
-    });
+    const unsubscribeUsers = onSnapshot(
+      usersQuery,
+      (snapshot) => {
+        const users = snapshot.docs.map((doc) => doc.data() as UserProfile);
+        setAllUsers(users);
+        setPendingUsers(users.filter((user) => user.status === 'pending'));
+        setLoadError(null);
+        setLoading(false);
+      },
+      (error) => handleSnapshotError('users', error)
+    );
 
-    const unsubscribeTips = onSnapshot(tipsQuery, (snapshot) => {
-      setTips(snapshot.docs.map((doc) => doc.data() as RankActivityItem));
-    });
+    const unsubscribeBugs = onSnapshot(
+      bugsQuery,
+      (snapshot) => {
+        setBugs(snapshot.docs.map((doc) => doc.data() as RankActivityItem));
+      },
+      (error) => handleSnapshotError('bugs', error)
+    );
 
-    const unsubscribeProposals = onSnapshot(proposalsQuery, (snapshot) => {
-      setProposals(snapshot.docs.map((doc) => doc.data() as RankActivityItem));
-    });
+    const unsubscribeTips = onSnapshot(
+      tipsQuery,
+      (snapshot) => {
+        setTips(snapshot.docs.map((doc) => doc.data() as RankActivityItem));
+      },
+      (error) => handleSnapshotError('tips', error)
+    );
 
-    const unsubscribeAchievements = onSnapshot(achievementsQuery, (snapshot) => {
-      setAchievements(snapshot.docs.map((doc) => doc.data() as RankActivityItem));
-    });
+    const unsubscribeProposals = onSnapshot(
+      proposalsQuery,
+      (snapshot) => {
+        setProposals(snapshot.docs.map((doc) => doc.data() as RankActivityItem));
+      },
+      (error) => handleSnapshotError('knowledge posts', error)
+    );
+
+    const unsubscribeAchievements = onSnapshot(
+      achievementsQuery,
+      (snapshot) => {
+        setAchievements(snapshot.docs.map((doc) => doc.data() as RankActivityItem));
+      },
+      (error) => handleSnapshotError('achievements', error)
+    );
 
     return () => {
       unsubscribeUsers();
@@ -86,6 +114,17 @@ export const AdminDashboard: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="page-empty text-left">
+          <h2 className="text-lg text-foreground" style={{ fontWeight: 590 }}>Admin panel failed to load</h2>
+          <p className="mt-2 text-sm leading-7 text-muted-foreground">{loadError}</p>
+        </div>
       </div>
     );
   }

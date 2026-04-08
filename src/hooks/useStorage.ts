@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { BugStory, Tip, Proposal, Notification, Comment, Achievement } from '../types';
 import { db, auth, createBugStory, updateBugReactions, updateTipReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType, getFirebaseDebugInfo } from '../firebase';
 import { collection, onSnapshot, query, orderBy, where, writeBatch, doc, setDoc, serverTimestamp, updateDoc, deleteDoc, collectionGroup } from 'firebase/firestore';
-import { sendBroadcastEmail, sendUserEmail } from '../utils/emailNotifier';
 import { useAuth } from '../AuthContext';
 
 function toDate(ts: any): number {
@@ -207,12 +206,6 @@ export function useStorage(activeScreen?: string) {
       isRead: false,
       time: 'Just now'
     });
-    sendBroadcastEmail(
-      `🐛 New Bug Story on QHUB`,
-      bug.author,
-      `${bug.author} shared a new bug story: "${bug.title}". Check it out on the Bug Wall!`,
-      auth.currentUser?.uid,
-    );
   };
 
   const addTip = async (tip: Omit<Tip, 'id' | 'time'>) => {
@@ -237,12 +230,6 @@ export function useStorage(activeScreen?: string) {
       isRead: false,
       time: 'Just now'
     });
-    sendBroadcastEmail(
-      `💡 New Tip & Trick on QHUB`,
-      tip.author,
-      `${tip.author} shared a new tip: "${tip.title}". Check it out in Tips & Tricks!`,
-      auth.currentUser?.uid,
-    );
   };
 
 const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) => {
@@ -268,12 +255,6 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
       isRead: false,
       time: 'Just now'
     });
-    sendBroadcastEmail(
-      `📚 New Knowledge Sharing on QHUB`,
-      author,
-      `${author} proposed a new knowledge sharing session: "${proposal.title}". Check it out!`,
-      auth.currentUser?.uid,
-    );
   };
 
   const addAchievement = async (achievement: Omit<Achievement, 'id' | 'date' | 'author'>) => {
@@ -342,13 +323,6 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
         isRead: false,
         time: 'Just now'
       });
-      sendUserEmail(
-        bug.authorId,
-        auth.currentUser?.uid || '',
-        `${emoji} Someone reacted to your story on QHUB`,
-        currentUserName,
-        `${currentUserName} reacted ${emoji} to your bug story: "${bug.title}".`,
-      );
     }
   };
 
@@ -372,13 +346,6 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
         isRead: false,
         time: 'Just now'
       });
-      sendUserEmail(
-        tip.authorId,
-        auth.currentUser?.uid || '',
-        `${emoji} Someone reacted to your tip on QHUB`,
-        currentUserName,
-        `${currentUserName} reacted ${emoji} to your tip: "${tip.title}".`,
-      );
     }
   };
 
@@ -411,13 +378,6 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
           isRead: false,
           time: 'Just now'
         });
-        sendUserEmail(
-          bug.authorId,
-          authorId,
-          `💬 New comment on your story on QHUB`,
-          author,
-          `${author} commented on your bug story: "${bug.title}".`,
-        );
       }
     } catch (notifError) {
       console.error("Failed to create notification for comment", notifError);
@@ -451,13 +411,6 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
         isRead: false,
         time: 'Just now'
       });
-      sendUserEmail(
-        comment.authorId,
-        currentUserId,
-        `❤️ Someone liked your comment on QHUB`,
-        actor,
-        `${actor} liked your comment on the bug story: "${bug.title}".`,
-      );
     }
   };
 
@@ -481,13 +434,6 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
         isRead: false,
         time: 'Just now'
       });
-      sendUserEmail(
-        comment.authorId,
-        reply.authorId || '',
-        `↩️ New reply to your comment on QHUB`,
-        reply.author,
-        `${reply.author} replied to your comment on the bug story: "${bug.title}".`,
-      );
     }
   };
 

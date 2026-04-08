@@ -69,7 +69,6 @@ export interface UserProfile {
   status: 'pending' | 'approved' | 'rejected';
   role: 'user' | 'admin';
   createdAt: Timestamp;
-  emailNotifications?: boolean;
 }
 
 // Error Handling
@@ -224,14 +223,6 @@ export const updateDisplayName = async (uid: string, displayName: string) => {
 export const updatePhotoURL = async (uid: string, photoURL: string) => {
   try {
     await updateDoc(doc(db, 'users', uid), { photoURL });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, `users/${uid}`);
-  }
-};
-
-export const updateEmailNotifications = async (uid: string, enabled: boolean) => {
-  try {
-    await updateDoc(doc(db, 'users', uid), { emailNotifications: enabled });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `users/${uid}`);
   }

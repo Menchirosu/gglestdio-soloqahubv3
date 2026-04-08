@@ -553,8 +553,7 @@ function MainApp({
             className="shell-command-anchor hidden md:flex"
           >
             <Search size={13} />
-            <span>Search or jump to…</span>
-            <kbd className="ml-2 rounded-[4px] border border-border bg-panel px-1.5 py-0.5 text-[11px]">⌘K</kbd>
+            <span>Search or jump to...</span>`r`n            <kbd className="ml-auto rounded-[6px] border border-border/80 bg-background/70 px-1.5 py-0.5 text-[11px] text-muted-foreground">Ctrl K</kbd>
           </button>
 
           <form onSubmit={handleSearch} className="relative w-full md:hidden">
@@ -568,7 +567,7 @@ function MainApp({
                 setIsSearchResultsOpen(e.target.value.trim().length > 1);
               }}
               onFocus={() => { if (searchQuery.trim().length > 1) setIsSearchResultsOpen(true); }}
-              placeholder="Search bugs, tips, wins…"
+              placeholder="Search bugs, tips, wins..."
               className="w-full rounded-[6px] border border-border bg-input py-1.5 pl-8 pr-8 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-ring/50 focus:outline-none focus:ring-1 focus:ring-ring/30"
             />
             {searchQuery && (
@@ -966,3 +965,4 @@ function MainApp({
     </div>
   );
 }
+

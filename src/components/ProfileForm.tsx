@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../AuthContext';
-import { updateDisplayName, updatePhotoURL, updateEmailNotifications } from '../firebase';
+import { updateDisplayName, updatePhotoURL } from '../firebase';
 import { useToast } from './Toast';
-import { Upload, RefreshCw, User, Bell, BellOff } from 'lucide-react';
+import { Upload, RefreshCw, User } from 'lucide-react';
 
 interface ProfileFormProps {
   onClose: () => void;
@@ -26,7 +26,6 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onClose, onUpdateAvata
   const { profile } = useAuth();
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
   const [selectedPhotoURL, setSelectedPhotoURL] = useState(profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`);
-  const [emailNotifications, setEmailNotifications] = useState(profile?.emailNotifications !== false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
@@ -67,10 +66,6 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onClose, onUpdateAvata
         updates.push(updatePhotoURL(profile.uid, selectedPhotoURL));
       }
 
-      if (emailNotifications !== (profile.emailNotifications !== false)) {
-        updates.push(updateEmailNotifications(profile.uid, emailNotifications));
-      }
-
       if (updates.length > 0) {
         await Promise.all(updates);
         if (selectedPhotoURL !== profile.photoURL) {
@@ -87,7 +82,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onClose, onUpdateAvata
     }
   };
 
-  const isChanged = displayName.trim() !== profile?.displayName || selectedPhotoURL !== profile?.photoURL || emailNotifications !== (profile?.emailNotifications !== false);
+  const isChanged = displayName.trim() !== profile?.displayName || selectedPhotoURL !== profile?.photoURL;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -148,25 +143,6 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onClose, onUpdateAvata
           maxLength={50}
           required
         />
-      </div>
-
-      <div className="flex items-center justify-between p-4 bg-surface-container-high rounded-2xl">
-        <div className="flex items-center gap-3">
-          {emailNotifications
-            ? <Bell size={18} className="text-primary shrink-0" />
-            : <BellOff size={18} className="text-outline shrink-0" />}
-          <div>
-            <p className="text-sm font-bold text-on-surface">Email Notifications</p>
-            <p className="text-xs text-on-surface-variant">Receive emails when someone reacts or comments</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setEmailNotifications(v => !v)}
-          className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ml-4 ${emailNotifications ? 'bg-primary' : 'bg-outline/30'}`}
-        >
-          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${emailNotifications ? 'left-[22px]' : 'left-0.5'}`} />
-        </button>
       </div>
 
       <div className="flex gap-3 pt-4">
