@@ -561,6 +561,7 @@ function MainApp() {
                       achievements={achievements}
                       searchQuery={searchQuery}
                       activeUsers={activeUsers}
+                      userName={profile?.displayName ?? ''}
                     />
                   )}
                   {currentScreen === 'bug-wall' && (
