@@ -1,17 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Cpu, AlertTriangle, Zap, X, ChevronRight, Activity, Users, TrendingDown } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { Icon } from '@iconify/react';
 import { BugStory, Tip } from '../types';
-import { timeAgo } from '../utils/timeAgo';
 
 type SignalType = 'regression' | 'flakiness' | 'unowned' | 'ai-anomaly';
+type Severity = 'critical' | 'warning' | 'info';
 
 interface Signal {
   id: string;
   type: SignalType;
   title: string;
   summary: string;
-  severity: 'critical' | 'warning' | 'info';
+  severity: Severity;
   count: number;
   detail: {
     affectedItems: string[];
@@ -21,22 +21,41 @@ interface Signal {
   };
 }
 
+// Colorblind-safe severity encoding: icon + shape + label, not color alone.
+const SEVERITY_META: Record<Severity, { icon: string; label: string; tone: string; ring: string }> = {
+  critical: {
+    icon: 'solar:bolt-bold-duotone',
+    label: 'Critical',
+    tone: 'text-[#C73D35]',
+    ring: 'ring-[#C73D35]/25',
+  },
+  warning: {
+    icon: 'solar:danger-triangle-bold-duotone',
+    label: 'Warning',
+    tone: 'text-[#C86948]',
+    ring: 'ring-[#C86948]/25',
+  },
+  info: {
+    icon: 'solar:widget-2-bold-duotone',
+    label: 'Info',
+    tone: 'text-[#5A8B58]',
+    ring: 'ring-[#5A8B58]/25',
+  },
+};
+
+const TYPE_META: Record<SignalType, { icon: string; label: string }> = {
+  regression: { icon: 'solar:graph-down-bold-duotone', label: 'Regression Cluster' },
+  flakiness: { icon: 'solar:test-tube-minimalistic-bold-duotone', label: 'Flakiness Spike' },
+  unowned: { icon: 'solar:user-cross-bold-duotone', label: 'Unowned Bugs' },
+  'ai-anomaly': { icon: 'solar:magic-stick-3-bold-duotone', label: 'AI Anomaly' },
+};
+
 function SignalTypePill({ type }: { type: SignalType }) {
-  const styles: Record<SignalType, string> = {
-    regression: 'bg-[var(--signal-critical)]/10 text-[var(--signal-critical)] border-[var(--signal-critical)]/20',
-    flakiness: 'bg-[var(--signal-warning)]/10 text-[var(--signal-warning)] border-[var(--signal-warning)]/20',
-    unowned: 'bg-secondary text-muted-foreground border-border',
-    'ai-anomaly': 'bg-primary/10 text-primary border-primary/20',
-  };
-  const labels: Record<SignalType, string> = {
-    regression: 'Regression Cluster',
-    flakiness: 'Flakiness Spike',
-    unowned: 'Unowned Bugs',
-    'ai-anomaly': 'AI Anomaly',
-  };
+  const meta = TYPE_META[type];
   return (
-    <span className={`inline-flex items-center rounded-[4px] border px-1.5 py-0.5 text-[10px] ${styles[type]}`} style={{ fontWeight: 500 }}>
-      {labels[type]}
+    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary/40 px-2 py-0.5 text-[10px] text-foreground/80" style={{ fontWeight: 500 }}>
+      <Icon icon={meta.icon} width={11} height={11} />
+      {meta.label}
     </span>
   );
 }
@@ -49,21 +68,24 @@ interface SignalCardProps {
 }
 
 function SignalCard({ signal, isSelected, onClick }: SignalCardProps) {
-  const severityIcon = {
-    critical: <Zap size={13} className="text-[var(--signal-critical)]" />,
-    warning: <AlertTriangle size={13} className="text-[var(--signal-warning)]" />,
-    info: <Cpu size={13} className="text-primary" />,
-  }[signal.severity];
-
+  const sev = SEVERITY_META[signal.severity];
   return (
     <motion.button
       layout
       onClick={onClick}
-      className={`w-full flex items-start gap-3 px-4 py-3 text-left border-b border-border/50 hover:bg-secondary/20 transition-colors ${
-        isSelected ? 'bg-primary/5 border-l-2 border-l-primary' : 'border-l-2 border-l-transparent'
+      className={`w-full flex items-start gap-3 px-4 py-3 text-left border-b border-border/60 transition-colors ${
+        isSelected
+          ? 'bg-primary/5 border-l-2 border-l-primary'
+          : 'border-l-2 border-l-transparent hover:bg-secondary/30'
       }`}
     >
-      <div className="shrink-0 mt-0.5">{severityIcon}</div>
+      <span
+        className={`shrink-0 mt-0.5 flex h-6 w-6 items-center justify-center rounded-full ring-1 ${sev.ring} ${sev.tone}`}
+        aria-label={sev.label}
+        title={sev.label}
+      >
+        <Icon icon={sev.icon} width={14} height={14} />
+      </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <SignalTypePill type={signal.type} />
@@ -73,7 +95,7 @@ function SignalCard({ signal, isSelected, onClick }: SignalCardProps) {
         <p className="text-[13px] text-foreground" style={{ fontWeight: 510 }}>{signal.title}</p>
         <p className="mt-0.5 text-[12px] text-muted-foreground leading-relaxed line-clamp-2">{signal.summary}</p>
       </div>
-      <ChevronRight size={13} className="shrink-0 mt-1 text-muted-foreground/40" />
+      <Icon icon="solar:alt-arrow-right-linear" width={13} height={13} className="shrink-0 mt-1 text-muted-foreground/50" />
     </motion.button>
   );
 }
@@ -84,36 +106,48 @@ interface SignalInspectorProps {
 }
 
 function SignalInspector({ signal, onClose }: SignalInspectorProps) {
+  const reduce = useReducedMotion();
+  const sev = SEVERITY_META[signal.severity];
   return (
     <motion.div
-      initial={{ opacity: 0, x: 16 }}
+      initial={reduce ? false : { opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 16 }}
-      transition={{ duration: 0.15, ease: 'easeOut' }}
+      exit={reduce ? { opacity: 0 } : { opacity: 0, x: 12 }}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
       className="flex flex-col h-full border-l border-border bg-card overflow-y-auto custom-scrollbar"
       style={{ width: 'var(--inspector-width, 340px)', minWidth: '280px' }}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2 px-4 py-3 border-b border-border shrink-0">
         <div className="flex-1 min-w-0">
-          <SignalTypePill type={signal.type} />
-          <p className="mt-1.5 text-[13px] text-foreground leading-snug" style={{ fontWeight: 590 }}>
+          <div className="flex items-center gap-2">
+            <SignalTypePill type={signal.type} />
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ring-1 ${sev.ring} ${sev.tone}`}
+              style={{ fontWeight: 510 }}
+            >
+              <Icon icon={sev.icon} width={10} height={10} />
+              {sev.label}
+            </span>
+          </div>
+          <p className="mt-2 text-[14px] text-foreground leading-snug" style={{ fontWeight: 590 }}>
             {signal.title}
           </p>
         </div>
         <button
           onClick={onClose}
-          className="shrink-0 flex h-6 w-6 items-center justify-center rounded-[4px] text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          className="shrink-0 flex h-6 w-6 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          aria-label="Close"
         >
-          <X size={13} />
+          <Icon icon="solar:close-circle-linear" width={14} height={14} />
         </button>
       </div>
 
-      {/* AI summary */}
+      {/* AI summary (whisper) */}
       <div className="px-4 py-3 border-b border-border shrink-0">
-        <div className="flex items-start gap-2 rounded-[6px] bg-primary/8 border border-primary/15 px-3 py-2">
-          <Cpu size={12} className="text-primary mt-0.5 shrink-0" />
-          <p className="text-[12px] text-primary/90 leading-relaxed">{signal.detail.aiSummary}</p>
+        <div className="flex items-start gap-2 rounded-[8px] bg-primary/8 border border-primary/15 px-3 py-2">
+          <Icon icon="solar:magic-stick-3-bold-duotone" width={13} height={13} className="text-primary mt-0.5 shrink-0" />
+          <p className="whisper text-[12px] text-primary/90 leading-relaxed" style={{ fontStyle: 'italic' }}>{signal.detail.aiSummary}</p>
         </div>
       </div>
 
@@ -125,7 +159,7 @@ function SignalInspector({ signal, onClose }: SignalInspectorProps) {
         <div className="flex flex-col gap-1.5">
           {signal.detail.suggestedActions.map((action, i) => (
             <div key={i} className="flex items-center gap-2 text-[12px] text-foreground/80">
-              <span className="h-1 w-1 rounded-full bg-muted-foreground/50 shrink-0" />
+              <Icon icon="solar:check-circle-linear" width={12} height={12} className="text-muted-foreground/60 shrink-0" />
               {action}
             </div>
           ))}
@@ -147,7 +181,7 @@ function SignalInspector({ signal, onClose }: SignalInspectorProps) {
         </p>
         <div className="space-y-1.5">
           {signal.detail.affectedItems.map((item, i) => (
-            <div key={i} className="rounded-[6px] border border-border bg-secondary/30 px-3 py-2 text-[12px] text-foreground/80">
+            <div key={i} className="rounded-[8px] border border-border bg-secondary/30 px-3 py-2 text-[12px] text-foreground/80">
               {item}
             </div>
           ))}
@@ -163,6 +197,7 @@ interface SignalsScreenProps {
 }
 
 export function SignalsScreen({ bugs }: SignalsScreenProps) {
+  const reduce = useReducedMotion();
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
 
   // Derive real signals from actual bug data where possible, fill rest with placeholders
@@ -199,7 +234,7 @@ export function SignalsScreen({ bugs }: SignalsScreenProps) {
         id: 'regression-cluster',
         type: 'regression',
         title: `${clusterTag[1].length} bugs in "${clusterTag[0]}" area`,
-        summary: `Multiple bug stories filed under the same tag — possible regression cluster worth investigating.`,
+        summary: 'Multiple bug stories filed under the same tag — possible regression cluster worth investigating.',
         severity: clusterTag[1].length >= 4 ? 'critical' : 'warning',
         count: clusterTag[1].length,
         detail: {
@@ -216,7 +251,7 @@ export function SignalsScreen({ bugs }: SignalsScreenProps) {
         id: 'unowned-bugs',
         type: 'unowned',
         title: `${unownedBugs.length} bug${unownedBugs.length > 1 ? 's' : ''} with no activity`,
-        summary: `These bug stories have no comments or reactions. They may be getting missed.`,
+        summary: 'These bug stories have no comments or reactions. They may be getting missed.',
         severity: 'warning',
         count: unownedBugs.length,
         detail: {
@@ -233,7 +268,7 @@ export function SignalsScreen({ bugs }: SignalsScreenProps) {
         id: 'recent-volume',
         type: 'ai-anomaly',
         title: `${recentBugs.length} bugs filed in the last 7 days`,
-        summary: `Elevated bug volume this week. May indicate a regression or deployment issue.`,
+        summary: 'Elevated bug volume this week. May indicate a regression or deployment issue.',
         severity: recentBugs.length >= 5 ? 'critical' : 'info',
         count: recentBugs.length,
         detail: {
@@ -267,67 +302,74 @@ export function SignalsScreen({ bugs }: SignalsScreenProps) {
   // Stat counters
   const criticalCount = signals.filter(s => s.severity === 'critical').length;
   const warningCount = signals.filter(s => s.severity === 'warning').length;
+  const realCount = signals.filter(s => s.count > 0).length;
 
   const stats = [
-    { label: 'Active signals', value: signals.length, icon: Activity },
-    { label: 'Critical', value: criticalCount, icon: Zap },
-    { label: 'Warnings', value: warningCount, icon: AlertTriangle },
-    { label: 'Bugs tracked', value: bugs.length, icon: TrendingDown },
+    { label: 'Active signals', value: realCount, icon: 'solar:pulse-bold-duotone' },
+    { label: 'Critical', value: criticalCount, icon: 'solar:bolt-bold-duotone' },
+    { label: 'Warnings', value: warningCount, icon: 'solar:danger-triangle-bold-duotone' },
+    { label: 'Bugs tracked', value: bugs.length, icon: 'solar:bug-bold-duotone' },
   ];
 
   return (
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-[20px] text-foreground" style={{ fontWeight: 590, letterSpacing: '-0.03em' }}>
-          Signals
+        <h1 className="page-title-serif text-[28px] text-foreground">
+          <span style={{ fontStyle: 'italic' }}>Signals</span>
         </h1>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">
+        <p className="mt-1 text-[13px] text-muted-foreground">
           Live system health and pattern detection.
         </p>
       </div>
 
       {/* Stat strip */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {stats.map((stat, i) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.18, delay: i * 0.04 }}
-              className="flex items-center gap-3 rounded-[8px] border border-border bg-card px-4 py-3"
-            >
-              <Icon size={14} className="text-muted-foreground shrink-0" />
-              <div>
-                <p className="text-[20px] text-foreground tabular-nums" style={{ fontWeight: 620, letterSpacing: '-0.03em' }}>
-                  {stat.value}
-                </p>
-                <p className="text-[11px] text-muted-foreground">{stat.label}</p>
-              </div>
-            </motion.div>
-          );
-        })}
+        {stats.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={reduce ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, delay: i * 0.04 }}
+            className="flex items-center gap-3 rounded-[12px] border border-border bg-card px-4 py-3"
+          >
+            <Icon icon={stat.icon} width={16} height={16} className="text-muted-foreground shrink-0" />
+            <div>
+              <p className="font-serif italic tabular-nums text-[28px] text-foreground leading-none" style={{ fontWeight: 500, letterSpacing: '-0.02em' }}>
+                {stat.value}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{stat.label}</p>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
       {/* Signal feed + inspector */}
       <div className="flex gap-0 min-h-[400px]">
         {/* Signal feed */}
-        <div className={`flex flex-col rounded-[8px] border border-border bg-card overflow-hidden ${selectedSignal ? 'flex-1' : 'w-full'}`}>
+        <div className={`flex flex-col rounded-[12px] border border-border bg-card overflow-hidden ${selectedSignal ? 'flex-1' : 'w-full'}`}>
           <div className="px-4 py-2.5 border-b border-border shrink-0">
             <p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground" style={{ fontWeight: 510 }}>
               Signal Feed — {signals.length} active
             </p>
           </div>
-          {signals.map(signal => (
-            <SignalCard
-              key={signal.id}
-              signal={signal}
-              isSelected={selectedSignal?.id === signal.id}
-              onClick={() => setSelectedSignal(prev => prev?.id === signal.id ? null : signal)}
-            />
-          ))}
+          {signals.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12 text-center">
+              <p className="whisper text-[18px] text-foreground" style={{ fontStyle: 'italic' }}>
+                All quiet on the signal floor.
+              </p>
+              <p className="text-[12px] text-muted-foreground">No regressions, no unowned bugs, nothing stalled.</p>
+            </div>
+          ) : (
+            signals.map(signal => (
+              <SignalCard
+                key={signal.id}
+                signal={signal}
+                isSelected={selectedSignal?.id === signal.id}
+                onClick={() => setSelectedSignal(prev => prev?.id === signal.id ? null : signal)}
+              />
+            ))
+          )}
         </div>
 
         {/* Inspector */}
@@ -341,7 +383,7 @@ export function SignalsScreen({ bugs }: SignalsScreenProps) {
         </AnimatePresence>
       </div>
 
-      <p className="text-[11px] text-muted-foreground/50 text-center">
+      <p className="whisper text-center text-[12px] text-muted-foreground/70" style={{ fontStyle: 'italic' }}>
         Signals are derived from your bug queue. CI/CD and test runner integration will enable richer detection.
       </p>
     </div>
