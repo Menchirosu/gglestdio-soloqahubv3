@@ -63,6 +63,16 @@
     --surface-low: #f3f4f5;
     --surface-high: #e8e9eb;
     --surface-highest: #d0d6e0;
+
+    /* Shell layout tokens */
+    --rail-width: 52px;
+    --command-bar-height: 44px;
+    --inspector-width: 340px;
+    --motion-fast: 120ms;
+    --motion-default: 200ms;
+    --motion-slow: 300ms;
+    --signal-warning: #f59e0b;
+    --signal-critical: #ef4444;
   }
 
   .dark {
@@ -89,6 +99,16 @@
     --surface-low: #141516;
     --surface-high: #28282c;
     --surface-highest: #34343a;
+
+    /* Shell layout tokens (same values, dark context) */
+    --rail-width: 52px;
+    --command-bar-height: 44px;
+    --inspector-width: 340px;
+    --motion-fast: 120ms;
+    --motion-default: 200ms;
+    --motion-slow: 300ms;
+    --signal-warning: #f59e0b;
+    --signal-critical: #f87171;
   }
 }
 

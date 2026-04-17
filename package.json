@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rules": "vitest run tests/firestore.rules.test.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:smoke": "PLAYWRIGHT_BASE_URL=http://localhost:3001 playwright test e2e/smoke.spec.ts"
   },
   "dependencies": {
     "@giphy/js-fetch-api": "^5.7.0",

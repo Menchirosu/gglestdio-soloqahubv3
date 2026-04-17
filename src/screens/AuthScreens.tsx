@@ -189,6 +189,7 @@ export const LoginScreen: React.FC = () => {
                 <button
                   onClick={handleSignIn}
                   disabled={isLoading}
+                  data-testid="login-google-button"
                   className="flex w-full items-center justify-center gap-3 rounded-2xl bg-on-surface px-4 py-4 text-sm text-surface transition-all duration-150 hover:opacity-92 active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60"
                   style={{ fontWeight: 610 }}
                 >

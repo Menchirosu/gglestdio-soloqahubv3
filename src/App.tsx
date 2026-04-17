@@ -2,20 +2,18 @@ import React, { useState, useEffect, Suspense } from 'react';
 import {
   LayoutDashboard,
   Bug,
-  Lightbulb,
   BookOpen,
   Sparkles,
   Focus,
   Search,
   Bell,
   PlusCircle,
-  Menu,
   X,
   LogOut,
   ShieldCheck,
-  User,
   Sun,
   Moon,
+  Activity,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -36,18 +34,18 @@ import { logout, updatePresence, subscribeToPresence } from './firebase';
 import { SearchResultsPopup } from './components/SearchResultsPopup';
 import { CommandPalette } from './components/CommandPalette';
 
-// Lazy-loaded screens — only bundled when first visited
-const DashboardScreen = React.lazy(() =>
-  import('./screens/DashboardScreen').then(m => ({ default: m.DashboardScreen }))
+// Lazy-loaded screens
+const OverviewScreen = React.lazy(() =>
+  import('./screens/OverviewScreen').then(m => ({ default: m.OverviewScreen }))
 );
-const BugWallScreen = React.lazy(() =>
-  import('./screens/BugWallScreen').then(m => ({ default: m.BugWallScreen }))
+const QueueScreen = React.lazy(() =>
+  import('./screens/QueueScreen').then(m => ({ default: m.QueueScreen }))
 );
-const TipsTricksScreen = React.lazy(() =>
-  import('./screens/TipsTricksScreen').then(m => ({ default: m.TipsTricksScreen }))
+const SignalsScreen = React.lazy(() =>
+  import('./screens/SignalsScreen').then(m => ({ default: m.SignalsScreen }))
 );
-const KnowledgeSharingScreen = React.lazy(() =>
-  import('./screens/KnowledgeSharingScreen').then(m => ({ default: m.KnowledgeSharingScreen }))
+const ContributeScreen = React.lazy(() =>
+  import('./screens/ContributeScreen').then(m => ({ default: m.ContributeScreen }))
 );
 const AchievementsScreen = React.lazy(() =>
   import('./screens/AchievementsScreen').then(m => ({ default: m.AchievementsScreen }))
@@ -80,7 +78,6 @@ function AppContent() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('darkMode');
-      // Default to dark mode (Linear-native)
       return saved !== null ? JSON.parse(saved) : true;
     }
     return true;
@@ -123,9 +120,7 @@ function MainApp({
   const { profile, isAdmin } = useAuth();
   const { searchQuery, setSearchQuery, selectedItemId, setSelectedItemId } = useSearch();
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard');
-  const [navDirection, setNavDirection] = useState<1 | -1>(1);
   const [activeModal, setActiveModal] = useState<{ type: string; data?: any } | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
@@ -166,7 +161,6 @@ function MainApp({
     setIsSearchResultsOpen(searchQuery.trim().length > 1);
   }, [searchQuery]);
 
-  // Global Cmd+K / Ctrl+K shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -178,28 +172,34 @@ function MainApp({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'bug-wall', label: 'Bug Wall', icon: Bug },
-    { id: 'tips-tricks', label: 'Tips & Tricks', icon: Lightbulb },
-    { id: 'knowledge-sharing', label: 'Knowledge Sharing', icon: BookOpen },
-    { id: 'achievements', label: 'Achievements', icon: Sparkles },
-    { id: 'focus-zone', label: 'Focus Zone', icon: Focus },
+  // Rail items — label is the new workspace name, id is the existing screen key
+  const railItems: { id: Screen; label: string; icon: React.ElementType }[] = [
+    { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+    { id: 'bug-wall', label: 'Queue', icon: Bug },
+    { id: 'signals', label: 'Signals', icon: Activity },
+    { id: 'tips-tricks', label: 'Contribute', icon: BookOpen },
+    { id: 'focus-zone', label: 'Focus', icon: Focus },
+    { id: 'achievements', label: 'Recognition', icon: Sparkles },
   ];
 
-  if (isAdmin) {
-    navItems.push({ id: 'admin-dashboard', label: 'Admin Panel', icon: ShieldCheck });
-  }
-
-  const primaryNavItems = navItems.filter(item => !['focus-zone', 'admin-dashboard'].includes(item.id));
-  const secondaryNavItems = navItems.filter(item => item.id === 'focus-zone');
-  const adminNavItems = navItems.filter(item => item.id === 'admin-dashboard');
+  const workspaceLabels: Record<string, string> = {
+    dashboard: 'Overview',
+    'bug-wall': 'Queue',
+    signals: 'Signals',
+    'tips-tricks': 'Contribute',
+    'knowledge-sharing': 'Contribute',
+    'focus-zone': 'Focus',
+    achievements: 'Recognition',
+    'admin-dashboard': 'Admin',
+  };
 
   const navigateTo = (screen: Screen) => {
-    const currentIdx = navItems.findIndex(n => n.id === currentScreen);
-    const nextIdx = navItems.findIndex(n => n.id === screen);
-    setNavDirection(nextIdx >= currentIdx ? 1 : -1);
-    setCurrentScreen(screen);
+    // Remap old knowledge-sharing to contribute workspace
+    if (screen === 'knowledge-sharing') {
+      setCurrentScreen('tips-tricks');
+    } else {
+      setCurrentScreen(screen);
+    }
   };
 
   const handleEntrySelect = (type: 'bug' | 'tip' | 'knowledge' | 'achievement') => {
@@ -249,7 +249,7 @@ function MainApp({
           return;
         }
       } catch {
-        // non-JSON error payload — fall through
+        // non-JSON error payload
       }
       if (message.includes('permission') || message.includes('Missing or insufficient permissions')) {
         showToast('Permission denied. Please ensure you are logged in and approved.', 'error');
@@ -259,7 +259,6 @@ function MainApp({
     }
   };
 
-  // Sanitize search query before display to prevent XSS in toast
   const sanitizeText = (text: string) =>
     text.replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c] ?? c));
 
@@ -274,7 +273,6 @@ function MainApp({
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase().trim();
     const results: any[] = [];
-
     bugs.forEach(b => {
       if (b.title.toLowerCase().includes(query) || b.discovery.toLowerCase().includes(query))
         results.push({ id: b.id, title: b.title, type: 'bug', screen: 'bug-wall' });
@@ -285,17 +283,12 @@ function MainApp({
     });
     proposals.forEach(p => {
       if (p.title.toLowerCase().includes(query) || p.scope.toLowerCase().includes(query))
-        results.push({ id: p.id, title: p.title, type: 'proposal', screen: 'knowledge-sharing' });
+        results.push({ id: p.id, title: p.title, type: 'proposal', screen: 'tips-tricks' });
     });
     achievements.forEach(a => {
-      if (
-        a.title.toLowerCase().includes(query) ||
-        a.story.toLowerCase().includes(query) ||
-        a.impact.toLowerCase().includes(query)
-      )
+      if (a.title.toLowerCase().includes(query) || a.story.toLowerCase().includes(query) || a.impact.toLowerCase().includes(query))
         results.push({ id: a.id, title: a.title, type: 'achievement', screen: 'achievements' });
     });
-
     return results.slice(0, 10);
   }, [searchQuery, bugs, tips, proposals, achievements]);
 
@@ -309,515 +302,347 @@ function MainApp({
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
+  const activeRailId = currentScreen === 'knowledge-sharing' ? 'tips-tricks' : currentScreen;
+
   return (
-    <div className="app-wash min-h-screen text-foreground">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
 
-      {/* Mobile sidebar overlay */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 z-40 bg-black/60 md:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <aside
-        className={`shell-sidebar fixed left-0 top-0 z-50 flex h-full w-64 flex-col px-4 py-5 transition-transform duration-200 md:translate-x-0 ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* Logo */}
-        <div className="mb-8 flex items-center justify-between px-1">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-primary/14 text-primary">
-              <LayoutDashboard size={14} />
-            </div>
-            <div className="space-y-0.5">
-              <span className="block text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Workspace</span>
-              <span
-                className="block text-[15px] text-foreground"
-                style={{ fontWeight: 590, letterSpacing: '-0.02em' }}
-              >
-                QA Solo Hub
-              </span>
-            </div>
+      {/* Compact Icon Rail — desktop only */}
+      <aside data-testid="icon-rail" className="hidden md:flex flex-col w-[52px] shrink-0 h-full bg-panel border-r border-border z-40">
+        {/* Logo mark — aligns with command bar height */}
+        <div className="flex h-[44px] items-center justify-center shrink-0 border-b border-border">
+          <div className="flex h-7 w-7 items-center justify-center rounded-[6px] bg-primary/14 text-primary">
+            <LayoutDashboard size={12} />
           </div>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="shell-utility-button md:hidden"
-            aria-label="Close menu"
-          >
-            <X size={16} />
-          </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-6">
-          <div className="space-y-1">
-            <p className="px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Core</p>
-            {primaryNavItems.map(item => (
-              <motion.button
-                key={item.id}
-                whileTap={{ scale: 0.96 }}
-                transition={{ duration: 0.1 }}
+        {/* Nav items */}
+        <nav className="flex flex-col items-center gap-0.5 px-2 py-3 flex-1">
+          {railItems.map(item => (
+            <div key={item.id} className="relative w-full flex justify-center">
+              {activeRailId === item.id && (
+                <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+              )}
+              <button
+                title={item.label}
+                data-testid={`rail-nav-${item.id}`}
                 onClick={() => {
-                  navigateTo(item.id as Screen);
-                  setIsSidebarOpen(false);
+                  navigateTo(item.id);
                   setSearchQuery('');
                   setSelectedItemId(null);
                   setIsSearchResultsOpen(false);
                 }}
-                className={`group/nav shell-nav-item ${currentScreen === item.id ? 'shell-nav-item-active' : ''}`}
+                className={`flex h-[36px] w-[36px] items-center justify-center rounded-[6px] transition-colors ${
+                  activeRailId === item.id
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                }`}
               >
-                {currentScreen === item.id && (
-                  <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
-                )}
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-[8px] transition-colors ${
-                    currentScreen === item.id
-                      ? 'bg-primary/16 text-primary'
-                      : 'text-muted-foreground group-hover/nav:text-foreground'
-                  }`}
-                >
-                  <item.icon size={15} />
-                </div>
-                <span className="text-[13px]" style={{ fontWeight: 510 }}>
-                  {item.label}
-                </span>
-              </motion.button>
-            ))}
-          </div>
-
-          {secondaryNavItems.length > 0 && (
-            <div className="space-y-1">
-              <p className="px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Secondary</p>
-              {secondaryNavItems.map(item => (
-                <motion.button
-                  key={item.id}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ duration: 0.1 }}
-                  onClick={() => {
-                    navigateTo(item.id as Screen);
-                    setIsSidebarOpen(false);
-                    setSearchQuery('');
-                    setSelectedItemId(null);
-                    setIsSearchResultsOpen(false);
-                  }}
-                  className={`group/nav shell-nav-item ${currentScreen === item.id ? 'shell-nav-item-active' : ''}`}
-                >
-                  {currentScreen === item.id && (
-                    <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
-                  )}
-                  <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-[8px] transition-colors ${
-                      currentScreen === item.id
-                        ? 'bg-primary/16 text-primary'
-                        : 'text-muted-foreground group-hover/nav:text-foreground'
-                    }`}
-                  >
-                    <item.icon size={15} />
-                  </div>
-                  <span className="text-[13px]" style={{ fontWeight: 510 }}>
-                    {item.label}
-                  </span>
-                </motion.button>
-              ))}
+                <item.icon size={15} />
+              </button>
             </div>
-          )}
-
-          {adminNavItems.length > 0 && (
-            <div className="space-y-1">
-              <p className="px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
-              {adminNavItems.map(item => (
-                <motion.button
-                  key={item.id}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ duration: 0.1 }}
-                  onClick={() => {
-                    navigateTo(item.id as Screen);
-                    setIsSidebarOpen(false);
-                    setSearchQuery('');
-                    setSelectedItemId(null);
-                    setIsSearchResultsOpen(false);
-                  }}
-                  className={`group/nav shell-nav-item ${currentScreen === item.id ? 'shell-nav-item-active' : ''}`}
-                >
-                  {currentScreen === item.id && (
-                    <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
-                  )}
-                  <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-[8px] transition-colors ${
-                      currentScreen === item.id
-                        ? 'bg-primary/16 text-primary'
-                        : 'text-muted-foreground group-hover/nav:text-foreground'
-                    }`}
-                  >
-                    <item.icon size={15} />
-                  </div>
-                  <span className="text-[13px]" style={{ fontWeight: 510 }}>
-                    {item.label}
-                  </span>
-                </motion.button>
-              ))}
-            </div>
-          )}
+          ))}
         </nav>
 
-        {/* Bottom actions */}
-        <div className="mt-auto space-y-3 pt-5">
-          <motion.button
-            whileTap={{ scale: 0.96 }}
-            transition={{ duration: 0.1 }}
-            onClick={() => setActiveModal({ type: 'selector' })}
-            className="flex w-full items-center justify-center gap-2 rounded-[8px] bg-primary py-2.5 text-[13px] text-white transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            style={{ fontWeight: 510 }}
-          >
-            <PlusCircle size={15} />
-            Share something
-          </motion.button>
-
-          {/* User footer */}
-          <div
-            className="flex cursor-pointer items-center gap-2.5 rounded-[10px] border border-border/80 bg-input/80 px-3 py-2.5 transition-colors hover:bg-surface-container-low"
+        {/* Bottom: admin + user avatar */}
+        <div className="flex flex-col items-center gap-1 px-2 py-3 border-t border-border">
+          {isAdmin && (
+            <div className="relative w-full flex justify-center">
+              {currentScreen === 'admin-dashboard' && (
+                <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+              )}
+              <button
+                title="Admin"
+                onClick={() => navigateTo('admin-dashboard')}
+                className={`flex h-[36px] w-[36px] items-center justify-center rounded-[6px] transition-colors ${
+                  currentScreen === 'admin-dashboard'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                }`}
+              >
+                <ShieldCheck size={15} />
+              </button>
+            </div>
+          )}
+          <button
+            title={profile?.displayName || 'Profile'}
             onClick={() => setActiveModal({ type: 'profile' })}
+            className="relative mt-1 h-7 w-7 overflow-hidden rounded-full border border-border hover:opacity-80 transition-opacity flex-shrink-0"
           >
-            <div className="relative h-7 w-7 shrink-0">
-              <div className="h-7 w-7 overflow-hidden rounded-full border border-border">
-                <img
-                  src={profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`}
-                  alt="Profile"
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-              {/* Online presence dot */}
-              <span className="absolute bottom-0 right-0 block h-2 w-2 rounded-full bg-green-500 ring-1 ring-panel" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] text-foreground" style={{ fontWeight: 510 }}>
-                {profile?.displayName || 'You'}
-              </p>
-              <p className="text-[10px] text-muted-foreground">
-                {profile?.role === 'admin' ? 'Admin' : 'QA'}
-              </p>
-            </div>
-            <button
-              onClick={e => { e.stopPropagation(); logout(); }}
-              className="shrink-0 rounded-[6px] p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              title="Sign out"
-            >
-              <LogOut size={13} />
-            </button>
-          </div>
+            <img
+              src={profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`}
+              alt="Profile"
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+            <span className="absolute bottom-0 right-0 block h-1.5 w-1.5 rounded-full bg-green-500 ring-1 ring-panel" />
+          </button>
+          <button
+            onClick={logout}
+            title="Sign out"
+            className="flex h-[28px] w-[28px] items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          >
+            <LogOut size={13} />
+          </button>
         </div>
       </aside>
 
-      {/* Search backdrop */}
-      <AnimatePresence>
-        {isSearchResultsOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.12 }}
-            className="fixed inset-0 z-[55] bg-black/40"
-            onClick={() => { setIsSearchResultsOpen(false); setSearchQuery(''); }}
-          />
-        )}
-      </AnimatePresence>
+      {/* Main area */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
-      {/* Topbar */}
-      <header
-        className={`glass fixed left-0 right-0 top-0 flex h-16 items-center justify-between px-4 sm:px-5 md:left-64 md:px-7 ${
-          isSearchResultsOpen ? 'z-[60]' : 'z-30'
-        }`}
-      >
-        <div className="flex max-w-xl flex-1 items-center gap-3">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="shell-utility-button md:hidden"
-            aria-label="Open menu"
-          >
-            <Menu size={18} />
-          </button>
+        {/* Command Bar */}
+        <header className={`flex h-[44px] shrink-0 items-center gap-2 border-b border-border bg-panel px-3 ${isSearchResultsOpen ? 'z-[60]' : 'z-30'} relative`}>
+          {/* Workspace label */}
+          <span className="hidden md:block text-[12px] text-muted-foreground shrink-0 select-none min-w-[72px]" style={{ fontWeight: 500 }}>
+            {workspaceLabels[currentScreen] ?? 'Overview'}
+          </span>
+          <span className="hidden md:block h-4 w-px bg-border shrink-0" />
 
-          {/* Cmd+K palette trigger — desktop */}
-          <button
-            onClick={() => setIsCommandPaletteOpen(true)}
-            className="shell-command-anchor hidden md:flex"
-          >
-            <Search size={13} />
-            <span>Search or jump to...</span>`r`n            <kbd className="ml-auto rounded-[6px] border border-border/80 bg-background/70 px-1.5 py-0.5 text-[11px] text-muted-foreground">Ctrl K</kbd>
-          </button>
+          {/* Search trigger (desktop) */}
+          <div className="flex flex-1 items-center min-w-0">
+            <button
+              data-testid="command-palette-trigger"
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="shell-command-anchor hidden md:flex w-full max-w-sm"
+            >
+              <Search size={12} />
+              <span className="text-[12px]">Search issues, actions, commands...</span>
+              <kbd className="ml-auto rounded-[4px] border border-border/80 bg-background/70 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                Ctrl K
+              </kbd>
+            </button>
 
-          <form onSubmit={handleSearch} className="relative w-full md:hidden">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => {
-                setSearchQuery(e.target.value);
-                setSelectedItemId(null);
-                setIsSearchResultsOpen(e.target.value.trim().length > 1);
-              }}
-              onFocus={() => { if (searchQuery.trim().length > 1) setIsSearchResultsOpen(true); }}
-              placeholder="Search bugs, tips, wins..."
-              className="w-full rounded-[6px] border border-border bg-input py-1.5 pl-8 pr-8 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-ring/50 focus:outline-none focus:ring-1 focus:ring-ring/30"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => { setSearchQuery(''); setSelectedItemId(null); setIsSearchResultsOpen(false); }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-[4px] p-0.5 text-muted-foreground hover:text-foreground"
-              >
-                <X size={12} />
-              </button>
-            )}
-            <SearchResultsPopup
-              isOpen={isSearchResultsOpen}
-              onClose={() => { setIsSearchResultsOpen(false); setSearchQuery(''); }}
-              results={searchResults}
-              onResultClick={handleResultClick}
-              searchQuery={searchQuery}
-            />
-          </form>
-        </div>
+            {/* Mobile search */}
+            <form onSubmit={handleSearch} className="relative w-full md:hidden">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={13} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => {
+                  setSearchQuery(e.target.value);
+                  setSelectedItemId(null);
+                  setIsSearchResultsOpen(e.target.value.trim().length > 1);
+                }}
+                onFocus={() => { if (searchQuery.trim().length > 1) setIsSearchResultsOpen(true); }}
+                placeholder="Search..."
+                className="w-full rounded-[6px] border border-border bg-input py-1 pl-8 pr-8 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-ring/50 focus:outline-none focus:ring-1 focus:ring-ring/30"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => { setSearchQuery(''); setSelectedItemId(null); setIsSearchResultsOpen(false); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-[4px] p-0.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X size={12} />
+                </button>
+              )}
+              <SearchResultsPopup
+                isOpen={isSearchResultsOpen}
+                onClose={() => { setIsSearchResultsOpen(false); setSearchQuery(''); }}
+                results={searchResults}
+                onResultClick={handleResultClick}
+                searchQuery={searchQuery}
+              />
+            </form>
+          </div>
 
-        <div className="flex items-center gap-2">
-          {/* Dark mode toggle */}
-          <div className="group relative">
+          {/* Right utilities */}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* New entry */}
+            <button
+              onClick={() => setActiveModal({ type: 'selector' })}
+              className="hidden md:flex items-center gap-1 rounded-[6px] border border-border/70 bg-input/60 px-2 py-1 text-[11px] text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
+              style={{ fontWeight: 510 }}
+            >
+              <PlusCircle size={11} />
+              New
+            </button>
+
+            {/* Dark mode */}
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
               className="shell-utility-button"
-              aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              title={isDarkMode ? 'Light mode' : 'Dark mode'}
             >
-              {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
+              {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
             </button>
-            <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[4px] border border-border bg-panel px-2 py-1 text-[11px] text-on-surface opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100" style={{ fontWeight: 510 }}>
-              {isDarkMode ? 'Light mode' : 'Dark mode'}
-            </div>
-          </div>
 
-          {/* Notifications */}
-          <div className="group relative">
-            <button
-              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="shell-utility-button relative"
-              aria-label="Notifications"
-            >
-              <Bell size={15} />
-              {unreadCount > 0 && (
-                <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
-              )}
-            </button>
-            <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[4px] border border-border bg-panel px-2 py-1 text-[11px] text-on-surface opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100" style={{ fontWeight: 510 }}>
-              Notifications{unreadCount > 0 ? ` · ${unreadCount} unread` : ''}
-            </div>
+            {/* Notifications */}
+            <div className="relative">
+              <button
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className="shell-utility-button relative"
+                title={`Notifications${unreadCount > 0 ? ` · ${unreadCount} unread` : ''}`}
+              >
+                <Bell size={14} />
+                {unreadCount > 0 && (
+                  <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                )}
+              </button>
 
-            <AnimatePresence>
-              {isNotificationsOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setIsNotificationsOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                    transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="absolute right-0 z-20 mt-2 w-72 overflow-hidden rounded-[8px] border border-border bg-card shadow-[rgba(0,0,0,0.3)_0px_8px_24px,rgba(0,0,0,0.2)_0px_0px_0px_1px]"
-                  >
-                    <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                      <h4 className="text-[13px] text-foreground" style={{ fontWeight: 590 }}>
-                        Notifications
-                      </h4>
-                      <button
-                        onClick={markAllNotificationsAsRead}
-                        className="text-[11px] text-primary hover:underline focus-visible:outline-none"
-                        style={{ fontWeight: 510 }}
-                      >
-                        Mark all read
-                      </button>
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="px-4 py-8 text-center">
-                          <p className="text-[12px] text-muted-foreground">No notifications yet.</p>
-                        </div>
-                      ) : (
-                        notifications.map(n => (
-                          <div
-                            key={n.id}
-                            onClick={() => {
-                              markNotificationAsRead(n.id);
-                              if (n.targetScreen) {
-                                navigateTo(n.targetScreen);
-                                setIsNotificationsOpen(false);
-                              }
-                            }}
-                            className={`relative cursor-pointer border-b border-border px-4 py-3 transition-colors hover:bg-surface-container-low ${
-                              !n.isRead ? 'bg-primary/5' : ''
-                            }`}
-                          >
-                            {!n.isRead && (
-                              <span className="absolute left-1.5 top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
-                            )}
-                            <p className="text-[13px] text-foreground" style={{ fontWeight: 510 }}>
-                              {n.title}
-                            </p>
-                            <p className="mt-0.5 text-[12px] text-muted-foreground">{n.desc}</p>
-                            <p className="mt-1 text-[11px] text-muted-foreground/60">{n.time}</p>
+              <AnimatePresence>
+                {isNotificationsOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsNotificationsOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      className="absolute right-0 z-20 mt-2 w-72 overflow-hidden rounded-[8px] border border-border bg-card shadow-[rgba(0,0,0,0.3)_0px_8px_24px,rgba(0,0,0,0.2)_0px_0px_0px_1px]"
+                    >
+                      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                        <h4 className="text-[13px] text-foreground" style={{ fontWeight: 590 }}>
+                          Notifications
+                        </h4>
+                        <button
+                          onClick={markAllNotificationsAsRead}
+                          className="text-[11px] text-primary hover:underline focus-visible:outline-none"
+                          style={{ fontWeight: 510 }}
+                        >
+                          Mark all read
+                        </button>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-8 text-center">
+                            <p className="text-[12px] text-muted-foreground">No notifications yet.</p>
                           </div>
-                        ))
-                      )}
-                    </div>
-                    <div className="border-t border-border px-4 py-2 text-center">
-                      <p className="text-[11px] text-muted-foreground">
-                        {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* User chip — desktop only */}
-          <div className="hidden items-center gap-2 rounded-[10px] border border-border/80 bg-input/80 px-2.5 py-1.5 sm:flex">
-            <div className="text-right">
-              <p className="text-[12px] text-foreground" style={{ fontWeight: 510 }}>
-                {profile?.displayName}
-              </p>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                {profile?.role === 'admin' ? 'Admin' : 'Solo QA'}
-              </p>
+                        ) : (
+                          notifications.map(n => (
+                            <div
+                              key={n.id}
+                              onClick={() => {
+                                markNotificationAsRead(n.id);
+                                if (n.targetScreen) {
+                                  navigateTo(n.targetScreen);
+                                  setIsNotificationsOpen(false);
+                                }
+                              }}
+                              className={`relative cursor-pointer border-b border-border px-4 py-3 transition-colors hover:bg-surface-container-low ${!n.isRead ? 'bg-primary/5' : ''}`}
+                            >
+                              {!n.isRead && (
+                                <span className="absolute left-1.5 top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+                              )}
+                              <p className="text-[13px] text-foreground" style={{ fontWeight: 510 }}>
+                                {n.title}
+                              </p>
+                              <p className="mt-0.5 text-[12px] text-muted-foreground">{n.desc}</p>
+                              <p className="mt-1 text-[11px] text-muted-foreground/60">{n.time}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div className="border-t border-border px-4 py-2 text-center">
+                        <p className="text-[11px] text-muted-foreground">
+                          {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
-            <div
-              className="h-7 w-7 cursor-pointer overflow-hidden rounded-full border border-border transition-opacity hover:opacity-80"
-              onClick={() => setActiveModal({ type: 'profile' })}
-            >
-              <img
-                src={profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`}
-                alt="Profile"
-                className={`h-full w-full object-cover ${profile?.photoURL?.includes('pixel') ? '[image-rendering:pixelated]' : ''}`}
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <button
-              onClick={() => setActiveModal({ type: 'profile' })}
-              className="rounded-[6px] p-1 text-muted-foreground transition-colors hover:bg-surface-container-low hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              title="Profile Settings"
-            >
-              <User size={14} />
-            </button>
-            <button
-              onClick={logout}
-              className="rounded-[6px] p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              title="Logout"
-            >
-              <LogOut size={14} />
-            </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main content */}
-      <main
-        className={`shell-canvas relative min-h-screen px-4 pb-24 pt-22 sm:px-6 md:pb-12 md:pl-[17.5rem] md:pr-8 md:pt-[6.25rem] ${
-          currentScreen === 'bug-wall' ? 'page-glow-bug' :
-          currentScreen === 'tips-tricks' ? 'page-glow-tips' :
-          currentScreen === 'knowledge-sharing' ? 'page-glow-knowledge' :
-          currentScreen === 'achievements' ? 'page-glow-achievements' :
-          currentScreen === 'focus-zone' ? 'page-glow-focus' : ''
-        }`}
-      >
-        <AnimatePresence mode="wait" custom={navDirection}>
-          <motion.div
-            key={currentScreen}
-            custom={navDirection}
-            initial={{ opacity: 0, x: navDirection * 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: navDirection * -24 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="mx-auto max-w-[76rem]"
-          >
-            <Suspense fallback={<ScreenLoader />}>
-              {currentScreen === 'dashboard' && (
-                <DashboardScreen
-                  onNavigate={navigateTo}
-                  onShare={() => setActiveModal({ type: 'selector' })}
-                  bugs={bugs}
-                  tips={tips}
-                  proposals={proposals}
-                  achievements={achievements}
-                  searchQuery={searchQuery}
-                  activeUsers={activeUsers}
-                />
-              )}
-              {currentScreen === 'bug-wall' && (
-                <BugWallScreen
-                  bugs={bugs}
-                  onReact={reactToBug}
-                  onComment={addCommentToBug}
-                  onReactComment={reactToComment}
-                  onReplyComment={replyToComment}
-                  onDeleteBug={deleteBug}
-                  onEditBug={bug => setActiveModal({ type: 'edit-bug', data: bug })}
-                  onAddBug={() => setActiveModal({ type: 'bug' })}
-                  onDeleteComment={deleteComment}
-                  onEditComment={editComment}
-                  searchQuery={searchQuery}
-                  selectedItemId={selectedItemId}
-                  onClearSelection={() => setSelectedItemId(null)}
-                  onSearchChange={setSearchQuery}
-                  showToast={showToast}
-                  onAddBugSubmit={handleBugSubmit}
-                />
-              )}
-              {currentScreen === 'tips-tricks' && (
-                <TipsTricksScreen
-                  tips={tips}
-                  onAddTip={() => setActiveModal({ type: 'tip' })}
-                  onDeleteTip={deleteTip}
-                  onEditTip={tip => setActiveModal({ type: 'edit-tip', data: tip })}
-                  onReact={reactToTip}
-                  searchQuery={searchQuery}
-                  selectedItemId={selectedItemId}
-                  onClearSelection={() => setSelectedItemId(null)}
-                />
-              )}
-              {currentScreen === 'knowledge-sharing' && (
-                <KnowledgeSharingScreen
-                  proposals={proposals}
-                  onAddProposal={() => setActiveModal({ type: 'proposal' })}
-                  onDeleteProposal={deleteProposal}
-                  onEditProposal={proposal => setActiveModal({ type: 'edit-proposal', data: proposal })}
-                  searchQuery={searchQuery}
-                  selectedItemId={selectedItemId}
-                  onClearSelection={() => setSelectedItemId(null)}
-                />
-              )}
-              {currentScreen === 'achievements' && (
-                <AchievementsScreen
-                  achievements={achievements}
-                  onAddAchievement={() => setActiveModal({ type: 'achievement' })}
-                  onDeleteAchievement={deleteAchievement}
-                  onEditAchievement={achievement => setActiveModal({ type: 'edit-achievement', data: achievement })}
-                  searchQuery={searchQuery}
-                  selectedItemId={selectedItemId}
-                  onClearSelection={() => setSelectedItemId(null)}
-                />
-              )}
-              {currentScreen === 'focus-zone' && <FocusZoneScreen />}
-              {currentScreen === 'admin-dashboard' && <AdminDashboard />}
-            </Suspense>
-          </motion.div>
+        {/* Search backdrop */}
+        <AnimatePresence>
+          {isSearchResultsOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              className="fixed inset-0 z-[55] bg-black/40"
+              onClick={() => { setIsSearchResultsOpen(false); setSearchQuery(''); }}
+            />
+          )}
         </AnimatePresence>
-      </main>
+
+        {/* Workspace content */}
+        <main className="flex-1 overflow-y-auto custom-scrollbar">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentScreen}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              className="min-h-full"
+            >
+              <div className="mx-auto max-w-[82rem] px-5 py-5 pb-24 md:pb-6">
+                <Suspense fallback={<ScreenLoader />}>
+                  {currentScreen === 'dashboard' && (
+                    <OverviewScreen
+                      onNavigate={navigateTo}
+                      onShare={() => setActiveModal({ type: 'selector' })}
+                      bugs={bugs}
+                      tips={tips}
+                      proposals={proposals}
+                      achievements={achievements}
+                      searchQuery={searchQuery}
+                      activeUsers={activeUsers}
+                    />
+                  )}
+                  {currentScreen === 'bug-wall' && (
+                    <QueueScreen
+                      bugs={bugs}
+                      onReact={reactToBug}
+                      onComment={addCommentToBug}
+                      onReactComment={reactToComment}
+                      onReplyComment={replyToComment}
+                      onDeleteBug={deleteBug}
+                      onEditBug={bug => setActiveModal({ type: 'edit-bug', data: bug })}
+                      onAddBug={() => setActiveModal({ type: 'bug' })}
+                      onDeleteComment={deleteComment}
+                      onEditComment={editComment}
+                      searchQuery={searchQuery}
+                      selectedItemId={selectedItemId}
+                      onClearSelection={() => setSelectedItemId(null)}
+                      showToast={showToast}
+                      onAddBugSubmit={handleBugSubmit}
+                    />
+                  )}
+                  {currentScreen === 'signals' && (
+                    <SignalsScreen bugs={bugs} tips={tips} />
+                  )}
+                  {(currentScreen === 'tips-tricks' || currentScreen === 'knowledge-sharing') && (
+                    <ContributeScreen
+                      defaultTab={currentScreen === 'knowledge-sharing' ? 'knowledge' : 'tips'}
+                      tips={tips}
+                      proposals={proposals}
+                      onAddTip={() => setActiveModal({ type: 'tip' })}
+                      onDeleteTip={deleteTip}
+                      onEditTip={tip => setActiveModal({ type: 'edit-tip', data: tip })}
+                      onReact={reactToTip}
+                      onAddProposal={() => setActiveModal({ type: 'proposal' })}
+                      onDeleteProposal={deleteProposal}
+                      onEditProposal={proposal => setActiveModal({ type: 'edit-proposal', data: proposal })}
+                      searchQuery={searchQuery}
+                      selectedItemId={selectedItemId}
+                      onClearSelection={() => setSelectedItemId(null)}
+                    />
+                  )}
+                  {currentScreen === 'achievements' && (
+                    <AchievementsScreen
+                      achievements={achievements}
+                      onAddAchievement={() => setActiveModal({ type: 'achievement' })}
+                      onDeleteAchievement={deleteAchievement}
+                      onEditAchievement={achievement => setActiveModal({ type: 'edit-achievement', data: achievement })}
+                      searchQuery={searchQuery}
+                      selectedItemId={selectedItemId}
+                      onClearSelection={() => setSelectedItemId(null)}
+                    />
+                  )}
+                  {currentScreen === 'focus-zone' && <FocusZoneScreen />}
+                  {currentScreen === 'admin-dashboard' && <AdminDashboard />}
+                </Suspense>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
 
       {/* Modals */}
       <Modal isOpen={activeModal?.type === 'bug'} onClose={() => setActiveModal(null)} hideHeader>
@@ -923,28 +748,27 @@ function MainApp({
       />
 
       {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 flex h-16 items-stretch border-t border-border bg-panel md:hidden">
-        {navItems.slice(0, 5).map(item => (
+      <nav data-testid="mobile-bottom-nav" className="fixed bottom-0 left-0 right-0 z-30 flex h-16 items-stretch border-t border-border bg-panel md:hidden">
+        {railItems.slice(0, 5).map(item => (
           <motion.button
             key={item.id}
+            data-testid={`mobile-nav-${item.id}`}
             whileTap={{ scale: 0.88 }}
             transition={{ duration: 0.1 }}
             onClick={() => {
-              navigateTo(item.id as Screen);
+              navigateTo(item.id);
               setSearchQuery('');
               setSelectedItemId(null);
               setIsSearchResultsOpen(false);
             }}
             className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-colors ${
-              currentScreen === item.id
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
+              activeRailId === item.id ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {currentScreen === item.id && (
+            {activeRailId === item.id && (
               <span className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />
             )}
-            <item.icon size={18} strokeWidth={currentScreen === item.id ? 2 : 1.5} />
+            <item.icon size={18} strokeWidth={activeRailId === item.id ? 2 : 1.5} />
             <span className="text-[9px] tracking-wide" style={{ fontWeight: 510 }}>
               {item.label.split(' ')[0]}
             </span>
@@ -965,4 +789,3 @@ function MainApp({
     </div>
   );
 }
-

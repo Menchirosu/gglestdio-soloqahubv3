@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'https://qawall.vercel.app';
+const isLocal = /^https?:\/\/localhost(:|\/|$)/i.test(baseURL);
 
 export default defineConfig({
   testDir: './e2e',
@@ -12,6 +13,18 @@ export default defineConfig({
     trace: 'on-first-retry',
     viewport: { width: 1280, height: 720 },
   },
+  // Auto-start the dev server only when targeting localhost, so the default
+  // prod target (CI) is unaffected.
+  ...(isLocal
+    ? {
+        webServer: {
+          command: 'npm run dev',
+          url: baseURL,
+          reuseExistingServer: !process.env.CI,
+          timeout: 60_000,
+        },
+      }
+    : {}),
   projects: [
     {
       name: 'chromium',
