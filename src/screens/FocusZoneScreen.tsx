@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation } from 'motion/react';
-import { Play, Square, RefreshCw, Volume2, VolumeX, Quote, Droplets, Waves, Flame, Leaf, Wind } from 'lucide-react';
+import { motion, useAnimation, useReducedMotion } from 'motion/react';
+import { Icon } from '@iconify/react';
 import { BreathingGuide } from '../components/BreathingGuide';
 import { SoundGenerator } from '../services/soundGenerator';
 
+const SOUNDSCAPES: { id: string; name: string; icon: string }[] = [
+  { id: 'rain', name: 'Rainfall', icon: 'solar:cloud-rain-bold-duotone' },
+  { id: 'waves', name: 'Ocean Waves', icon: 'solar:waterdrops-bold-duotone' },
+  { id: 'fire', name: 'Fireplace', icon: 'solar:fire-bold-duotone' },
+  { id: 'forest', name: 'Forest', icon: 'solar:leaf-bold-duotone' },
+];
+
 export function FocusZoneScreen() {
+  const reduce = useReducedMotion();
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [mode, setMode] = useState<'focus' | 'break'>('focus');
@@ -34,7 +42,6 @@ export function FocusZoneScreen() {
 
     const generator = soundGeneratorRef.current;
 
-    // Stop audio if no sound is selected
     if (sound === 'none') {
       generator.stop();
       return;
@@ -48,14 +55,12 @@ export function FocusZoneScreen() {
     };
   }, [sound]);
 
-  // Separate effect for muting to avoid restarting the audio
   useEffect(() => {
     if (soundGeneratorRef.current) {
       soundGeneratorRef.current.setMuted(isMuted);
     }
   }, [isMuted]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (soundGeneratorRef.current) {
@@ -67,8 +72,7 @@ export function FocusZoneScreen() {
   const playBtnControls = useAnimation();
 
   const toggleTimer = () => {
-    if (!isActive) {
-      // Starting — spring pop on the button
+    if (!isActive && !reduce) {
       playBtnControls.start({
         scale: [1, 1.1, 0.95, 1],
         transition: { duration: 0.4, ease: 'easeOut' },
@@ -92,14 +96,21 @@ export function FocusZoneScreen() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-4">
-      <section className="page-hero px-6 py-8 text-center space-y-2">
-        <p className="page-kicker">Focus</p>
-        <h2 className="text-4xl font-black tracking-tighter">The Focus Zone</h2>
-        <p className="page-subtitle mx-auto text-base">Silence the noise. Sharpen the mind. Ship the quality.</p>
+      {/* Hero */}
+      <section className="text-center space-y-2">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground" style={{ fontWeight: 600 }}>
+          Focus
+        </p>
+        <h1 className="page-title-serif text-[40px] text-foreground">
+          <span style={{ fontStyle: 'italic' }}>The Focus Zone.</span>
+        </h1>
+        <p className="mx-auto max-w-xl text-[14px] text-muted-foreground leading-relaxed">
+          Silence the noise. Sharpen the mind. Ship the quality.
+        </p>
       </section>
 
+      {/* Timer card */}
       <div className="page-panel p-8 max-w-2xl mx-auto flex flex-col items-center justify-center gap-6">
-        {/* SVG Circular Progress Ring */}
         <div className="relative w-56 h-56 flex items-center justify-center">
           {(() => {
             const total = mode === 'focus' ? 25 * 60 : 5 * 60;
@@ -111,7 +122,7 @@ export function FocusZoneScreen() {
             const isLow = timeLeft / total < 0.25;
             return (
               <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 224 224">
-                <circle cx="112" cy="112" r={radius} fill="none" stroke="currentColor" strokeWidth="10" className="text-surface-container-low" />
+                <circle cx="112" cy="112" r={radius} fill="none" stroke="currentColor" strokeWidth="10" className="text-muted/60" />
                 <circle
                   cx="112" cy="112" r={radius} fill="none"
                   stroke="currentColor"
@@ -119,102 +130,121 @@ export function FocusZoneScreen() {
                   strokeLinecap="round"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
-                  className={`transition-all duration-1000 ${isLow ? 'text-amber-500' : 'text-primary'}`}
+                  className={`transition-all duration-1000 ${isLow ? 'text-[#C73D35]' : 'text-primary'}`}
                 />
               </svg>
             );
           })()}
           <div className="text-center relative z-10">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mb-1" style={{ fontWeight: 510 }}>{mode} session</p>
-            <h3 className="text-6xl font-mono tracking-tighter tabular-nums" style={{ fontWeight: 590 }}>{formatTime(timeLeft)}</h3>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-1" style={{ fontWeight: 510 }}>
+              {mode} session
+            </p>
+            <h3 className="text-6xl font-mono tracking-tighter tabular-nums text-foreground" style={{ fontWeight: 590 }}>
+              {formatTime(timeLeft)}
+            </h3>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={reduce ? undefined : { scale: 0.9 }}
             transition={{ duration: 0.1 }}
             onClick={resetTimer}
             aria-label="Reset timer"
-            className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-high transition-colors"
+            className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
           >
-            <RefreshCw size={20} />
+            <Icon icon="solar:refresh-linear" width={20} height={20} />
           </motion.button>
 
           <motion.button
             animate={playBtnControls}
-            whileTap={{ scale: 0.94 }}
+            whileTap={reduce ? undefined : { scale: 0.94 }}
             onClick={toggleTimer}
             aria-label={isActive ? 'Stop timer' : 'Start timer'}
             className="w-20 h-20 rounded-full bg-primary text-white flex items-center justify-center shadow-xl shadow-primary/30 hover:bg-primary/90 transition-colors"
           >
             {isActive
-              ? <Square size={22} fill="currentColor" />
-              : <Play size={28} fill="currentColor" />}
+              ? <Icon icon="solar:stop-bold" width={26} height={26} />
+              : <Icon icon="solar:play-bold" width={30} height={30} />}
           </motion.button>
 
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={reduce ? undefined : { scale: 0.9 }}
             transition={{ duration: 0.1 }}
             onClick={toggleMute}
             aria-label={isMuted ? 'Unmute' : 'Mute'}
             className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-              isMuted ? 'bg-error/10 text-error' : 'bg-surface-container-low text-outline hover:text-primary hover:bg-surface-container-high'
+              isMuted
+                ? 'bg-destructive/10 text-destructive'
+                : 'bg-secondary text-muted-foreground hover:text-primary hover:bg-muted'
             }`}
           >
-            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+            <Icon
+              icon={isMuted ? 'solar:volume-cross-linear' : 'solar:volume-loud-linear'}
+              width={20}
+              height={20}
+            />
           </motion.button>
         </div>
       </div>
 
-      {/* Breathing Guide Section */}
+      {/* Breathing Guide */}
       <section className="page-panel max-w-2xl mx-auto p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-primary/10 rounded-[8px] text-primary">
-            <Wind size={20} />
+          <div className="p-2 bg-primary/10 rounded-[10px] text-primary">
+            <Icon icon="solar:wind-bold-duotone" width={20} height={20} />
           </div>
-          <h4 className="text-xl font-black">Breathing Guide</h4>
+          <h2 className="text-[18px] text-foreground" style={{ fontWeight: 590, letterSpacing: '-0.02em' }}>
+            Breathing Guide
+          </h2>
         </div>
         <BreathingGuide isActive={isActive} />
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+      {/* Mantra + Soundscapes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
         <div className="page-panel-muted p-6 space-y-4">
-          <h4 className="text-base font-bold flex items-center gap-2">
-            <Quote size={18} className="text-secondary" />
+          <h3 className="text-[15px] text-foreground flex items-center gap-2" style={{ fontWeight: 590 }}>
+            <Icon icon="solar:quote-up-square-bold-duotone" width={18} height={18} className="text-[#5A8B58]" />
             Mindful Mantra
-          </h4>
-          <p className="text-lg font-medium italic text-on-surface-variant leading-relaxed">
-            "Quality is not an act, it is a habit. Breathe into the complexity, exhale the solutions."
+          </h3>
+          <p className="whisper text-[17px] leading-relaxed" style={{ fontStyle: 'italic', color: 'var(--foreground)' }}>
+            &ldquo;Quality is not an act, it is a habit. Breathe into the complexity, exhale the solutions.&rdquo;
           </p>
-          <div className="flex items-center gap-3 pt-2">
-            <div className="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
-              <Leaf size={16} />
-            </div>
-            <span className="text-[10px] font-bold text-tertiary uppercase tracking-widest">Daily Wisdom</span>
+          <div className="flex items-center gap-2 pt-1">
+            <Icon icon="solar:leaf-bold-duotone" width={14} height={14} className="text-[#5A8B58]" />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>
+              Daily Wisdom
+            </span>
           </div>
         </div>
 
         <div className="page-panel-muted p-6 space-y-4">
-          <h4 className="text-base font-bold">Soundscapes</h4>
+          <h3 className="text-[15px] text-foreground" style={{ fontWeight: 590 }}>Soundscapes</h3>
           <div className="grid grid-cols-2 gap-3">
-            {[
-              { id: 'rain', name: 'Rainfall', icon: Droplets, color: 'text-blue-400' },
-              { id: 'waves', name: 'Ocean Waves', icon: Waves, color: 'text-cyan-400' },
-              { id: 'fire', name: 'Fireplace', icon: Flame, color: 'text-orange-400' },
-              { id: 'forest', name: 'Forest', icon: Leaf, color: 'text-emerald-400' },
-            ].map((s) => (
-              <button 
-                key={s.id}
-                onClick={() => setSound(sound === s.id ? 'none' : s.id)}
-                className={`p-3 rounded-[8px] border-2 flex items-center gap-2 transition-all ${
-                  sound === s.id ? 'border-primary bg-primary/5' : 'border-surface-container-high hover:border-outline-variant'
-                }`}
-              >
-                <s.icon size={16} className={s.color} />
-                <span className="text-xs font-bold">{s.name}</span>
-              </button>
-            ))}
+            {SOUNDSCAPES.map((s) => {
+              const isActiveSound = sound === s.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setSound(isActiveSound ? 'none' : s.id)}
+                  className={`p-3 rounded-[10px] border flex items-center gap-2 transition-colors ${
+                    isActiveSound
+                      ? 'border-primary bg-primary/5 text-foreground'
+                      : 'border-border bg-secondary/40 text-muted-foreground hover:text-foreground hover:border-border/80'
+                  }`}
+                  aria-pressed={isActiveSound}
+                >
+                  <Icon
+                    icon={s.icon}
+                    width={16}
+                    height={16}
+                    className={isActiveSound ? 'text-primary' : ''}
+                  />
+                  <span className="text-[12px]" style={{ fontWeight: 510 }}>{s.name}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
