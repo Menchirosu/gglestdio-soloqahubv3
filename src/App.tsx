@@ -11,8 +11,6 @@ import {
   X,
   LogOut,
   ShieldCheck,
-  Sun,
-  Moon,
   Activity,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -75,22 +73,16 @@ export default function App() {
 
 function AppContent() {
   const { user, loading, isApproved } = useAuth();
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('darkMode');
-      return saved !== null ? JSON.parse(saved) : true;
-    }
-    return true;
-  });
 
+  // Lumie is light-only (Q4). Strip any legacy dark-mode preference once.
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    document.documentElement.classList.remove('dark');
+    try {
+      localStorage.removeItem('darkMode');
+    } catch {
+      // ignore storage access errors (e.g. privacy mode)
     }
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-  }, [isDarkMode]);
+  }, []);
 
   if (loading) {
     return (
@@ -105,18 +97,12 @@ function AppContent() {
 
   return (
     <SearchProvider>
-      <MainApp isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+      <MainApp />
     </SearchProvider>
   );
 }
 
-function MainApp({
-  isDarkMode,
-  setIsDarkMode,
-}: {
-  isDarkMode: boolean;
-  setIsDarkMode: (val: boolean) => void;
-}) {
+function MainApp() {
   const { profile, isAdmin } = useAuth();
   const { searchQuery, setSearchQuery, selectedItemId, setSelectedItemId } = useSearch();
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard');
@@ -305,13 +291,13 @@ function MainApp({
   const activeRailId = currentScreen === 'knowledge-sharing' ? 'tips-tricks' : currentScreen;
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+    <div className="flex h-screen lumie-canvas text-foreground overflow-hidden">
 
-      {/* Compact Icon Rail — desktop only */}
-      <aside data-testid="icon-rail" className="hidden md:flex flex-col w-[52px] shrink-0 h-full bg-panel border-r border-border z-40">
+      {/* Compact Icon Rail — desktop only. Sits on warm canvas, outside the cream card (Q3). */}
+      <aside data-testid="icon-rail" className="hidden md:flex flex-col w-[52px] shrink-0 h-full shell-rail z-40">
         {/* Logo mark — aligns with command bar height */}
-        <div className="flex h-[44px] items-center justify-center shrink-0 border-b border-border">
-          <div className="flex h-7 w-7 items-center justify-center rounded-[6px] bg-primary/14 text-primary">
+        <div className="flex h-[44px] items-center justify-center shrink-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-primary/14 text-primary">
             <LayoutDashboard size={12} />
           </div>
         </div>
@@ -345,7 +331,7 @@ function MainApp({
         </nav>
 
         {/* Bottom: admin + user avatar */}
-        <div className="flex flex-col items-center gap-1 px-2 py-3 border-t border-border">
+        <div className="flex flex-col items-center gap-1 px-2 py-3">
           {isAdmin && (
             <div className="relative w-full flex justify-center">
               {currentScreen === 'admin-dashboard' && (
@@ -387,11 +373,12 @@ function MainApp({
         </div>
       </aside>
 
-      {/* Main area */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      {/* Main area — wrapped in Lumie framed cream card (24px radius on desktop, edge-to-edge on mobile) */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden md:py-3 md:pr-3">
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden lumie-frame">
 
         {/* Command Bar */}
-        <header className={`flex h-[44px] shrink-0 items-center gap-2 border-b border-border bg-panel px-3 ${isSearchResultsOpen ? 'z-[60]' : 'z-30'} relative`}>
+        <header className={`flex h-[44px] shrink-0 items-center gap-2 border-b border-border bg-frame px-3 ${isSearchResultsOpen ? 'z-[60]' : 'z-30'} relative`}>
           {/* Workspace label */}
           <span className="hidden md:block text-[12px] text-muted-foreground shrink-0 select-none min-w-[72px]" style={{ fontWeight: 500 }}>
             {workspaceLabels[currentScreen] ?? 'Overview'}
@@ -456,15 +443,6 @@ function MainApp({
             >
               <PlusCircle size={11} />
               New
-            </button>
-
-            {/* Dark mode */}
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="shell-utility-button"
-              title={isDarkMode ? 'Light mode' : 'Dark mode'}
-            >
-              {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
             </button>
 
             {/* Notifications */}
@@ -642,6 +620,7 @@ function MainApp({
             </motion.div>
           </AnimatePresence>
         </main>
+        </div>
       </div>
 
       {/* Modals */}
@@ -747,8 +726,8 @@ function MainApp({
         isAdmin={isAdmin}
       />
 
-      {/* Mobile bottom nav */}
-      <nav data-testid="mobile-bottom-nav" className="fixed bottom-0 left-0 right-0 z-30 flex h-16 items-stretch border-t border-border bg-panel md:hidden">
+      {/* Mobile bottom nav — sits on canvas, no card wrap (Q10 triage-first mobile) */}
+      <nav data-testid="mobile-bottom-nav" className="fixed bottom-0 left-0 right-0 z-30 flex h-16 items-stretch border-t border-border bg-canvas md:hidden">
         {railItems.slice(0, 5).map(item => (
           <motion.button
             key={item.id}

@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <!-- X-Frame-Options is set as a real HTTP header in server.ts; browsers ignore it when
+         supplied via <meta> and log a console error, so we don't duplicate it here. -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta name="robots" content="noindex, nofollow" />
     <meta http-equiv="Content-Security-Policy" content="

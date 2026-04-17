@@ -32,8 +32,9 @@ test.describe('Smoke: app shell + auth gate', () => {
     // React must mount something into #root
     await expect(page.locator('#root')).not.toBeEmpty();
 
-    // Give lazy chunks a beat to resolve
-    await page.waitForLoadState('networkidle').catch(() => {});
+    // Wait for the login surface — a real render signal, not network idle
+    // (Firebase keeps a long-lived connection open so networkidle never fires).
+    await expect(page.getByTestId('login-google-button')).toBeVisible({ timeout: 10_000 });
 
     expect(consoleErrors, `console errors: ${consoleErrors.join('\n')}`).toEqual([]);
   });
@@ -115,10 +116,6 @@ test.describe('Smoke: API contract', () => {
     expect(body).toMatchObject({ status: 'ok' });
   });
 
-  test('POST /api/achievements with empty body returns a 400 shape', async ({ request }) => {
-    const response = await request.post('/api/achievements', { data: {} });
-    expect(response.status()).toBe(400);
-    const body = await response.json();
-    expect(body).toHaveProperty('error');
-  });
+  // /api/achievements is a Vercel serverless handler not mounted by the local
+  // dev Express server; contract coverage lives in e2e/achievements-api.spec.ts.
 });
