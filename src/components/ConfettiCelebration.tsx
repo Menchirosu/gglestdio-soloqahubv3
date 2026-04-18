@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { Trophy } from 'lucide-react';
+import { Icon } from '@iconify/react';
 
 interface ConfettiCelebrationProps {
   title: string;
@@ -111,7 +111,7 @@ export function ConfettiCelebration({ title, onDone }: ConfettiCelebrationProps)
           className="flex flex-col items-center gap-4 rounded-[12px] border border-primary/25 bg-panel px-10 py-8 shadow-2xl shadow-primary/10 text-center max-w-sm w-full"
         >
           <div className="flex h-14 w-14 items-center justify-center rounded-[8px] bg-primary/15">
-            <Trophy size={28} className="text-primary" />
+            <Icon icon="solar:cup-star-bold-duotone" width={28} height={28} className="text-primary" />
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-[0.22em] text-primary" style={{ fontWeight: 590 }}>

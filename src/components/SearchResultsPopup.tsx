@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bug, Lightbulb, BookOpen, Search, X } from 'lucide-react';
-import { BugStory, Tip, Proposal, Screen } from '../types';
+import { Icon } from '@iconify/react';
+import { Screen } from '../types';
 
 interface SearchResult {
   id: string;
@@ -23,52 +23,55 @@ export function SearchResultsPopup({ isOpen, onClose, results, onResultClick, se
     <AnimatePresence>
       {isOpen && searchQuery && (
         <motion.div
-          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+          initial={{ opacity: 0, y: -8, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.95 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="absolute top-full left-0 right-0 mt-2 bg-surface rounded-2xl shadow-2xl border border-outline-variant/20 overflow-hidden z-50 max-h-[400px] flex flex-col"
+          exit={{ opacity: 0, y: -8, scale: 0.97 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
+          className="absolute top-full left-0 right-0 mt-2 bg-card rounded-[12px] shadow-2xl border border-border overflow-hidden z-50 max-h-[400px] flex flex-col"
         >
-          <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between bg-surface-container-low">
+          <div className="p-3 border-b border-border flex items-center justify-between bg-secondary/30">
             <div className="flex items-center gap-2">
-              <Search size={14} className="text-primary" />
-              <h4 className="font-bold text-xs uppercase tracking-widest text-on-surface">Search Results</h4>
+              <Icon icon="solar:magnifer-bold-duotone" width={13} height={13} className="text-primary" />
+              <h4 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>Search Results</h4>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-surface-container-high rounded-full transition-colors">
-              <X size={14} className="text-outline" />
+            <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground rounded-[4px] transition-colors">
+              <Icon icon="solar:close-bold" width={13} height={13} />
             </button>
           </div>
 
           <div className="overflow-y-auto flex-1 custom-scrollbar">
             {results.length === 0 ? (
               <div className="p-8 text-center">
-                <p className="text-sm text-outline italic">No results found for "{searchQuery}"</p>
+                <p className="whisper text-[14px]">No results for "{searchQuery}"</p>
               </div>
             ) : (
-              <div className="py-2">
+              <div className="py-1">
                 {results.map((result) => (
                   <button
                     key={`${result.type}-${result.id}`}
                     onClick={() => onResultClick(result)}
-                    className="w-full flex items-center gap-4 px-4 py-3 hover:bg-primary/5 transition-all text-left group"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors text-left group"
                   >
-                    <div className={`p-2 rounded-lg ${
-                      result.type === 'bug' ? 'bg-error/10 text-error' :
-                      result.type === 'tip' ? 'bg-input text-muted-foreground' :
-                      'bg-secondary/10 text-secondary'
+                    <div className={`p-1.5 rounded-[6px] shrink-0 ${
+                      result.type === 'bug' ? 'bg-destructive/10 text-destructive' :
+                      result.type === 'tip' ? 'bg-primary/10 text-primary' :
+                      'bg-secondary/60 text-muted-foreground'
                     }`}>
-                      {result.type === 'bug' && <Bug size={16} />}
-                      {result.type === 'tip' && <Lightbulb size={16} />}
-                      {result.type === 'proposal' && <BookOpen size={16} />}
+                      <Icon
+                        icon={
+                          result.type === 'bug' ? 'solar:bug-bold-duotone' :
+                          result.type === 'tip' ? 'solar:lightbulb-bold-duotone' :
+                          'solar:book-bold-duotone'
+                        }
+                        width={14} height={14}
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-on-surface truncate group-hover:text-primary transition-colors">
+                      <p className="text-[13px] text-foreground truncate group-hover:text-primary transition-colors" style={{ fontWeight: 510 }}>
                         {result.title}
                       </p>
-                      <p className="text-[10px] text-outline uppercase tracking-widest font-bold mt-0.5">
-                        {result.type === 'bug' ? 'Bug Story' :
-                         result.type === 'tip' ? 'Tip & Trick' :
-                         'Proposal'}
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-[0.12em] mt-0.5" style={{ fontWeight: 600 }}>
+                        {result.type === 'bug' ? 'Bug Story' : result.type === 'tip' ? 'Tip' : 'Knowledge Post'}
                       </p>
                     </div>
                   </button>
@@ -76,16 +79,16 @@ export function SearchResultsPopup({ isOpen, onClose, results, onResultClick, se
               </div>
             )}
           </div>
-          
+
           {results.length > 0 && (
-            <div className="p-3 text-center bg-surface-container-low border-t border-outline-variant/10">
-              <p className="text-[10px] text-outline font-medium">
-                Showing {results.length} matching items
+            <div className="p-2.5 text-center bg-secondary/20 border-t border-border">
+              <p className="text-[10px] text-muted-foreground" style={{ fontWeight: 500 }}>
+                {results.length} matching item{results.length !== 1 ? 's' : ''}
               </p>
             </div>
           )}
         </motion.div>
-    )}
-  </AnimatePresence>
-);
+      )}
+    </AnimatePresence>
+  );
 }

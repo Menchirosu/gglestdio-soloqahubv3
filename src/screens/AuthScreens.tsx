@@ -1,14 +1,5 @@
 import React, { useState } from 'react';
-import {
-  AlertCircle,
-  ArrowRight,
-  Clock,
-  LogIn,
-  Mail,
-  ShieldAlert,
-  ShieldCheck,
-  Waypoints,
-} from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { motion } from 'motion/react';
 import { signInWithGoogle, logout } from '../firebase';
 import { useAuth } from '../AuthContext';
@@ -143,7 +134,7 @@ export const LoginScreen: React.FC = () => {
 
             <div className="surface-nested-card rounded-3xl p-5 sm:p-6">
               <div className="flex items-center gap-3 text-sm text-on-surface">
-                <Waypoints size={16} className="text-primary" />
+                <Icon icon="solar:routing-bold-duotone" width={16} height={16} className="text-primary" />
                 <span style={{ fontWeight: 590 }}>Built for review, critique, and useful decisions.</span>
               </div>
               <p className="mt-3 max-w-xl text-sm leading-6 text-on-surface-variant">
@@ -159,7 +150,7 @@ export const LoginScreen: React.FC = () => {
               <div className="space-y-7">
                 <div className="space-y-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-                    <LogIn size={22} />
+                    <Icon icon="solar:login-bold-duotone" width={22} height={22} />
                   </div>
                   <div className="space-y-2">
                     <p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Member Access</p>
@@ -181,7 +172,7 @@ export const LoginScreen: React.FC = () => {
                     aria-live="polite"
                     className="flex items-start gap-2.5 rounded-2xl border border-error/20 bg-error/8 px-4 py-3 text-left"
                   >
-                    <AlertCircle size={16} className="mt-0.5 shrink-0 text-error" />
+                    <Icon icon="solar:danger-circle-bold-duotone" width={16} height={16} className="mt-0.5 shrink-0 text-error" />
                     <p className="text-sm leading-6 text-error">{error}</p>
                   </motion.div>
                 )}
@@ -206,7 +197,7 @@ export const LoginScreen: React.FC = () => {
 
                 <div className="border-t border-border/70 pt-4">
                   <div className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-                    <ShieldCheck size={14} className="text-primary" />
+                    <Icon icon="solar:shield-check-bold-duotone" width={14} height={14} className="text-primary" />
                     Access flow
                   </div>
                   <div className="grid grid-cols-3 gap-3">
@@ -254,7 +245,7 @@ export const PendingApprovalScreen: React.FC = () => {
         {profile?.status === 'rejected' ? (
           <>
             <div className="w-20 h-20 bg-error/10 rounded-3xl flex items-center justify-center mx-auto">
-              <ShieldAlert size={40} className="text-error" />
+              <Icon icon="solar:shield-warning-bold-duotone" width={40} height={40} className="text-error" />
             </div>
             <div className="space-y-2">
               <h1 className="text-3xl font-bold text-on-surface">Access Denied</h1>
@@ -273,7 +264,7 @@ export const PendingApprovalScreen: React.FC = () => {
                 className="absolute inset-0 bg-primary/20 rounded-3xl"
               />
               <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center relative z-10">
-                <Clock size={40} className="text-primary" />
+                <Icon icon="solar:clock-circle-bold-duotone" width={40} height={40} className="text-primary" />
               </div>
             </div>
             <div className="space-y-3">
@@ -283,7 +274,7 @@ export const PendingApprovalScreen: React.FC = () => {
                 Solo Hub account is awaiting admin review.
               </p>
               <div className="bg-primary/5 border border-primary/10 rounded-2xl px-4 py-3 flex items-center gap-3 text-left">
-                <Mail size={16} className="text-primary shrink-0" />
+                <Icon icon="solar:letter-bold-duotone" width={16} height={16} className="text-primary shrink-0" />
                 <p className="text-xs text-on-surface-variant">
                   You&apos;ll receive an email notification once your account is activated. This usually takes less
                   than 24 hours.

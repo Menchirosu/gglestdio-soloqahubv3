@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lightbulb, Check } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { Tip } from '../types';
 import { useAuth } from '../AuthContext';
 
@@ -95,7 +95,7 @@ export function TipForm({ onSubmit, onClose, initialData }: TipFormProps) {
         className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl cursor-pointer hover:bg-surface-container-high transition-colors"
       >
         <div className="flex items-center gap-3">
-          <Lightbulb className={`transition-colors ${formData.highlight ? 'text-primary' : 'text-outline'}`} size={18} />
+          <Icon icon="solar:lightbulb-bold-duotone" width={18} height={18} className={`transition-colors ${formData.highlight ? 'text-primary' : 'text-muted-foreground'}`} />
           <span className="text-sm font-medium">Highlight as Featured Tip</span>
         </div>
         <div className={`w-11 h-6 rounded-full relative transition-colors ${formData.highlight ? 'bg-primary' : 'bg-outline-variant'}`}>
@@ -112,7 +112,7 @@ export function TipForm({ onSubmit, onClose, initialData }: TipFormProps) {
           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         ) : (
           <>
-            <Check size={15} />
+            <Icon icon="solar:check-bold" width={15} height={15} />
             Share Tip
           </>
         )}

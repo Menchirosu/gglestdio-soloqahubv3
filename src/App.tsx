@@ -1,18 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
-import {
-  LayoutDashboard,
-  Bug,
-  BookOpen,
-  Sparkles,
-  Focus,
-  Search,
-  Bell,
-  PlusCircle,
-  X,
-  LogOut,
-  ShieldCheck,
-  Activity,
-} from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { Screen, BugStory, Tip, Proposal } from './types';
@@ -111,6 +98,9 @@ function MainApp() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
   const [activeUsers, setActiveUsers] = useState<{ uid: string; displayName: string; photoURL: string }[]>([]);
+  const [noiseEnabled, setNoiseEnabled] = useState(() => {
+    try { return localStorage.getItem('lumie-noise') !== 'off'; } catch { return true; }
+  });
 
   const {
     bugs, tips, proposals, achievements, notifications,
@@ -144,6 +134,11 @@ function MainApp() {
   }, []);
 
   useEffect(() => {
+    document.documentElement.setAttribute('data-noise', noiseEnabled ? 'on' : 'off');
+    try { localStorage.setItem('lumie-noise', noiseEnabled ? 'on' : 'off'); } catch { /* ignore */ }
+  }, [noiseEnabled]);
+
+  useEffect(() => {
     setIsSearchResultsOpen(searchQuery.trim().length > 1);
   }, [searchQuery]);
 
@@ -158,14 +153,13 @@ function MainApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Rail items — label is the new workspace name, id is the existing screen key
-  const railItems: { id: Screen; label: string; icon: React.ElementType }[] = [
-    { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-    { id: 'bug-wall', label: 'Queue', icon: Bug },
-    { id: 'signals', label: 'Signals', icon: Activity },
-    { id: 'tips-tricks', label: 'Contribute', icon: BookOpen },
-    { id: 'focus-zone', label: 'Focus', icon: Focus },
-    { id: 'achievements', label: 'Recognition', icon: Sparkles },
+  const railItems: { id: Screen; label: string; icon: string }[] = [
+    { id: 'dashboard', label: 'Overview', icon: 'solar:widget-5-bold-duotone' },
+    { id: 'bug-wall', label: 'Queue', icon: 'solar:bug-bold-duotone' },
+    { id: 'signals', label: 'Signals', icon: 'solar:chart-2-bold-duotone' },
+    { id: 'tips-tricks', label: 'Contribute', icon: 'solar:book-bold-duotone' },
+    { id: 'focus-zone', label: 'Focus', icon: 'solar:target-bold-duotone' },
+    { id: 'achievements', label: 'Recognition', icon: 'solar:medal-ribbons-bold-duotone' },
   ];
 
   const workspaceLabels: Record<string, string> = {
@@ -291,14 +285,14 @@ function MainApp() {
   const activeRailId = currentScreen === 'knowledge-sharing' ? 'tips-tricks' : currentScreen;
 
   return (
-    <div className="flex h-screen lumie-canvas text-foreground overflow-hidden">
+    <div className="flex h-screen lumie-canvas lumie-noise relative text-foreground overflow-hidden">
 
       {/* Compact Icon Rail — desktop only. Sits on warm canvas, outside the cream card (Q3). */}
       <aside data-testid="icon-rail" className="hidden md:flex flex-col w-[52px] shrink-0 h-full shell-rail z-40">
         {/* Logo mark — aligns with command bar height */}
         <div className="flex h-[44px] items-center justify-center shrink-0">
           <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-primary/14 text-primary">
-            <LayoutDashboard size={12} />
+            <Icon icon="solar:bug-minimalistic-bold-duotone" width={12} height={12} />
           </div>
         </div>
 
@@ -324,7 +318,7 @@ function MainApp() {
                     : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
                 }`}
               >
-                <item.icon size={15} />
+                <Icon icon={item.icon} width={15} height={15} />
               </button>
             </div>
           ))}
@@ -346,7 +340,7 @@ function MainApp() {
                     : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
                 }`}
               >
-                <ShieldCheck size={15} />
+                <Icon icon="solar:shield-check-bold-duotone" width={15} height={15} />
               </button>
             </div>
           )}
@@ -364,11 +358,20 @@ function MainApp() {
             <span className="absolute bottom-0 right-0 block h-1.5 w-1.5 rounded-full bg-green-500 ring-1 ring-panel" />
           </button>
           <button
+            onClick={() => setNoiseEnabled(v => !v)}
+            title={noiseEnabled ? 'Disable paper texture' : 'Enable paper texture'}
+            className={`flex h-[28px] w-[28px] items-center justify-center rounded-[6px] transition-colors ${
+              noiseEnabled ? 'text-primary hover:bg-primary/10' : 'text-muted-foreground/40 hover:bg-secondary/50 hover:text-muted-foreground'
+            }`}
+          >
+            <Icon icon="solar:layers-bold-duotone" width={13} height={13} />
+          </button>
+          <button
             onClick={logout}
             title="Sign out"
             className="flex h-[28px] w-[28px] items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
-            <LogOut size={13} />
+            <Icon icon="solar:logout-bold-duotone" width={13} height={13} />
           </button>
         </div>
       </aside>
@@ -392,7 +395,7 @@ function MainApp() {
               onClick={() => setIsCommandPaletteOpen(true)}
               className="shell-command-anchor hidden md:flex w-full max-w-sm"
             >
-              <Search size={12} />
+              <Icon icon="solar:magnifer-bold-duotone" width={12} height={12} />
               <span className="text-[12px]">Search issues, actions, commands...</span>
               <kbd className="ml-auto rounded-[4px] border border-border/80 bg-background/70 px-1.5 py-0.5 text-[10px] text-muted-foreground">
                 Ctrl K
@@ -401,7 +404,7 @@ function MainApp() {
 
             {/* Mobile search */}
             <form onSubmit={handleSearch} className="relative w-full md:hidden">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={13} />
+              <Icon icon="solar:magnifer-bold-duotone" width={13} height={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 value={searchQuery}
@@ -420,7 +423,7 @@ function MainApp() {
                   onClick={() => { setSearchQuery(''); setSelectedItemId(null); setIsSearchResultsOpen(false); }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded-[4px] p-0.5 text-muted-foreground hover:text-foreground"
                 >
-                  <X size={12} />
+                  <Icon icon="solar:close-bold" width={12} height={12} />
                 </button>
               )}
               <SearchResultsPopup
@@ -441,7 +444,7 @@ function MainApp() {
               className="hidden md:flex items-center gap-1 rounded-[6px] border border-border/70 bg-input/60 px-2 py-1 text-[11px] text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
               style={{ fontWeight: 510 }}
             >
-              <PlusCircle size={11} />
+              <Icon icon="solar:add-circle-bold-duotone" width={11} height={11} />
               New
             </button>
 
@@ -452,7 +455,7 @@ function MainApp() {
                 className="shell-utility-button relative"
                 title={`Notifications${unreadCount > 0 ? ` · ${unreadCount} unread` : ''}`}
               >
-                <Bell size={14} />
+                <Icon icon="solar:bell-bold-duotone" width={14} height={14} />
                 {unreadCount > 0 && (
                   <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
                 )}
@@ -748,7 +751,7 @@ function MainApp() {
             {activeRailId === item.id && (
               <span className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />
             )}
-            <item.icon size={18} strokeWidth={activeRailId === item.id ? 2 : 1.5} />
+            <Icon icon={item.icon} width={18} height={18} />
             <span className="text-[9px] tracking-wide" style={{ fontWeight: 510 }}>
               {item.label.split(' ')[0]}
             </span>
@@ -760,7 +763,7 @@ function MainApp() {
           onClick={() => setIsCommandPaletteOpen(true)}
           className="flex flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground"
         >
-          <Search size={18} strokeWidth={1.5} />
+          <Icon icon="solar:magnifer-bold-duotone" width={18} height={18} />
           <span className="text-[9px] tracking-wide" style={{ fontWeight: 510 }}>Search</span>
         </motion.button>
       </nav>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useAnimation, AnimatePresence } from 'motion/react';
-import { Trophy, RotateCcw } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { updateCurrentPresenter } from '../firebase';
 
 interface Member {
@@ -311,7 +311,7 @@ export function SpinWheel({ members, onWinner }: SpinWheelProps) {
               : 'hover:bg-primary/90 active:scale-[0.97]'
             }`}
         >
-          <RotateCcw size={15} className={isSpinning ? 'animate-spin' : ''} />
+          <Icon icon="solar:restart-bold-duotone" width={15} height={15} className={isSpinning ? 'animate-spin' : ''} />
           {isSpinning ? 'Spinning...' : 'Spin the Wheel'}
         </button>
 
@@ -326,7 +326,7 @@ export function SpinWheel({ members, onWinner }: SpinWheelProps) {
               className="bg-primary/10 border border-primary/20 px-5 py-3 rounded-[8px] flex items-center gap-3"
             >
               <div className="p-1.5 bg-primary/20 rounded-[6px]">
-                <Trophy size={15} className="text-primary" />
+                <Icon icon="solar:cup-star-bold-duotone" width={15} height={15} className="text-primary" />
               </div>
               <p className="text-sm text-on-surface font-[590]">
                 This week's presenter:{' '}

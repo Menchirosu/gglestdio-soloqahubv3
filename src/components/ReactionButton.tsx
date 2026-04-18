@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart } from 'lucide-react';
+import { Icon } from '@iconify/react';
 
 interface ReactionButtonProps {
   count: number;
@@ -69,9 +69,10 @@ export function ReactionButton({ count, isReacted, onReact, size = 20 }: Reactio
           isReacted ? 'text-error' : 'text-outline/60 hover:text-error'
         }`}
       >
-        <Heart
-          size={size}
-          fill={isReacted ? 'currentColor' : 'none'}
+        <Icon
+          icon={isReacted ? 'solar:heart-bold' : 'solar:heart-linear'}
+          width={size}
+          height={size}
           className="transition-colors"
         />
         <span className="text-xs font-medium">{count || '0'}</span>

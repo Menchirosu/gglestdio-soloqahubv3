@@ -1,19 +1,4 @@
-import {
-  LayoutDashboard,
-  Bug,
-  Lightbulb,
-  BookOpen,
-  Focus,
-  LucideIcon
-} from 'lucide-react';
-
 export type Screen = 'dashboard' | 'bug-wall' | 'tips-tricks' | 'knowledge-sharing' | 'achievements' | 'focus-zone' | 'admin-dashboard' | 'signals';
-
-export interface NavItem {
-  id: Screen;
-  label: string;
-  icon: LucideIcon;
-}
 
 export interface Comment {
   id: string;

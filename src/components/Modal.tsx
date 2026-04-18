@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from 'lucide-react';
+import { Icon } from '@iconify/react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -26,16 +26,16 @@ export function Modal({ isOpen, onClose, title, children, hideHeader = false }: 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-2xl bg-surface rounded-3xl shadow-2xl border border-outline-variant/10 overflow-hidden"
+            className="relative w-full max-w-2xl bg-card rounded-[20px] shadow-2xl border border-border overflow-hidden"
           >
             {!hideHeader && (
-              <div className="px-8 py-6 border-b border-outline-variant/10 flex items-center justify-between">
-                <h3 className="text-xl font-bold font-headline">{title}</h3>
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <h3 className="text-[16px] text-foreground" style={{ fontWeight: 600, letterSpacing: '-0.01em' }}>{title}</h3>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-surface-container-low rounded-full transition-colors"
+                  className="p-1.5 text-muted-foreground hover:bg-secondary/60 hover:text-foreground rounded-[6px] transition-colors"
                 >
-                  <X size={20} />
+                  <Icon icon="solar:close-bold" width={20} height={20} />
                 </button>
               </div>
             )}
@@ -43,9 +43,9 @@ export function Modal({ isOpen, onClose, title, children, hideHeader = false }: 
               {hideHeader && (
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 p-2 hover:bg-surface-container-low rounded-full transition-colors z-10"
+                  className="absolute top-4 right-4 p-1.5 text-muted-foreground hover:bg-secondary/60 hover:text-foreground rounded-[6px] transition-colors z-10"
                 >
-                  <X size={20} />
+                  <Icon icon="solar:close-bold" width={20} height={20} />
                 </button>
               )}
               {children}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Check } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { Achievement } from '../types';
 import { ConfettiCelebration } from './ConfettiCelebration';
 
@@ -136,7 +136,7 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
       <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/8 px-4 py-4">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 rounded-xl bg-emerald-500/15 p-2 text-emerald-700 dark:text-emerald-300">
-            <Sparkles size={16} />
+            <Icon icon="solar:medal-ribbons-bold-duotone" width={16} height={16} />
           </div>
           <div>
             <p className="text-sm font-bold text-on-surface">Keep it honest and specific.</p>
@@ -156,7 +156,7 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         ) : (
           <>
-            <Check size={15} />
+            <Icon icon="solar:check-bold" width={15} height={15} />
             Save Achievement
           </>
         )}

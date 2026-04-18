@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { Icon } from '@iconify/react';
 
 export function useToast() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
+      const timer = setTimeout(() => setToast(null), 6000);
       return () => clearTimeout(timer);
     }
   }, [toast]);
@@ -24,7 +24,7 @@ export function Toast({ message, type }: { message: string; type: 'success' | 'e
       type === 'success' ? 'bg-primary text-white' : 'bg-error text-white'
     }`}>
       <div className="flex items-center gap-3">
-        {type === 'success' ? <CheckCircle size={18} className="shrink-0" /> : <XCircle size={18} className="shrink-0" />}
+        <Icon icon={type === 'success' ? 'solar:check-circle-bold-duotone' : 'solar:close-circle-bold-duotone'} width={18} height={18} className="shrink-0" />
         <p className="font-bold text-sm">{message}</p>
       </div>
     </div>

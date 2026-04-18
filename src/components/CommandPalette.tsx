@@ -1,22 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  Bug,
-  Lightbulb,
-  BookOpen,
-  Sparkles,
-  Focus,
-  LayoutDashboard,
-  PlusCircle,
-  Search,
-  ArrowRight,
-  ShieldCheck,
-} from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { Screen, BugStory, Tip, Proposal, Achievement } from '../types';
 
 interface CommandItem {
   id: string;
-  icon: React.ElementType;
+  icon: string;
   label: string;
   description?: string;
   group: 'navigate' | 'create' | 'search';
@@ -51,7 +40,6 @@ export function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Focus input when palette opens
   useEffect(() => {
     if (isOpen) {
       setQuery('');
@@ -61,20 +49,20 @@ export function CommandPalette({
   }, [isOpen]);
 
   const navCommands: CommandItem[] = [
-    { id: 'nav-dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'Welcome and pulse', group: 'navigate', onSelect: () => { onNavigate('dashboard'); onClose(); } },
-    { id: 'nav-bugs', icon: Bug, label: 'Bug Wall', description: 'Stories from the trenches', group: 'navigate', onSelect: () => { onNavigate('bug-wall'); onClose(); } },
-    { id: 'nav-tips', icon: Lightbulb, label: 'Tips & Tricks', description: 'Practical shortcuts', group: 'navigate', onSelect: () => { onNavigate('tips-tricks'); onClose(); } },
-    { id: 'nav-knowledge', icon: BookOpen, label: 'Knowledge Sharing', description: 'Guides and ideas', group: 'navigate', onSelect: () => { onNavigate('knowledge-sharing'); onClose(); } },
-    { id: 'nav-achievements', icon: Sparkles, label: 'Achievements', description: 'Celebrate wins', group: 'navigate', onSelect: () => { onNavigate('achievements'); onClose(); } },
-    { id: 'nav-focus', icon: Focus, label: 'Focus Zone', description: 'Reset and breathe', group: 'navigate', onSelect: () => { onNavigate('focus-zone'); onClose(); } },
-    ...(isAdmin ? [{ id: 'nav-admin', icon: ShieldCheck, label: 'Admin Panel', description: 'Admin tools', group: 'navigate' as const, onSelect: () => { onNavigate('admin-dashboard'); onClose(); } }] : []),
+    { id: 'nav-dashboard', icon: 'solar:widget-5-bold-duotone', label: 'Overview', description: 'Welcome and pulse', group: 'navigate', onSelect: () => { onNavigate('dashboard'); onClose(); } },
+    { id: 'nav-bugs', icon: 'solar:bug-bold-duotone', label: 'Queue', description: 'Stories from the trenches', group: 'navigate', onSelect: () => { onNavigate('bug-wall'); onClose(); } },
+    { id: 'nav-signals', icon: 'solar:chart-2-bold-duotone', label: 'Signals', description: 'QA health at a glance', group: 'navigate', onSelect: () => { onNavigate('signals'); onClose(); } },
+    { id: 'nav-tips', icon: 'solar:lightbulb-bold-duotone', label: 'Contribute', description: 'Tips, tricks & knowledge', group: 'navigate', onSelect: () => { onNavigate('tips-tricks'); onClose(); } },
+    { id: 'nav-achievements', icon: 'solar:medal-ribbons-bold-duotone', label: 'Recognition', description: 'Celebrate wins', group: 'navigate', onSelect: () => { onNavigate('achievements'); onClose(); } },
+    { id: 'nav-focus', icon: 'solar:target-bold-duotone', label: 'Focus', description: 'Reset and breathe', group: 'navigate', onSelect: () => { onNavigate('focus-zone'); onClose(); } },
+    ...(isAdmin ? [{ id: 'nav-admin', icon: 'solar:shield-check-bold-duotone', label: 'Admin', description: 'Admin tools', group: 'navigate' as const, onSelect: () => { onNavigate('admin-dashboard'); onClose(); } }] : []),
   ];
 
   const createCommands: CommandItem[] = [
-    { id: 'create-bug', icon: Bug, label: 'Post a Bug Story', description: 'Share a hard-earned lesson', group: 'create', onSelect: () => { onCreateEntry('bug'); onClose(); } },
-    { id: 'create-tip', icon: Lightbulb, label: 'Contribute a Tip', description: 'Leave a practical shortcut', group: 'create', onSelect: () => { onCreateEntry('tip'); onClose(); } },
-    { id: 'create-knowledge', icon: BookOpen, label: 'Submit Knowledge Post', description: 'Share a guide or idea', group: 'create', onSelect: () => { onCreateEntry('knowledge'); onClose(); } },
-    { id: 'create-achievement', icon: Sparkles, label: 'Log Achievement', description: 'Capture a win', group: 'create', onSelect: () => { onCreateEntry('achievement'); onClose(); } },
+    { id: 'create-bug', icon: 'solar:bug-bold-duotone', label: 'Post a Bug Story', description: 'Share a hard-earned lesson', group: 'create', onSelect: () => { onCreateEntry('bug'); onClose(); } },
+    { id: 'create-tip', icon: 'solar:lightbulb-bold-duotone', label: 'Contribute a Tip', description: 'Leave a practical shortcut', group: 'create', onSelect: () => { onCreateEntry('tip'); onClose(); } },
+    { id: 'create-knowledge', icon: 'solar:book-bold-duotone', label: 'Submit Knowledge Post', description: 'Share a guide or idea', group: 'create', onSelect: () => { onCreateEntry('knowledge'); onClose(); } },
+    { id: 'create-achievement', icon: 'solar:medal-ribbons-bold-duotone', label: 'Log Achievement', description: 'Capture a win', group: 'create', onSelect: () => { onCreateEntry('achievement'); onClose(); } },
   ];
 
   const searchResults: CommandItem[] = useMemo(() => {
@@ -84,19 +72,19 @@ export function CommandPalette({
 
     bugs.forEach(b => {
       if (b.title.toLowerCase().includes(q) || b.discovery.toLowerCase().includes(q))
-        results.push({ id: `s-bug-${b.id}`, icon: Bug, label: b.title, description: 'Bug story', group: 'search', onSelect: () => { onNavigate('bug-wall'); onClose(); } });
+        results.push({ id: `s-bug-${b.id}`, icon: 'solar:bug-bold-duotone', label: b.title, description: 'Bug story', group: 'search', onSelect: () => { onNavigate('bug-wall'); onClose(); } });
     });
     tips.forEach(t => {
       if (t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q))
-        results.push({ id: `s-tip-${t.id}`, icon: Lightbulb, label: t.title, description: 'Tip', group: 'search', onSelect: () => { onNavigate('tips-tricks'); onClose(); } });
+        results.push({ id: `s-tip-${t.id}`, icon: 'solar:lightbulb-bold-duotone', label: t.title, description: 'Tip', group: 'search', onSelect: () => { onNavigate('tips-tricks'); onClose(); } });
     });
     proposals.forEach(p => {
       if (p.title.toLowerCase().includes(q) || p.scope.toLowerCase().includes(q))
-        results.push({ id: `s-prop-${p.id}`, icon: BookOpen, label: p.title, description: 'Knowledge post', group: 'search', onSelect: () => { onNavigate('knowledge-sharing'); onClose(); } });
+        results.push({ id: `s-prop-${p.id}`, icon: 'solar:book-bold-duotone', label: p.title, description: 'Knowledge post', group: 'search', onSelect: () => { onNavigate('knowledge-sharing'); onClose(); } });
     });
     achievements.forEach(a => {
       if (a.title.toLowerCase().includes(q) || a.story.toLowerCase().includes(q))
-        results.push({ id: `s-ach-${a.id}`, icon: Sparkles, label: a.title, description: 'Achievement', group: 'search', onSelect: () => { onNavigate('achievements'); onClose(); } });
+        results.push({ id: `s-ach-${a.id}`, icon: 'solar:medal-ribbons-bold-duotone', label: a.title, description: 'Achievement', group: 'search', onSelect: () => { onNavigate('achievements'); onClose(); } });
     });
 
     return results.slice(0, 8);
@@ -110,7 +98,6 @@ export function CommandPalette({
     ? createCommands.filter(c => c.label.toLowerCase().includes(query.toLowerCase()))
     : createCommands;
 
-  // Build visible items list for keyboard nav
   const allItems: CommandItem[] = query
     ? [...searchResults, ...filteredNavCommands, ...filteredCreateCommands]
     : [...navCommands, ...createCommands];
@@ -119,7 +106,6 @@ export function CommandPalette({
     setFocusedIndex(0);
   }, [query]);
 
-  // Scroll focused item into view
   useEffect(() => {
     if (!listRef.current) return;
     const item = listRef.current.querySelector(`[data-focused="true"]`);
@@ -145,7 +131,7 @@ export function CommandPalette({
     if (items.length === 0) return null;
     return (
       <div>
-        <p className="px-3 pb-1 pt-3 text-[11px] uppercase tracking-[0.12em] text-muted-foreground" style={{ fontWeight: 510 }}>
+        <p className="px-3 pb-1 pt-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>
           {label}
         </p>
         {items.map((item, localIdx) => {
@@ -164,7 +150,7 @@ export function CommandPalette({
               <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] ${
                 isFocused ? 'bg-primary/15 text-primary' : 'bg-input text-muted-foreground'
               }`}>
-                <item.icon size={14} />
+                <Icon icon={item.icon} width={14} height={14} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px]" style={{ fontWeight: isFocused ? 510 : 400 }}>{item.label}</p>
@@ -172,7 +158,7 @@ export function CommandPalette({
                   <p className="truncate text-[11px] text-muted-foreground">{item.description}</p>
                 )}
               </div>
-              {isFocused && <ArrowRight size={13} className="shrink-0 text-primary" />}
+              {isFocused && <Icon icon="solar:arrow-right-bold" width={13} height={13} className="shrink-0 text-primary" />}
             </button>
           );
         })}
@@ -180,7 +166,6 @@ export function CommandPalette({
     );
   };
 
-  // Compute group start offsets for keyboard nav
   const searchOffset = 0;
   const navOffset = query ? searchResults.length : 0;
   const createOffset = query ? searchResults.length + filteredNavCommands.length : navCommands.length;
@@ -189,7 +174,6 @@ export function CommandPalette({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -199,7 +183,6 @@ export function CommandPalette({
             onClick={onClose}
           />
 
-          {/* Panel */}
           <motion.div
             initial={{ opacity: 0, scale: 0.97, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -208,9 +191,8 @@ export function CommandPalette({
             className="fixed left-1/2 top-[15%] z-[90] w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-[12px] border border-border bg-card shadow-[rgba(0,0,0,0.5)_0px_16px_48px,rgba(0,0,0,0.3)_0px_0px_0px_1px]"
             onKeyDown={handleKeyDown}
           >
-            {/* Search input */}
             <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-              <Search size={15} className="shrink-0 text-muted-foreground" />
+              <Icon icon="solar:magnifer-bold-duotone" width={15} height={15} className="shrink-0 text-muted-foreground" />
               <input
                 ref={inputRef}
                 type="text"
@@ -224,7 +206,6 @@ export function CommandPalette({
               </kbd>
             </div>
 
-            {/* Results */}
             <div ref={listRef} className="max-h-[360px] overflow-y-auto p-2">
               {query ? (
                 <>
@@ -248,7 +229,6 @@ export function CommandPalette({
               )}
             </div>
 
-            {/* Footer */}
             <div className="flex items-center gap-4 border-t border-border px-4 py-2">
               <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                 <kbd className="rounded-[3px] border border-border bg-input px-1 text-[10px]">↑↓</kbd> navigate

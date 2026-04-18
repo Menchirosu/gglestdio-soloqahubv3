@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../AuthContext';
 import { updateDisplayName, updatePhotoURL } from '../firebase';
 import { useToast } from './Toast';
-import { Upload, RefreshCw, User } from 'lucide-react';
+import { Icon } from '@iconify/react';
 
 interface ProfileFormProps {
   onClose: () => void;
@@ -98,7 +98,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onClose, onUpdateAvata
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-outline">
-                <User size={48} />
+                <Icon icon="solar:user-bold-duotone" width={48} height={48} />
               </div>
             )}
           </div>
@@ -108,7 +108,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onClose, onUpdateAvata
             className="absolute -bottom-2 -right-2 p-3 bg-primary text-white rounded-2xl shadow-lg hover:scale-110 transition-all"
             title="Upload Image"
           >
-            <Upload size={20} />
+            <Icon icon="solar:upload-bold-duotone" width={20} height={20} />
           </button>
           <input
             ref={fileInputRef}
@@ -125,7 +125,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onClose, onUpdateAvata
             onClick={handleRandomize}
             className="flex items-center gap-2 px-6 py-2 bg-surface-container-high text-on-surface font-bold rounded-full hover:bg-surface-container-highest transition-all group"
           >
-            <RefreshCw size={16} className="group-hover:rotate-180 transition-transform duration-500" />
+            <Icon icon="solar:refresh-bold-duotone" width={16} height={16} className="group-hover:rotate-180 transition-transform duration-500" />
             Can't decide? Randomize!
           </button>
           <p className="text-[10px] text-outline uppercase font-bold tracking-widest">Or upload your own image</p>

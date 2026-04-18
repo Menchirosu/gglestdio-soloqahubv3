@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bug, PlusCircle, Image as ImageIcon, Smile, Trash2, X, Zap } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BugStory } from '../types';
 import { useAuth } from '../AuthContext';
@@ -140,7 +140,7 @@ export function BugForm({ onSubmit, onClose, initialData, showToast }: BugFormPr
                   onClick={() => setExistingImageUrls(prev => prev.filter((_, i) => i !== idx))} 
                   className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <Trash2 size={14} />
+                  <Icon icon="solar:trash-bin-trash-bold-duotone" width={14} height={14} />
                 </button>
               </div>
             ))}
@@ -153,7 +153,7 @@ export function BugForm({ onSubmit, onClose, initialData, showToast }: BugFormPr
                   onClick={() => setImageFiles(prev => prev.filter((_, i) => i !== idx))} 
                   className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <Trash2 size={14} />
+                  <Icon icon="solar:trash-bin-trash-bold-duotone" width={14} height={14} />
                 </button>
               </div>
             ))}
@@ -166,7 +166,7 @@ export function BugForm({ onSubmit, onClose, initialData, showToast }: BugFormPr
                   onClick={() => setGifUrl(null)} 
                   className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <Trash2 size={14} />
+                  <Icon icon="solar:trash-bin-trash-bold-duotone" width={14} height={14} />
                 </button>
               </div>
             )}
@@ -194,7 +194,7 @@ export function BugForm({ onSubmit, onClose, initialData, showToast }: BugFormPr
                   className="cursor-pointer hover:text-primary transition-colors flex items-center"
                   title="Add Images"
                 >
-                  <ImageIcon size={20} />
+                  <Icon icon="solar:gallery-bold-duotone" width={20} height={20} />
                 </label>
               </div>
 
@@ -208,7 +208,7 @@ export function BugForm({ onSubmit, onClose, initialData, showToast }: BugFormPr
                 className="gif-button-trigger hover:text-primary transition-colors"
                 title="Add GIF"
               >
-                <Smile size={20} />
+                <Icon icon="solar:emoji-funny-square-bold-duotone" width={20} height={20} />
               </button>
 
               <div className="h-5 w-[1px] bg-outline-variant/20 mx-1" />
@@ -220,7 +220,7 @@ export function BugForm({ onSubmit, onClose, initialData, showToast }: BugFormPr
                   isAnonymous ? 'bg-primary/10 border-primary/20 text-primary' : 'text-outline/60 hover:text-on-surface border-transparent hover:bg-surface-container-high'
                 }`}
               >
-                <Bug size={16} />
+                <Icon icon="solar:bug-bold-duotone" width={16} height={16} />
                 <span className="text-[10px] font-black uppercase tracking-widest">Anonymous</span>
               </button>
             </div>
@@ -252,7 +252,7 @@ export function BugForm({ onSubmit, onClose, initialData, showToast }: BugFormPr
             <div className="flex justify-between items-center mb-2 px-2">
               <span className="text-[10px] font-black uppercase tracking-widest text-outline">Trending GIFs</span>
               <button type="button" onClick={() => setShowGifPicker(false)} className="text-outline hover:text-on-surface">
-                <X size={14} />
+                <Icon icon="solar:close-bold" width={14} height={14} />
               </button>
             </div>
             <input

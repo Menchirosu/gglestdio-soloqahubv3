@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Check } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { Proposal } from '../types';
 import { useAuth } from '../AuthContext';
 
@@ -118,7 +118,7 @@ export function ProposalForm({ onSubmit, onClose, initialData }: ProposalFormPro
           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         ) : (
           <>
-            <Check size={15} />
+            <Icon icon="solar:check-bold" width={15} height={15} />
             Submit Proposal
           </>
         )}
