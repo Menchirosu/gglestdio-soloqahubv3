@@ -1,8 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { Icon } from '@iconify/react';
 import { db, approveUser, rejectUser, UserProfile } from '../firebase';
-import { Award, BriefcaseBusiness, BookOpen, Clock, ShieldCheck, ShieldX, Sparkles, Trophy, UserCheck, Users, Bug, Lightbulb } from 'lucide-react';
-import { BUG_STORY_WEIGHT, KNOWLEDGE_WEIGHT, LOOKBACK_DAYS, QaLeaderboardEntry, RankActivityItem, TIP_WEIGHT, WORK_ACHIEVEMENT_WEIGHT, computeQaLeaderboard } from '../utils/qaRanking';
+import {
+  BUG_STORY_WEIGHT,
+  KNOWLEDGE_WEIGHT,
+  LOOKBACK_DAYS,
+  QaLeaderboardEntry,
+  RankActivityItem,
+  TIP_WEIGHT,
+  WORK_ACHIEVEMENT_WEIGHT,
+  computeQaLeaderboard,
+} from '../utils/qaRanking';
+
+const SAGE = '#5A8B58';
+const SAGE_DARK = '#3F6B3E';
+const TERRA = '#C86948';
 
 export const AdminDashboard: React.FC = () => {
   const [pendingUsers, setPendingUsers] = useState<UserProfile[]>([]);
@@ -113,7 +126,7 @@ export const AdminDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
@@ -122,163 +135,176 @@ export const AdminDashboard: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="page-empty text-left">
-          <h2 className="text-lg text-foreground" style={{ fontWeight: 590 }}>Admin panel failed to load</h2>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">{loadError}</p>
+          <p className="whisper text-[18px] text-foreground" style={{ fontStyle: 'italic' }}>Admin panel failed to load.</p>
+          <p className="mt-2 text-[13px] leading-7 text-muted-foreground">{loadError}</p>
         </div>
       </div>
     );
   }
 
+  const approvedCount = allUsers.filter((user) => user.status === 'approved').length;
+
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
-      <div className="page-hero flex items-center justify-between px-6 py-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Hero */}
+      <div className="page-hero flex items-start justify-between gap-4 px-6 py-5">
         <div className="space-y-1">
-          <p className="page-kicker">Admin</p>
-          <h1 className="text-3xl font-bold text-on-surface">Admin Control Center</h1>
-          <p className="text-on-surface-variant">Manage user access and see who is carrying the strongest QA signal this month.</p>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground" style={{ fontWeight: 600 }}>
+            Admin
+          </p>
+          <h1 className="page-title-serif text-[32px] text-foreground">
+            <span style={{ fontStyle: 'italic' }}>Control center.</span>
+          </h1>
+          <p className="text-[13px] text-muted-foreground">
+            Manage access and see who is carrying the strongest QA signal this month.
+          </p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-bold">
-          <ShieldCheck size={18} />
+        <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-[11px] text-primary shrink-0" style={{ fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <Icon icon="solar:shield-check-bold-duotone" width={14} height={14} />
           Admin Access
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="page-panel-muted p-6 rounded-[14px] space-y-2">
+      {/* Stat tiles — dense density per Q7 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="rounded-[12px] border border-border bg-card px-5 py-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-outline uppercase tracking-widest">Pending</span>
-            <Clock size={16} className="text-primary" />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>Pending</span>
+            <Icon icon="solar:clock-circle-bold-duotone" width={14} height={14} className="text-primary" />
           </div>
-          <p className="text-4xl font-bold text-on-surface">{pendingUsers.length}</p>
+          <p className="mt-2 font-serif italic tabular-nums text-[32px] text-foreground leading-none" style={{ fontWeight: 500, letterSpacing: '-0.02em' }}>
+            {pendingUsers.length}
+          </p>
         </div>
-        <div className="page-panel-muted p-6 rounded-[14px] space-y-2">
+        <div className="rounded-[12px] border border-border bg-card px-5 py-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-outline uppercase tracking-widest">Approved</span>
-            <UserCheck size={16} className="text-emerald-500" />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>Approved</span>
+            <Icon icon="solar:user-check-bold-duotone" width={14} height={14} style={{ color: SAGE }} />
           </div>
-          <p className="text-4xl font-bold text-on-surface">{allUsers.filter((user) => user.status === 'approved').length}</p>
+          <p className="mt-2 font-serif italic tabular-nums text-[32px] text-foreground leading-none" style={{ fontWeight: 500, letterSpacing: '-0.02em' }}>
+            {approvedCount}
+          </p>
         </div>
-        <div className="page-panel-muted p-6 rounded-[14px] space-y-2">
+        <div className="rounded-[12px] border border-border bg-card px-5 py-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-outline uppercase tracking-widest">Total Users</span>
-            <Users size={16} className="text-on-surface" />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>Total Users</span>
+            <Icon icon="solar:users-group-rounded-bold-duotone" width={14} height={14} className="text-foreground" />
           </div>
-          <p className="text-4xl font-bold text-on-surface">{allUsers.length}</p>
+          <p className="mt-2 font-serif italic tabular-nums text-[32px] text-foreground leading-none" style={{ fontWeight: 500, letterSpacing: '-0.02em' }}>
+            {allUsers.length}
+          </p>
         </div>
       </div>
 
-      <section className="space-y-4">
+      {/* Leaderboard */}
+      <section className="space-y-3">
         <div className="flex items-center gap-2">
-          <Award size={20} className="text-amber-500" />
+          <Icon icon="solar:cup-star-bold-duotone" width={18} height={18} style={{ color: TERRA }} />
           <div>
-            <h2 className="text-xl font-bold text-on-surface">Top QA Leaderboard</h2>
-            <p className="text-sm text-on-surface-variant">Approved users over the last {LOOKBACK_DAYS} days. Score = bugs x{BUG_STORY_WEIGHT}, tips x{TIP_WEIGHT}, knowledge x{KNOWLEDGE_WEIGHT}, work achievements x{WORK_ACHIEVEMENT_WEIGHT}, personal achievements x1.</p>
+            <h2 className="text-[18px] text-foreground" style={{ fontWeight: 600, letterSpacing: '-0.02em' }}>Top QA Leaderboard</h2>
+            <p className="text-[12px] text-muted-foreground leading-relaxed">
+              Approved users over the last {LOOKBACK_DAYS} days. Score = bugs x{BUG_STORY_WEIGHT}, tips x{TIP_WEIGHT}, knowledge x{KNOWLEDGE_WEIGHT}, work achievements x{WORK_ACHIEVEMENT_WEIGHT}, personal achievements x1.
+            </p>
           </div>
         </div>
 
         {topQa ? (
-          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-6">
-            <div className="page-panel p-6 border-primary/15">
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-4">
+            {/* Top-1 spotlight */}
+            <div className="page-panel p-5 ring-1 ring-primary/20">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-3">
-                  <div className="inline-flex items-center gap-1.5 rounded-[4px] bg-primary/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-primary" style={{ fontWeight: 590 }}>
-                    <Trophy size={12} />
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-primary" style={{ fontWeight: 600 }}>
+                    <Icon icon="solar:medal-star-bold-duotone" width={12} height={12} />
                     Rank #1
                   </div>
                   <div className="flex items-center gap-4">
                     <img
                       src={topQa.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${topQa.user.uid}`}
                       alt={topQa.user.displayName}
-                      className="w-16 h-16 rounded-[8px] object-cover border border-border"
+                      className="w-14 h-14 rounded-[10px] object-cover border border-border"
                       referrerPolicy="no-referrer"
                     />
                     <div>
-                      <h3 className="text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.user.displayName}</h3>
-                      <p className="text-sm text-on-surface-variant">{topQa.user.email}</p>
+                      <h3 className="text-[18px] text-foreground" style={{ fontWeight: 600 }}>{topQa.user.displayName}</h3>
+                      <p className="text-[12px] text-muted-foreground">{topQa.user.email}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-on-surface-variant" style={{ fontWeight: 510 }}>Total Score</p>
-                  <p className="text-5xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.totalScore}</p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>Total Score</p>
+                  <p className="mt-1 font-serif italic tabular-nums text-[48px] text-foreground leading-none" style={{ fontWeight: 500, letterSpacing: '-0.02em' }}>
+                    {topQa.totalScore}
+                  </p>
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="rounded-[8px] bg-surface-container px-4 py-3">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-on-surface-variant" style={{ fontWeight: 510 }}>Bugs</p>
-                  <p className="mt-1.5 text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.bugStories}</p>
-                </div>
-                <div className="rounded-[8px] bg-surface-container px-4 py-3">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-on-surface-variant" style={{ fontWeight: 510 }}>Tips</p>
-                  <p className="mt-1.5 text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.tips}</p>
-                </div>
-                <div className="rounded-[8px] bg-surface-container px-4 py-3">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-on-surface-variant" style={{ fontWeight: 510 }}>Knowledge</p>
-                  <p className="mt-1.5 text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.knowledgeProposals}</p>
-                </div>
-                <div className="rounded-[8px] bg-surface-container px-4 py-3">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-on-surface-variant" style={{ fontWeight: 510 }}>Work Wins</p>
-                  <p className="mt-1.5 text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.workAchievements}</p>
-                </div>
-                <div className="rounded-[8px] bg-surface-container px-4 py-3">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-on-surface-variant" style={{ fontWeight: 510 }}>Personal</p>
-                  <p className="mt-1.5 text-2xl text-on-surface" style={{ fontWeight: 590 }}>{topQa.personalAchievements}</p>
-                </div>
+              <div className="mt-5 grid grid-cols-2 md:grid-cols-5 gap-2">
+                {[
+                  { label: 'Bugs', value: topQa.bugStories },
+                  { label: 'Tips', value: topQa.tips },
+                  { label: 'Knowledge', value: topQa.knowledgeProposals },
+                  { label: 'Work Wins', value: topQa.workAchievements },
+                  { label: 'Personal', value: topQa.personalAchievements },
+                ].map((stat) => (
+                  <div key={stat.label} className="rounded-[10px] bg-secondary/60 px-3 py-2.5">
+                    <p className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground" style={{ fontWeight: 600 }}>{stat.label}</p>
+                    <p className="mt-1 font-serif italic tabular-nums text-[20px] text-foreground leading-none" style={{ fontWeight: 500 }}>
+                      {stat.value}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="page-panel-muted p-6">
+            {/* Top 5 */}
+            <div className="page-panel-muted p-5">
               <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-primary" />
-                <h3 className="text-sm text-on-surface" style={{ fontWeight: 590 }}>Top 5 Members</h3>
+                <Icon icon="solar:chart-2-bold-duotone" width={14} height={14} className="text-primary" />
+                <h3 className="text-[13px] text-foreground" style={{ fontWeight: 600 }}>Top 5 Members</h3>
               </div>
 
-              <div className="mt-4 space-y-2">
+              <div className="mt-3 space-y-2">
                 {leaderboard.map((entry, index) => (
-                  <div key={entry.user.uid} className="rounded-[8px] border border-border bg-surface px-4 py-3">
+                  <div key={entry.user.uid} className="rounded-[10px] border border-border bg-card px-3.5 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <img
                           src={entry.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.user.uid}`}
                           alt={entry.user.displayName}
-                          className="w-10 h-10 rounded-[6px] object-cover"
+                          className="w-9 h-9 rounded-[8px] object-cover"
                           referrerPolicy="no-referrer"
                         />
                         <div className="min-w-0">
-                          <p className="truncate text-sm text-on-surface" style={{ fontWeight: 510 }}>#{index + 1} {entry.user.displayName}</p>
-                          <p className="truncate text-[11px] text-on-surface-variant">{entry.user.email}</p>
+                          <p className="truncate text-[13px] text-foreground" style={{ fontWeight: 590 }}>
+                            #{index + 1} {entry.user.displayName}
+                          </p>
+                          <p className="truncate text-[11px] text-muted-foreground">{entry.user.email}</p>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <p className="text-xl text-on-surface" style={{ fontWeight: 590 }}>{entry.totalScore}</p>
-                        <p className="text-[10px] uppercase tracking-[0.14em] text-on-surface-variant" style={{ fontWeight: 510 }}>Score</p>
+                        <p className="font-serif italic tabular-nums text-[18px] text-foreground leading-none" style={{ fontWeight: 500 }}>
+                          {entry.totalScore}
+                        </p>
+                        <p className="mt-0.5 text-[9px] uppercase tracking-[0.14em] text-muted-foreground" style={{ fontWeight: 600 }}>Score</p>
                       </div>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
-                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-primary/10 px-2 py-1 text-primary" style={{ fontWeight: 510 }}>
-                        <Bug size={11} />
-                        {entry.bugStories} bugs
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-primary/10 px-2 py-1 text-primary" style={{ fontWeight: 510 }}>
-                        <Lightbulb size={11} />
-                        {entry.tips} tips
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-primary/10 px-2 py-1 text-primary" style={{ fontWeight: 510 }}>
-                        <BookOpen size={11} />
-                        {entry.knowledgeProposals} knowledge
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-primary/10 px-2 py-1 text-primary" style={{ fontWeight: 510 }}>
-                        <BriefcaseBusiness size={11} />
-                        {entry.workAchievements} work wins
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-[4px] bg-primary/10 px-2 py-1 text-primary" style={{ fontWeight: 510 }}>
-                        <Sparkles size={11} />
-                        {entry.personalAchievements} personal
-                      </span>
+                    <div className="mt-2.5 flex flex-wrap gap-1 text-[10px]">
+                      {[
+                        { icon: 'solar:bug-bold-duotone', label: `${entry.bugStories} bugs` },
+                        { icon: 'solar:lightbulb-bold-duotone', label: `${entry.tips} tips` },
+                        { icon: 'solar:book-bookmark-bold-duotone', label: `${entry.knowledgeProposals} knowledge` },
+                        { icon: 'solar:case-minimalistic-bold-duotone', label: `${entry.workAchievements} work wins` },
+                        { icon: 'solar:heart-bold-duotone', label: `${entry.personalAchievements} personal` },
+                      ].map((chip, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 rounded-full bg-secondary/70 px-2 py-0.5 text-foreground/80" style={{ fontWeight: 500 }}>
+                          <Icon icon={chip.icon} width={10} height={10} className="text-muted-foreground" />
+                          {chip.label}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -286,54 +312,59 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="rounded-[2rem] border border-dashed border-outline-variant/20 bg-surface-container-low p-10 text-center space-y-2">
-            <p className="text-lg font-bold text-on-surface">No scored member activity yet.</p>
-            <p className="text-sm text-on-surface-variant">The leaderboard will populate once approved members contribute bugs, tips, knowledge entries, or achievements within the last 30 days.</p>
+          <div className="page-empty text-center">
+            <p className="whisper text-[18px] text-foreground" style={{ fontStyle: 'italic' }}>No scored member activity yet.</p>
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              The leaderboard will populate once approved members contribute bugs, tips, knowledge entries, or achievements within the last {LOOKBACK_DAYS} days.
+            </p>
           </div>
         )}
       </section>
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
-          <Clock size={20} className="text-primary" />
+      {/* Pending approvals */}
+      <div className="space-y-3">
+        <h2 className="text-[16px] text-foreground flex items-center gap-2" style={{ fontWeight: 600, letterSpacing: '-0.01em' }}>
+          <Icon icon="solar:clock-circle-bold-duotone" width={16} height={16} className="text-primary" />
           Pending Approvals
         </h2>
 
         {pendingUsers.length === 0 ? (
-          <div className="bg-surface-container-low p-12 rounded-3xl border border-dashed border-outline-variant/20 text-center space-y-2">
-            <p className="text-on-surface-variant font-medium">No pending requests at the moment.</p>
-            <p className="text-sm text-outline">New users will appear here when they sign up.</p>
+          <div className="page-empty">
+            <p className="whisper text-[16px] text-foreground" style={{ fontStyle: 'italic' }}>Nothing waiting.</p>
+            <p className="mt-1 text-[12px] text-muted-foreground">New members appear here when they sign in.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {pendingUsers.map((user) => (
-              <div key={user.uid} className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/10 flex items-center justify-between hover:border-primary/20 transition-all">
-                <div className="flex items-center gap-4">
+              <div key={user.uid} className="page-panel flex items-center justify-between px-4 py-3 transition-colors hover:border-primary/30">
+                <div className="flex items-center gap-3">
                   <img
                     src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`}
                     alt={user.displayName}
-                    className="w-12 h-12 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover"
                     referrerPolicy="no-referrer"
                   />
                   <div>
-                    <h3 className="font-bold text-on-surface">{user.displayName}</h3>
-                    <p className="text-sm text-outline">{user.email}</p>
+                    <h3 className="text-[13px] text-foreground" style={{ fontWeight: 590 }}>{user.displayName}</h3>
+                    <p className="text-[12px] text-muted-foreground">{user.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleReject(user.uid)}
-                    className="px-3 py-2 text-error border border-error/20 hover:bg-error/10 rounded-xl transition-all flex items-center gap-2 text-sm font-bold"
+                    className="inline-flex items-center gap-1.5 rounded-[10px] border border-destructive/25 px-3 py-1.5 text-[12px] text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
+                    style={{ fontWeight: 590 }}
                     title="Reject User"
                   >
-                    <ShieldX size={16} />
+                    <Icon icon="solar:shield-cross-bold-duotone" width={14} height={14} />
                     Reject
                   </button>
                   <button
                     onClick={() => handleApprove(user.uid)}
-                    className="px-4 py-2 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 text-sm"
+                    className="inline-flex items-center gap-1.5 rounded-[10px] bg-primary px-3.5 py-1.5 text-[12px] text-white shadow-sm shadow-primary/15 transition-colors hover:bg-primary/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                    style={{ fontWeight: 590 }}
                   >
-                    <UserCheck size={16} />
+                    <Icon icon="solar:user-check-bold-duotone" width={14} height={14} />
                     Approve
                   </button>
                 </div>
@@ -343,57 +374,65 @@ export const AdminDashboard: React.FC = () => {
         )}
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
-          <UserCheck size={20} className="text-emerald-500" />
+      {/* User directory */}
+      <div className="space-y-3">
+        <h2 className="text-[16px] text-foreground flex items-center gap-2" style={{ fontWeight: 600, letterSpacing: '-0.01em' }}>
+          <Icon icon="solar:user-check-bold-duotone" width={16} height={16} style={{ color: SAGE }} />
           User Directory
         </h2>
-        <div className="bg-surface-container-low rounded-3xl border border-outline-variant/10 overflow-hidden">
+        <div className="rounded-[12px] border border-border bg-card overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-surface-container-high/50">
-                <th className="px-6 py-4 text-xs font-bold text-outline uppercase tracking-widest">User</th>
-                <th className="px-6 py-4 text-xs font-bold text-outline uppercase tracking-widest">Status</th>
-                <th className="px-6 py-4 text-xs font-bold text-outline uppercase tracking-widest">Role</th>
-                <th className="px-6 py-4 text-xs font-bold text-outline uppercase tracking-widest">Joined</th>
+              <tr className="bg-secondary/50">
+                <th className="px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>User</th>
+                <th className="px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>Status</th>
+                <th className="px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>Role</th>
+                <th className="px-5 py-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground" style={{ fontWeight: 600 }}>Joined</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant/5">
-              {allUsers.map((user) => (
-                <tr key={user.uid} className="hover:bg-surface-container-high/30 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`}
-                        alt={user.displayName}
-                        className="w-8 h-8 rounded-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div>
-                        <p className="text-sm font-bold text-on-surface">{user.displayName}</p>
-                        <p className="text-[10px] text-outline">{user.email}</p>
+            <tbody className="divide-y divide-border">
+              {allUsers.map((user) => {
+                const statusStyle =
+                  user.status === 'approved'
+                    ? { color: SAGE_DARK, bg: `${SAGE}1A` }
+                    : user.status === 'pending'
+                    ? { color: TERRA, bg: `${TERRA}1A` }
+                    : { color: '#C73D35', bg: '#C73D351A' };
+                return (
+                  <tr key={user.uid} className="hover:bg-secondary/30 transition-colors">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`}
+                          alt={user.displayName}
+                          className="w-8 h-8 rounded-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div>
+                          <p className="text-[12px] text-foreground" style={{ fontWeight: 590 }}>{user.displayName}</p>
+                          <p className="text-[10px] text-muted-foreground">{user.email}</p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      user.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500' :
-                      user.status === 'pending' ? 'bg-primary/10 text-primary' :
-                      'bg-error/10 text-error'
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-xs text-on-surface-variant font-medium">{user.role}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-xs text-outline">
-                      {user.createdAt?.toDate ? user.createdAt.toDate().toLocaleDateString() : 'Just now'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span
+                        className="inline-flex rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]"
+                        style={{ fontWeight: 600, color: statusStyle.color, background: statusStyle.bg }}
+                      >
+                        {user.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="text-[12px] text-muted-foreground">{user.role}</span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="text-[12px] text-muted-foreground">
+                        {user.createdAt?.toDate ? user.createdAt.toDate().toLocaleDateString() : 'Just now'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
