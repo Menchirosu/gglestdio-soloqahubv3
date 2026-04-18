@@ -303,9 +303,11 @@ function MainApp() {
               {activeRailId === item.id && (
                 <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
               )}
-              <button
+              <motion.button
                 title={item.label}
                 data-testid={`rail-nav-${item.id}`}
+                whileTap={{ scale: 0.85 }}
+                transition={{ duration: 0.1 }}
                 onClick={() => {
                   navigateTo(item.id);
                   setSearchQuery('');
@@ -319,7 +321,7 @@ function MainApp() {
                 }`}
               >
                 <Icon icon={item.icon} width={15} height={15} />
-              </button>
+              </motion.button>
             </div>
           ))}
         </nav>
@@ -331,8 +333,10 @@ function MainApp() {
               {currentScreen === 'admin-dashboard' && (
                 <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
               )}
-              <button
+              <motion.button
                 title="Admin"
+                whileTap={{ scale: 0.85 }}
+                transition={{ duration: 0.1 }}
                 onClick={() => navigateTo('admin-dashboard')}
                 className={`flex h-[36px] w-[36px] items-center justify-center rounded-[6px] transition-colors ${
                   currentScreen === 'admin-dashboard'
@@ -341,7 +345,7 @@ function MainApp() {
                 }`}
               >
                 <Icon icon="solar:shield-check-bold-duotone" width={15} height={15} />
-              </button>
+              </motion.button>
             </div>
           )}
           <button
@@ -466,11 +470,11 @@ function MainApp() {
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setIsNotificationsOpen(false)} />
                     <motion.div
-                      initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                      transition={{ duration: 0.15, ease: 'easeOut' }}
-                      className="absolute right-0 z-20 mt-2 w-72 overflow-hidden rounded-[8px] border border-border bg-card shadow-[rgba(0,0,0,0.3)_0px_8px_24px,rgba(0,0,0,0.2)_0px_0px_0px_1px]"
+                      exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      className="absolute right-0 z-20 mt-2 w-72 overflow-hidden rounded-[12px] border border-border bg-card shadow-[rgba(0,0,0,0.3)_0px_8px_24px,rgba(0,0,0,0.2)_0px_0px_0px_1px]"
                     >
                       <div className="flex items-center justify-between border-b border-border px-4 py-3">
                         <h4 className="text-[13px] text-foreground" style={{ fontWeight: 590 }}>
@@ -546,10 +550,10 @@ function MainApp() {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentScreen}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.12 }}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               className="min-h-full"
             >
               <div className="mx-auto max-w-[82rem] px-5 py-5 pb-24 md:pb-6">

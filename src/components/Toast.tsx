@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Icon } from '@iconify/react';
 
 export function useToast() {
@@ -20,13 +21,26 @@ export function useToast() {
 
 export function Toast({ message, type }: { message: string; type: 'success' | 'error' }) {
   return (
-    <div className={`fixed bottom-8 right-8 px-6 py-3 rounded-xl shadow-2xl z-50 animate-in slide-in-from-bottom-4 duration-300 ${
-      type === 'success' ? 'bg-primary text-white' : 'bg-error text-white'
-    }`}>
-      <div className="flex items-center gap-3">
-        <Icon icon={type === 'success' ? 'solar:check-circle-bold-duotone' : 'solar:close-circle-bold-duotone'} width={18} height={18} className="shrink-0" />
-        <p className="font-bold text-sm">{message}</p>
-      </div>
-    </div>
+    <AnimatePresence>
+      <motion.div
+        key={message}
+        initial={{ opacity: 0, y: 16, x: 8, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 8, scale: 0.96 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+        className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 rounded-[12px] px-4 py-3 shadow-[0_4px_24px_rgba(26,23,20,0.18)] ${
+          type === 'success'
+            ? 'bg-foreground text-background'
+            : 'bg-destructive text-white'
+        }`}
+      >
+        <Icon
+          icon={type === 'success' ? 'solar:check-circle-bold-duotone' : 'solar:close-circle-bold-duotone'}
+          width={16} height={16}
+          className="shrink-0"
+        />
+        <p className="text-[13px] max-w-[260px]" style={{ fontWeight: 590 }}>{message}</p>
+      </motion.div>
+    </AnimatePresence>
   );
 }

@@ -485,6 +485,20 @@ h3 { letter-spacing: -0.02em; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Empty state ambient float — gentle, slow, non-distracting */
+@keyframes empty-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-5px); }
+}
+
+.empty-float {
+  animation: empty-float 3.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-float { animation: none; }
+}
+
 .count-up-in {
   animation: count-up-in 0.3s ease-out both;
 }
