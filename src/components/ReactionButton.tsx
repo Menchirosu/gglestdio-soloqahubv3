@@ -48,7 +48,7 @@ export function ReactionButton({ count, isReacted, onReact, size = 20 }: Reactio
         {particles.map(p => (
           <motion.span
             key={p.id}
-            className="pointer-events-none absolute left-[10px] top-[10px] h-1.5 w-1.5 rounded-full bg-error"
+            className="pointer-events-none absolute left-[10px] top-[10px] h-1.5 w-1.5 rounded-full bg-destructive"
             initial={{ opacity: 1, x: 0, y: 0, scale: 1 }}
             animate={{ opacity: 0, x: p.tx, y: p.ty, scale: 0 }}
             transition={{ duration: 0.55, ease: [0.2, 0, 0.6, 1] }}
@@ -66,7 +66,7 @@ export function ReactionButton({ count, isReacted, onReact, size = 20 }: Reactio
             : { duration: 0.15 }
         }
         className={`flex items-center gap-1.5 transition-colors ${
-          isReacted ? 'text-error' : 'text-outline/60 hover:text-error'
+          isReacted ? 'text-destructive' : 'text-muted-foreground/60 hover:text-destructive'
         }`}
       >
         <Icon

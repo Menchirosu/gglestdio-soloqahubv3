@@ -53,7 +53,7 @@ export function CommandPalette({
     { id: 'nav-bugs', icon: 'solar:bug-bold-duotone', label: 'Queue', description: 'Stories from the trenches', group: 'navigate', onSelect: () => { onNavigate('bug-wall'); onClose(); } },
     { id: 'nav-signals', icon: 'solar:chart-2-bold-duotone', label: 'Signals', description: 'QA health at a glance', group: 'navigate', onSelect: () => { onNavigate('signals'); onClose(); } },
     { id: 'nav-tips', icon: 'solar:lightbulb-bold-duotone', label: 'Contribute', description: 'Tips, tricks & knowledge', group: 'navigate', onSelect: () => { onNavigate('tips-tricks'); onClose(); } },
-    { id: 'nav-achievements', icon: 'solar:medal-ribbons-bold-duotone', label: 'Recognition', description: 'Celebrate wins', group: 'navigate', onSelect: () => { onNavigate('achievements'); onClose(); } },
+    { id: 'nav-achievements', icon: 'solar:medal-ribbon-bold-duotone', label: 'Recognition', description: 'Celebrate wins', group: 'navigate', onSelect: () => { onNavigate('achievements'); onClose(); } },
     { id: 'nav-focus', icon: 'solar:target-bold-duotone', label: 'Focus', description: 'Reset and breathe', group: 'navigate', onSelect: () => { onNavigate('focus-zone'); onClose(); } },
     ...(isAdmin ? [{ id: 'nav-admin', icon: 'solar:shield-check-bold-duotone', label: 'Admin', description: 'Admin tools', group: 'navigate' as const, onSelect: () => { onNavigate('admin-dashboard'); onClose(); } }] : []),
   ];
@@ -62,7 +62,7 @@ export function CommandPalette({
     { id: 'create-bug', icon: 'solar:bug-bold-duotone', label: 'Post a Bug Story', description: 'Share a hard-earned lesson', group: 'create', onSelect: () => { onCreateEntry('bug'); onClose(); } },
     { id: 'create-tip', icon: 'solar:lightbulb-bold-duotone', label: 'Contribute a Tip', description: 'Leave a practical shortcut', group: 'create', onSelect: () => { onCreateEntry('tip'); onClose(); } },
     { id: 'create-knowledge', icon: 'solar:book-bold-duotone', label: 'Submit Knowledge Post', description: 'Share a guide or idea', group: 'create', onSelect: () => { onCreateEntry('knowledge'); onClose(); } },
-    { id: 'create-achievement', icon: 'solar:medal-ribbons-bold-duotone', label: 'Log Achievement', description: 'Capture a win', group: 'create', onSelect: () => { onCreateEntry('achievement'); onClose(); } },
+    { id: 'create-achievement', icon: 'solar:medal-ribbon-bold-duotone', label: 'Log Achievement', description: 'Capture a win', group: 'create', onSelect: () => { onCreateEntry('achievement'); onClose(); } },
   ];
 
   const searchResults: CommandItem[] = useMemo(() => {
@@ -84,7 +84,7 @@ export function CommandPalette({
     });
     achievements.forEach(a => {
       if (a.title.toLowerCase().includes(q) || a.story.toLowerCase().includes(q))
-        results.push({ id: `s-ach-${a.id}`, icon: 'solar:medal-ribbons-bold-duotone', label: a.title, description: 'Achievement', group: 'search', onSelect: () => { onNavigate('achievements'); onClose(); } });
+        results.push({ id: `s-ach-${a.id}`, icon: 'solar:medal-ribbon-bold-duotone', label: a.title, description: 'Achievement', group: 'search', onSelect: () => { onNavigate('achievements'); onClose(); } });
     });
 
     return results.slice(0, 8);

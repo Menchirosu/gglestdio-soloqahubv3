@@ -117,7 +117,7 @@ export function ConfettiCelebration({ title, onDone }: ConfettiCelebrationProps)
             <p className="text-[11px] uppercase tracking-[0.22em] text-primary" style={{ fontWeight: 590 }}>
               Achievement Unlocked
             </p>
-            <p className="mt-1.5 text-base text-on-surface" style={{ fontWeight: 590 }}>
+            <p className="mt-1.5 text-base text-foreground" style={{ fontWeight: 590 }}>
               {title}
             </p>
           </div>

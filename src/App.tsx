@@ -159,7 +159,7 @@ function MainApp() {
     { id: 'signals', label: 'Signals', icon: 'solar:chart-2-bold-duotone' },
     { id: 'tips-tricks', label: 'Contribute', icon: 'solar:book-bold-duotone' },
     { id: 'focus-zone', label: 'Focus', icon: 'solar:target-bold-duotone' },
-    { id: 'achievements', label: 'Recognition', icon: 'solar:medal-ribbons-bold-duotone' },
+    { id: 'achievements', label: 'Recognition', icon: 'solar:medal-ribbon-bold-duotone' },
   ];
 
   const workspaceLabels: Record<string, string> = {
@@ -504,7 +504,7 @@ function MainApp() {
                                   setIsNotificationsOpen(false);
                                 }
                               }}
-                              className={`relative cursor-pointer border-b border-border px-4 py-3 transition-colors hover:bg-surface-container-low ${!n.isRead ? 'bg-primary/5' : ''}`}
+                              className={`relative cursor-pointer border-b border-border px-4 py-3 transition-colors hover:bg-secondary/20 ${!n.isRead ? 'bg-primary/5' : ''}`}
                             >
                               {!n.isRead && (
                                 <span className="absolute left-1.5 top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-primary" />

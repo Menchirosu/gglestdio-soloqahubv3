@@ -76,7 +76,7 @@ export function BreathingGuide({ isActive }: BreathingGuideProps) {
         <h4 className="text-sm font-[590] uppercase tracking-[0.18em] text-primary h-5">
           {isActive ? currentPhase.name : 'Focus Breathing'}
         </h4>
-        <p className="text-on-surface-variant text-[10px] uppercase tracking-[0.2em]" style={{ fontWeight: 510 }}>
+        <p className="text-muted-foreground text-[10px] uppercase tracking-[0.2em]" style={{ fontWeight: 510 }}>
           Box Pattern: 4s • 4s • 4s • 4s
         </p>
       </div>

@@ -328,7 +328,7 @@ export function SpinWheel({ members, onWinner }: SpinWheelProps) {
               <div className="p-1.5 bg-primary/20 rounded-[6px]">
                 <Icon icon="solar:cup-star-bold-duotone" width={15} height={15} className="text-primary" />
               </div>
-              <p className="text-sm text-on-surface font-[590]">
+              <p className="text-sm text-foreground font-[590]">
                 This week's presenter:{' '}
                 <span className="text-primary">{winner.name}</span>
               </p>

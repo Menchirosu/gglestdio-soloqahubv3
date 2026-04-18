@@ -31,7 +31,6 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
         ...formData,
         achievementDate: formData.achievementDate || undefined,
       });
-      // Only celebrate on new achievements, not edits
       if (!initialData) {
         setCelebrationTitle(formData.title);
         setCelebrating(true);
@@ -59,33 +58,33 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2 md:col-span-2">
-          <label htmlFor="achievement-title" className="text-xs font-bold uppercase tracking-widest text-outline">Achievement Title</label>
+          <label htmlFor="achievement-title" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Achievement Title</label>
           <input
             id="achievement-title"
             required
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full bg-surface-container-highest border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+            className="w-full bg-secondary/30 border-none rounded-[12px] p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
             placeholder="e.g. Reduced flaky regression runs before release"
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-outline">Category</label>
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Category</label>
           <div className="grid grid-cols-2 gap-3">
             {(['Work', 'Personal'] as const).map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => setFormData({ ...formData, category: option })}
-                className={`rounded-2xl border px-4 py-4 text-left transition-all ${
+                className={`rounded-[12px] border px-4 py-4 text-left transition-all ${
                   formData.category === option
                     ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-outline-variant/20 bg-surface-container-low text-on-surface'
+                    : 'border-border/20 bg-card text-foreground'
                 }`}
               >
                 <span className="block text-sm font-bold">{option}</span>
-                <span className="mt-1 block text-xs text-outline">
+                <span className="mt-1 block text-xs text-muted-foreground">
                   {option === 'Work' ? 'Testing wins, delivery impact, collaboration' : 'Personal growth, learning, community, resilience'}
                 </span>
               </button>
@@ -94,53 +93,53 @@ export function AchievementForm({ onSubmit, onClose, initialData }: AchievementF
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="achievement-date" className="text-xs font-bold uppercase tracking-widest text-outline">When Did It Happen?</label>
+          <label htmlFor="achievement-date" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">When Did It Happen?</label>
           <input
             id="achievement-date"
             type="date"
             value={formData.achievementDate}
             onChange={(e) => setFormData({ ...formData, achievementDate: e.target.value })}
-            className="w-full bg-surface-container-highest border-none rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+            className="w-full bg-secondary/30 border-none rounded-[12px] p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="achievement-story" className="text-xs font-bold uppercase tracking-widest text-outline">What Happened?</label>
+        <label htmlFor="achievement-story" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">What Happened?</label>
         <textarea
           id="achievement-story"
           required
           minLength={24}
           value={formData.story}
           onChange={(e) => setFormData({ ...formData, story: e.target.value })}
-          className="w-full bg-surface-container-highest border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+          className="w-full bg-secondary/30 border-none rounded-[16px] p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none"
           placeholder="Describe the moment, challenge, or initiative in a few sentences."
           rows={4}
         />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="achievement-impact" className="text-xs font-bold uppercase tracking-widest text-outline">Why Did It Matter?</label>
+        <label htmlFor="achievement-impact" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Why Did It Matter?</label>
         <textarea
           id="achievement-impact"
           required
           minLength={20}
           value={formData.impact}
           onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
-          className="w-full bg-surface-container-highest border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+          className="w-full bg-secondary/30 border-none rounded-[16px] p-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all resize-none"
           placeholder="Explain the impact on quality, team flow, customer confidence, or personal growth."
           rows={4}
         />
       </div>
 
-      <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/8 px-4 py-4">
+      <div className="rounded-[12px] border border-[#5A8B58]/15 bg-[#5A8B58]/8 px-4 py-4">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 rounded-xl bg-emerald-500/15 p-2 text-emerald-700 dark:text-emerald-300">
-            <Icon icon="solar:medal-ribbons-bold-duotone" width={16} height={16} />
+          <div className="mt-0.5 rounded-[10px] bg-[#5A8B58]/15 p-2 text-[#5A8B58]">
+            <Icon icon="solar:medal-ribbon-bold-duotone" width={16} height={16} />
           </div>
           <div>
-            <p className="text-sm font-bold text-on-surface">Keep it honest and specific.</p>
-            <p className="mt-1 text-xs leading-relaxed text-on-surface-variant">
+            <p className="text-sm font-bold text-foreground">Keep it honest and specific.</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               Short, concrete stories are easier for the team to appreciate and easier for you to revisit later.
             </p>
           </div>

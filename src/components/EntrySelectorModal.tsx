@@ -36,7 +36,7 @@ export function EntrySelectorModal({ onSelect }: EntrySelectorModalProps) {
       id: 'achievement',
       title: 'Achievement',
       desc: 'Capture a meaningful work or personal win in your growth journal.',
-      icon: 'solar:medal-ribbons-bold-duotone',
+      icon: 'solar:medal-ribbon-bold-duotone',
       color: 'text-[#5A8B58]',
       bgColor: 'bg-[#5A8B58]/10',
     },
