@@ -187,7 +187,7 @@ export function useStorage(activeScreen?: string) {
     return () => unsubscribers.forEach(u => u());
   }, [user?.uid, loading, activeScreen]);
 
-  const addBug = async (bug: Omit<BugStory, 'id' | 'date' | 'reactions' | 'comments'>) => {
+  const addBug = async (bug: Omit<BugStory, 'id' | 'date' | 'reactions' | 'comments'>): Promise<string> => {
     const bugId = await createBugStory({
       ...bug,
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -206,6 +206,7 @@ export function useStorage(activeScreen?: string) {
       isRead: false,
       time: 'Just now'
     });
+    return bugId;
   };
 
   const addTip = async (tip: Omit<Tip, 'id' | 'time'>) => {
@@ -303,27 +304,38 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
   };
 
   const reactToBug = async (bugId: string, emoji: string, currentUserName?: string) => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
     const bug = bugs.find(b => b.id === bugId);
     if (!bug) return;
 
     const reactions = { ...bug.reactions };
-    reactions[emoji] = (reactions[emoji] || 0) + 1;
-    
-    await updateBugReactions(bugId, reactions);
+    const reactedBy = { ...(bug.reactedBy ?? {}) };
+    const alreadyReacted = (reactedBy[emoji] ?? []).includes(uid);
 
-    // Trigger notification
-    if (currentUserName && bug.authorId && bug.authorId !== auth.currentUser?.uid) {
-      await createNotification({
-        type: 'like',
-        title: 'New Bug Reaction',
-        desc: `${currentUserName} reacted ${emoji} to your story: "${bug.title}"`,
-        targetId: bug.id,
-        targetScreen: 'bug-wall',
-        recipientId: bug.authorId,
-        isRead: false,
-        time: 'Just now'
-      });
+    if (alreadyReacted) {
+      reactions[emoji] = Math.max(0, (reactions[emoji] || 1) - 1);
+      if (!reactions[emoji]) delete reactions[emoji];
+      reactedBy[emoji] = (reactedBy[emoji] ?? []).filter(id => id !== uid);
+      if (!reactedBy[emoji].length) delete reactedBy[emoji];
+    } else {
+      reactions[emoji] = (reactions[emoji] || 0) + 1;
+      reactedBy[emoji] = [...(reactedBy[emoji] ?? []), uid];
+      if (currentUserName && bug.authorId && bug.authorId !== uid) {
+        await createNotification({
+          type: 'like',
+          title: 'New Bug Reaction',
+          desc: `${currentUserName} reacted ${emoji} to your story: "${bug.title}"`,
+          targetId: bug.id,
+          targetScreen: 'bug-wall',
+          recipientId: bug.authorId,
+          isRead: false,
+          time: 'Just now'
+        });
+      }
     }
+
+    await updateBugReactions(bugId, reactions, reactedBy);
   };
 
   const reactToTip = async (tipId: string, emoji: string, currentUserName?: string) => {

@@ -143,57 +143,49 @@ export function TipsTricksScreen({ tips, onAddTip, onDeleteTip, onEditTip, onRea
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.28, delay: idx * 0.06, ease: [0.25, 0, 0, 1] }}
-            whileHover={{ y: -4, boxShadow: '0 10px 28px rgba(113,112,255,0.13)' }}
-            className={`page-panel p-7 flex flex-col h-full group relative overflow-hidden cursor-pointer ${
-              tip.highlight ? 'bg-primary text-white border-primary/20' : ''
-            }`}
+            whileHover={{ y: -4, boxShadow: '0 8px 24px rgba(26,23,20,0.08)' }}
+            className="page-panel p-7 flex flex-col h-full group relative overflow-hidden cursor-pointer"
           >
             <div className="mb-6">
-              <span className={`inline-block px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md ${
-                tip.highlight ? 'bg-white/20 backdrop-blur-sm' : 'bg-secondary-container text-on-secondary-container'
-              }`}>
+              <span className="inline-block px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md bg-secondary/30 text-muted-foreground">
                 {tip.cat}
               </span>
             </div>
-            <h3 className={`text-2xl font-bold leading-tight mb-4 group-hover:text-primary transition-colors ${tip.highlight ? 'group-hover:text-secondary-fixed' : ''}`}>
+            <h3 className="text-2xl font-bold leading-tight mb-4 group-hover:text-primary transition-colors text-foreground">
               {tip.title}
             </h3>
-            <p className={`leading-relaxed text-sm mb-6 line-clamp-3 ${tip.highlight ? 'text-white/80' : 'text-on-surface-variant'}`}>
+            <p className="leading-relaxed text-sm mb-6 line-clamp-3 text-muted-foreground">
               {tip.desc}
             </p>
-            <div className={`p-4 rounded-lg mb-8 italic text-sm border-l-4 ${
-              tip.highlight ? 'bg-white/10 border-white/30 text-white/90' : 'bg-surface-container-low border-secondary/30 text-tertiary'
-            }`}>
-              <span className={`font-bold block not-italic text-xs mb-1 ${tip.highlight ? 'text-white' : 'text-on-surface'}`}>Scenario:</span>
+            <div className="p-4 rounded-lg mb-8 italic text-sm border-l-4 bg-secondary/10 border-border/50 text-muted-foreground">
+              <span className="font-bold block not-italic text-xs mb-1 text-foreground">Scenario:</span>
               "{tip.scenario}"
             </div>
-            <div className={`mt-auto pt-6 border-t flex items-center justify-between ${tip.highlight ? 'border-white/10' : 'border-surface-container'}`}>
+            <div className="mt-auto pt-6 border-t border-border/40 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${tip.highlight ? 'bg-white/20' : 'bg-primary-container text-white'}`}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs bg-primary/10 text-primary">
                   {tip.author.split(' ').map(n => n[0]).join('')}
                 </div>
-                <span className={`text-xs font-bold ${tip.highlight ? 'text-white' : 'text-on-surface'}`}>{tip.author}</span>
+                <span className="text-xs font-bold text-foreground">{tip.author}</span>
               </div>
               <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
                 <motion.button
                   whileTap={{ scale: 0.85 }}
                   onClick={() => onReact(tip.id, '❤️', profile?.displayName)}
-                  className={`flex items-center gap-1 transition-colors ${
-                    tip.highlight ? 'text-white/70 hover:text-white' : 'text-outline/60 hover:text-error'
-                  }`}
+                  className="flex items-center gap-1 transition-colors text-muted-foreground/60 hover:text-destructive"
                 >
-                  <Heart size={15} className={(tip.reactions?.['❤️'] ?? 0) > 0 ? (tip.highlight ? 'fill-white text-white' : 'fill-error text-error') : ''} />
+                  <Heart size={15} className={(tip.reactions?.['❤️'] ?? 0) > 0 ? 'fill-destructive text-destructive' : ''} />
                   <span className="text-xs font-medium">{tip.reactions?.['❤️'] || ''}</span>
                 </motion.button>
-                <span className={`text-[10px] font-medium uppercase tracking-wider ${tip.highlight ? 'text-white/60' : 'text-outline'}`}>
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
                   {timeAgo(tip.createdAt || tip.date || tip.time)}
                 </span>
-                
+
                 {(profile?.uid === tip.authorId || (!tip.authorId && profile?.displayName === tip.author)) && (
                   <div className="relative">
-                    <button 
+                    <button
                       onClick={() => setMenuOpenId(menuOpenId === tip.id ? null : tip.id)}
-                      className={`p-1 rounded-full transition-colors opacity-0 group-hover:opacity-100 ${tip.highlight ? 'text-white/80 hover:bg-white/20' : 'text-outline hover:text-on-surface hover:bg-surface-container-high'}`}
+                      className="p-1 rounded-full transition-colors opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-secondary/30"
                     >
                       <MoreHorizontal size={16} />
                     </button>

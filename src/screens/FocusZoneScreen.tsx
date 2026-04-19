@@ -122,7 +122,7 @@ export function FocusZoneScreen() {
             const isLow = timeLeft / total < 0.25;
             return (
               <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 224 224">
-                <circle cx="112" cy="112" r={radius} fill="none" stroke="currentColor" strokeWidth="10" className="text-muted/60" />
+                <circle cx="112" cy="112" r={radius} fill="none" stroke="currentColor" strokeWidth="10" className="text-border" />
                 <circle
                   cx="112" cy="112" r={radius} fill="none"
                   stroke="currentColor"

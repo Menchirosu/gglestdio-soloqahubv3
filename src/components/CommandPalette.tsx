@@ -50,8 +50,8 @@ export function CommandPalette({
 
   const navCommands: CommandItem[] = [
     { id: 'nav-dashboard', icon: 'solar:widget-5-bold-duotone', label: 'Overview', description: 'Welcome and pulse', group: 'navigate', onSelect: () => { onNavigate('dashboard'); onClose(); } },
-    { id: 'nav-bugs', icon: 'solar:bug-bold-duotone', label: 'Queue', description: 'Stories from the trenches', group: 'navigate', onSelect: () => { onNavigate('bug-wall'); onClose(); } },
-    { id: 'nav-signals', icon: 'solar:chart-2-bold-duotone', label: 'Signals', description: 'QA health at a glance', group: 'navigate', onSelect: () => { onNavigate('signals'); onClose(); } },
+    { id: 'nav-bugs', icon: 'solar:bug-bold-duotone', label: 'Wall', description: 'Stories from the trenches', group: 'navigate', onSelect: () => { onNavigate('bug-wall'); onClose(); } },
+    { id: 'nav-signals', icon: 'solar:cup-star-bold-duotone', label: 'Leaderboard', description: 'Quarterly QA ranking', group: 'navigate', onSelect: () => { onNavigate('leaderboard'); onClose(); } },
     { id: 'nav-tips', icon: 'solar:lightbulb-bold-duotone', label: 'Contribute', description: 'Tips, tricks & knowledge', group: 'navigate', onSelect: () => { onNavigate('tips-tricks'); onClose(); } },
     { id: 'nav-achievements', icon: 'solar:medal-ribbon-bold-duotone', label: 'Recognition', description: 'Celebrate wins', group: 'navigate', onSelect: () => { onNavigate('achievements'); onClose(); } },
     { id: 'nav-focus', icon: 'solar:target-bold-duotone', label: 'Focus', description: 'Reset and breathe', group: 'navigate', onSelect: () => { onNavigate('focus-zone'); onClose(); } },

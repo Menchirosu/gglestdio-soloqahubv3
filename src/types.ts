@@ -1,4 +1,4 @@
-export type Screen = 'dashboard' | 'bug-wall' | 'tips-tricks' | 'knowledge-sharing' | 'achievements' | 'focus-zone' | 'admin-dashboard' | 'signals';
+export type Screen = 'dashboard' | 'bug-wall' | 'tips-tricks' | 'knowledge-sharing' | 'achievements' | 'focus-zone' | 'admin-dashboard' | 'leaderboard';
 
 export interface Comment {
   id: string;
@@ -8,6 +8,7 @@ export interface Comment {
   text: string;
   date: string;
   isAnonymous?: boolean;
+  isBot?: boolean;
   createdAt?: string;
   imageUrl?: string;
   imageUrls?: string[];
@@ -30,6 +31,7 @@ export interface BugStory {
   discovery: string;
   lesson: string;
   reactions: Record<string, number>;
+  reactedBy?: Record<string, string[]>;
   comments?: Comment[];
   createdAt?: any;
   imageUrl?: string;

@@ -23,11 +23,11 @@ import { CommandPalette } from './components/CommandPalette';
 const OverviewScreen = React.lazy(() =>
   import('./screens/OverviewScreen').then(m => ({ default: m.OverviewScreen }))
 );
-const QueueScreen = React.lazy(() =>
-  import('./screens/QueueScreen').then(m => ({ default: m.QueueScreen }))
+const WallScreen = React.lazy(() =>
+  import('./screens/WallScreen').then(m => ({ default: m.WallScreen }))
 );
-const SignalsScreen = React.lazy(() =>
-  import('./screens/SignalsScreen').then(m => ({ default: m.SignalsScreen }))
+const LeaderboardScreen = React.lazy(() =>
+  import('./screens/LeaderboardScreen').then(m => ({ default: m.LeaderboardScreen }))
 );
 const ContributeScreen = React.lazy(() =>
   import('./screens/ContributeScreen').then(m => ({ default: m.ContributeScreen }))
@@ -101,6 +101,9 @@ function MainApp() {
   const [noiseEnabled, setNoiseEnabled] = useState(() => {
     try { return localStorage.getItem('lumie-noise') !== 'off'; } catch { return true; }
   });
+  const [railExpanded, setRailExpanded] = useState(() => {
+    try { return localStorage.getItem('lumie-rail') === 'expanded'; } catch { return false; }
+  });
 
   const {
     bugs, tips, proposals, achievements, notifications,
@@ -155,8 +158,8 @@ function MainApp() {
 
   const railItems: { id: Screen; label: string; icon: string }[] = [
     { id: 'dashboard', label: 'Overview', icon: 'solar:widget-5-bold-duotone' },
-    { id: 'bug-wall', label: 'Queue', icon: 'solar:bug-bold-duotone' },
-    { id: 'signals', label: 'Signals', icon: 'solar:chart-2-bold-duotone' },
+    { id: 'bug-wall', label: 'Wall', icon: 'solar:bug-bold-duotone' },
+    { id: 'leaderboard', label: 'Leaderboard', icon: 'solar:cup-star-bold-duotone' },
     { id: 'tips-tricks', label: 'Contribute', icon: 'solar:book-bold-duotone' },
     { id: 'focus-zone', label: 'Focus', icon: 'solar:target-bold-duotone' },
     { id: 'achievements', label: 'Recognition', icon: 'solar:medal-ribbon-bold-duotone' },
@@ -164,8 +167,8 @@ function MainApp() {
 
   const workspaceLabels: Record<string, string> = {
     dashboard: 'Overview',
-    'bug-wall': 'Queue',
-    signals: 'Signals',
+    'bug-wall': 'Wall',
+    leaderboard: 'Leaderboard',
     'tips-tricks': 'Contribute',
     'knowledge-sharing': 'Contribute',
     'focus-zone': 'Focus',
@@ -174,9 +177,13 @@ function MainApp() {
   };
 
   const navigateTo = (screen: Screen) => {
-    // Remap old knowledge-sharing to contribute workspace
-    if (screen === 'knowledge-sharing') {
+    const legacyScreen = screen as unknown as string;
+
+    // Remap legacy workspace ids to current surfaces.
+    if (legacyScreen === 'knowledge-sharing') {
       setCurrentScreen('tips-tricks');
+    } else if (legacyScreen === 'signals') {
+      setCurrentScreen('leaderboard');
     } else {
       setCurrentScreen(screen);
     }
@@ -189,10 +196,11 @@ function MainApp() {
     if (type === 'achievement') setActiveModal({ type: 'achievement' });
   };
 
-  const handleBugSubmit = async (bug: any) => {
+  const handleBugSubmit = async (bug: any): Promise<string | void> => {
     try {
-      await addBug(bug);
+      const bugId = await addBug(bug);
       showToast('Bug story posted successfully!');
+      return bugId;
     } catch {
       showToast('Failed to post bug story. Please try again.', 'error');
     }
@@ -287,24 +295,30 @@ function MainApp() {
   return (
     <div className="flex h-screen lumie-canvas lumie-noise relative text-foreground overflow-hidden">
 
-      {/* Compact Icon Rail — desktop only. Sits on warm canvas, outside the cream card (Q3). */}
-      <aside data-testid="icon-rail" className="hidden md:flex flex-col w-[52px] shrink-0 h-full shell-rail z-40">
+      {/* Icon Rail — desktop only. Expands to show labels via toggle. */}
+      <aside
+        data-testid="icon-rail"
+        className={`hidden md:flex flex-col shrink-0 h-full shell-rail z-40 transition-all duration-200 ${railExpanded ? 'w-[160px]' : 'w-[52px]'}`}
+      >
         {/* Logo mark — aligns with command bar height */}
-        <div className="flex h-[44px] items-center justify-center shrink-0">
-          <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-primary/14 text-primary">
+        <div className={`flex h-[44px] items-center shrink-0 ${railExpanded ? 'px-3 gap-2' : 'justify-center'}`}>
+          <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-primary/14 text-primary shrink-0">
             <Icon icon="solar:bug-minimalistic-bold-duotone" width={12} height={12} />
           </div>
+          {railExpanded && (
+            <span className="text-[12px] text-foreground truncate" style={{ fontWeight: 590 }}>Lumie</span>
+          )}
         </div>
 
         {/* Nav items */}
-        <nav className="flex flex-col items-center gap-0.5 px-2 py-3 flex-1">
+        <nav className="flex flex-col gap-0.5 px-2 py-3 flex-1">
           {railItems.map(item => (
-            <div key={item.id} className="relative w-full flex justify-center">
+            <div key={item.id} className="relative w-full">
               {activeRailId === item.id && (
                 <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
               )}
               <motion.button
-                title={item.label}
+                title={railExpanded ? undefined : item.label}
                 data-testid={`rail-nav-${item.id}`}
                 whileTap={{ scale: 0.85 }}
                 transition={{ duration: 0.1 }}
@@ -314,68 +328,93 @@ function MainApp() {
                   setSelectedItemId(null);
                   setIsSearchResultsOpen(false);
                 }}
-                className={`flex h-[36px] w-[36px] items-center justify-center rounded-[6px] transition-colors ${
+                className={`flex h-[36px] w-full items-center gap-2.5 rounded-[6px] transition-colors px-2.5 ${
                   activeRailId === item.id
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
                 }`}
               >
-                <Icon icon={item.icon} width={15} height={15} />
+                <Icon icon={item.icon} width={15} height={15} className="shrink-0" />
+                {railExpanded && (
+                  <span className="text-[12px] truncate" style={{ fontWeight: activeRailId === item.id ? 590 : 400 }}>
+                    {item.label}
+                  </span>
+                )}
               </motion.button>
             </div>
           ))}
         </nav>
 
-        {/* Bottom: admin + user avatar */}
-        <div className="flex flex-col items-center gap-1 px-2 py-3">
+        {/* Bottom: admin + expand + user controls */}
+        <div className="flex flex-col gap-1 px-2 py-3">
           {isAdmin && (
-            <div className="relative w-full flex justify-center">
+            <div className="relative w-full">
               {currentScreen === 'admin-dashboard' && (
                 <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
               )}
               <motion.button
-                title="Admin"
+                title={railExpanded ? undefined : 'Admin'}
                 whileTap={{ scale: 0.85 }}
                 transition={{ duration: 0.1 }}
                 onClick={() => navigateTo('admin-dashboard')}
-                className={`flex h-[36px] w-[36px] items-center justify-center rounded-[6px] transition-colors ${
+                className={`flex h-[36px] w-full items-center gap-2.5 rounded-[6px] transition-colors px-2.5 ${
                   currentScreen === 'admin-dashboard'
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
                 }`}
               >
-                <Icon icon="solar:shield-check-bold-duotone" width={15} height={15} />
+                <Icon icon="solar:shield-check-bold-duotone" width={15} height={15} className="shrink-0" />
+                {railExpanded && <span className="text-[12px] truncate">Admin</span>}
               </motion.button>
             </div>
           )}
           <button
-            title={profile?.displayName || 'Profile'}
+            title={railExpanded ? undefined : (profile?.displayName || 'Profile')}
             onClick={() => setActiveModal({ type: 'profile' })}
-            className="relative mt-1 h-7 w-7 overflow-hidden rounded-full border border-border hover:opacity-80 transition-opacity flex-shrink-0"
+            className="flex h-[36px] w-full items-center gap-2.5 rounded-[6px] px-2.5 hover:bg-secondary/50 transition-opacity"
           >
-            <img
-              src={profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`}
-              alt="Profile"
-              className="h-full w-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-            <span className="absolute bottom-0 right-0 block h-1.5 w-1.5 rounded-full bg-green-500 ring-1 ring-panel" />
+            <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-border">
+              <img
+                src={profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`}
+                alt="Profile"
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <span className="absolute bottom-0 right-0 block h-1.5 w-1.5 rounded-full bg-green-500 ring-1 ring-panel" />
+            </div>
+            {railExpanded && (
+              <span className="text-[12px] text-foreground truncate">{profile?.displayName || 'Profile'}</span>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              const next = !railExpanded;
+              setRailExpanded(next);
+              try { localStorage.setItem('lumie-rail', next ? 'expanded' : 'collapsed'); } catch { /* ignore */ }
+            }}
+            title={railExpanded ? 'Collapse rail' : 'Expand rail'}
+            className="flex h-[28px] w-full items-center gap-2.5 rounded-[6px] px-2.5 text-muted-foreground/60 hover:bg-secondary/50 hover:text-muted-foreground transition-colors"
+          >
+            <Icon icon={railExpanded ? 'solar:sidebar-minimalistic-bold-duotone' : 'solar:sidebar-bold-duotone'} width={13} height={13} className="shrink-0" />
+            {railExpanded && <span className="text-[12px]">Collapse</span>}
           </button>
           <button
             onClick={() => setNoiseEnabled(v => !v)}
-            title={noiseEnabled ? 'Disable paper texture' : 'Enable paper texture'}
-            className={`flex h-[28px] w-[28px] items-center justify-center rounded-[6px] transition-colors ${
+            title={railExpanded ? undefined : (noiseEnabled ? 'Disable paper texture' : 'Enable paper texture')}
+            className={`flex h-[28px] w-full items-center gap-2.5 rounded-[6px] px-2.5 transition-colors ${
               noiseEnabled ? 'text-primary hover:bg-primary/10' : 'text-muted-foreground/40 hover:bg-secondary/50 hover:text-muted-foreground'
             }`}
           >
-            <Icon icon="solar:layers-bold-duotone" width={13} height={13} />
+            <Icon icon="solar:layers-bold-duotone" width={13} height={13} className="shrink-0" />
+            {railExpanded && <span className="text-[12px]">Paper texture</span>}
           </button>
           <button
             onClick={logout}
-            title="Sign out"
-            className="flex h-[28px] w-[28px] items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            title={railExpanded ? undefined : 'Sign out'}
+            className="flex h-[28px] w-full items-center gap-2.5 rounded-[6px] px-2.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
-            <Icon icon="solar:logout-bold-duotone" width={13} height={13} />
+            <Icon icon="solar:logout-bold-duotone" width={13} height={13} className="shrink-0" />
+            {railExpanded && <span className="text-[12px]">Sign out</span>}
           </button>
         </div>
       </aside>
@@ -561,6 +600,10 @@ function MainApp() {
                   {currentScreen === 'dashboard' && (
                     <OverviewScreen
                       onNavigate={navigateTo}
+                      onNavigateToItem={(screen, id) => {
+                        navigateTo(screen);
+                        setSelectedItemId(id);
+                      }}
                       onShare={() => setActiveModal({ type: 'selector' })}
                       bugs={bugs}
                       tips={tips}
@@ -572,7 +615,7 @@ function MainApp() {
                     />
                   )}
                   {currentScreen === 'bug-wall' && (
-                    <QueueScreen
+                    <WallScreen
                       bugs={bugs}
                       onReact={reactToBug}
                       onComment={addCommentToBug}
@@ -580,18 +623,23 @@ function MainApp() {
                       onReplyComment={replyToComment}
                       onDeleteBug={deleteBug}
                       onEditBug={bug => setActiveModal({ type: 'edit-bug', data: bug })}
-                      onAddBug={() => setActiveModal({ type: 'bug' })}
+                      onAddBugSubmit={handleBugSubmit}
                       onDeleteComment={deleteComment}
                       onEditComment={editComment}
                       searchQuery={searchQuery}
                       selectedItemId={selectedItemId}
                       onClearSelection={() => setSelectedItemId(null)}
                       showToast={showToast}
-                      onAddBugSubmit={handleBugSubmit}
                     />
                   )}
-                  {currentScreen === 'signals' && (
-                    <SignalsScreen bugs={bugs} tips={tips} />
+                  {currentScreen === 'leaderboard' && (
+                    <LeaderboardScreen
+                      bugs={bugs}
+                      tips={tips}
+                      proposals={proposals}
+                      achievements={achievements}
+                      isAdmin={isAdmin}
+                    />
                   )}
                   {(currentScreen === 'tips-tricks' || currentScreen === 'knowledge-sharing') && (
                     <ContributeScreen

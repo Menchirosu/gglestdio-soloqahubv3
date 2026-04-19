@@ -54,8 +54,8 @@ return (
         <div className="page-panel lg:col-span-8 p-8 relative overflow-hidden group">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-xl font-bold text-on-surface">Presenter Picker</h3>
-              <p className="text-xs text-tertiary">Spin the wheel to choose this week's knowledge sharer.</p>
+              <h3 className="text-xl font-bold text-foreground">Presenter Picker</h3>
+              <p className="text-xs text-muted-foreground">Spin the wheel to choose this week's knowledge sharer.</p>
             </div>
             {currentPresenter && (
               <div className="flex items-center gap-3 px-4 py-2 bg-primary/5 border border-primary/20 rounded-full animate-in fade-in slide-in-from-right-4">
@@ -68,7 +68,7 @@ return (
         </div>
 
         <div className="page-panel-muted lg:col-span-4 p-6 flex flex-col">
-          <h3 className="text-[15px] text-on-surface mb-4" style={{ fontWeight: 590, letterSpacing: '-0.01em' }}>Members</h3>
+          <h3 className="text-[15px] text-foreground mb-4" style={{ fontWeight: 590, letterSpacing: '-0.01em' }}>Members</h3>
           <div className="space-y-1 flex-1 overflow-y-auto max-h-[500px] pr-1 custom-scrollbar">
             {allMembers.map((member, i) => (
               <motion.div
@@ -78,7 +78,7 @@ return (
                 transition={{ duration: 0.25, delay: i * 0.04, ease: 'easeOut' }}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-input transition-all duration-150 hover:-translate-y-0.5 hover:shadow-sm group cursor-default"
               >
-                <div className="w-9 h-9 rounded-full overflow-hidden bg-surface-container-high ring-1 ring-border group-hover:ring-primary/20 transition-all shrink-0">
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-secondary/30 ring-1 ring-border group-hover:ring-primary/20 transition-all shrink-0">
                   <img
                     src={(member as any).photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name}`}
                     alt={member.name}
@@ -87,7 +87,7 @@ return (
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13px] text-on-surface truncate" style={{ fontWeight: 510 }}>{member.name}</p>
+                  <p className="text-[13px] text-foreground truncate" style={{ fontWeight: 510 }}>{member.name}</p>
                 </div>
                 <span className={`shrink-0 rounded-[4px] px-2 py-0.5 text-[10px] tracking-wide ${
                   member.role === 'Admin'
@@ -103,19 +103,19 @@ return (
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="page-panel lg:col-span-2 bg-primary p-8 flex flex-col justify-between text-on-primary col-span-full border-primary/20">
+        <div className="page-panel lg:col-span-2 bg-primary p-8 flex flex-col justify-between text-white col-span-full border-primary/20">
           <div>
             <h3 className="text-xl font-bold mb-2">Plant a Seed</h3>
-            <p className="text-primary-fixed-dim text-xs mb-8">Suggest a topic you want to hear or share about.</p>
+            <p className="text-white/70 text-xs mb-8">A tool you discovered, a session worth running, or just something bugging you.</p>
             <div className="space-y-4">
-              <button 
+              <button
                 onClick={() => onAddProposal()}
                 className="mt-4 w-full py-8 bg-white/10 border-2 border-dashed border-white/20 text-white font-bold rounded-[8px] hover:bg-white/20 transition-all flex flex-col items-center justify-center gap-3 group"
               >
                 <div className="p-3 bg-white text-primary rounded-full group-hover:scale-110 transition-transform">
                   <PlusCircle size={24} />
                 </div>
-                <span>Submit a New Proposal</span>
+                <span>I've got something</span>
               </button>
             </div>
           </div>
@@ -124,9 +124,9 @@ return (
 
       <section className="space-y-8">
         <div className="flex items-center gap-4">
-          <div className="h-[1px] flex-1 bg-outline-variant/30"></div>
-          <h3 className="text-sm font-bold text-outline uppercase tracking-widest px-4">The Horizon: Upcoming Topics</h3>
-          <div className="h-[1px] flex-1 bg-outline-variant/30"></div>
+          <div className="h-[1px] flex-1 bg-border/30"></div>
+          <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest px-4">The Horizon: Upcoming Topics</h3>
+          <div className="h-[1px] flex-1 bg-border/30"></div>
         </div>
         {selectedItemId && (
           <div className="flex justify-center">
@@ -173,22 +173,22 @@ return (
               className="page-panel-muted p-7 group"
             >
               <div className="flex justify-between items-start mb-6">
-                <span className={`px-3 py-1 bg-secondary-container text-on-surface text-[10px] font-bold rounded-full uppercase tracking-tighter`}>{timeAgo(item.createdAt || item.date)}</span>
+                <span className={`px-3 py-1 bg-secondary/20 text-foreground text-[10px] font-bold rounded-full uppercase tracking-tighter`}>{timeAgo(item.createdAt || item.date)}</span>
                 <Rocket size={20} className="opacity-40" />
               </div>
-              <h4 className="text-lg font-bold text-on-surface mb-3 group-hover:text-primary transition-colors">{item.title}</h4>
-              <p className="text-xs text-tertiary leading-relaxed mb-6">{item.scope}</p>
+              <h4 className="text-lg font-bold text-foreground mb-3 group-hover:text-primary transition-colors">{item.title}</h4>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-6">{item.scope}</p>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-surface-container-highest rounded-full flex items-center justify-center text-[10px] font-bold text-outline">?</div>
-                  <span className="text-[11px] font-medium text-on-surface-variant italic">Nominated by {item.author}</span>
+                  <div className="w-6 h-6 bg-secondary/30est rounded-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">?</div>
+                  <span className="text-[11px] font-medium text-foreground-variant italic">Nominated by {item.author}</span>
                 </div>
                 
                 {(profile?.uid === item.authorId || (!item.authorId && profile?.displayName === item.author)) && (
                   <div className="relative">
                     <button 
                       onClick={() => setMenuOpenId(menuOpenId === item.id ? null : item.id)}
-                      className="p-1 rounded-full text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors opacity-0 group-hover:opacity-100"
+                      className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors opacity-0 group-hover:opacity-100"
                     >
                       <MoreHorizontal size={16} />
                     </button>
@@ -199,13 +199,13 @@ return (
                           className="fixed inset-0 z-10" 
                           onClick={() => setMenuOpenId(null)}
                         ></div>
-                        <div className="absolute right-0 mt-1 w-32 bg-surface-container-highest border border-outline-variant/20 rounded-[8px] shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                        <div className="absolute right-0 mt-1 w-32 bg-card border border-border/50 rounded-[8px] shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                           <button 
                             onClick={() => {
                               onEditProposal(item);
                               setMenuOpenId(null);
                             }}
-                            className="w-full px-4 py-2 text-left text-xs font-bold text-on-surface hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+                            className="w-full px-4 py-2 text-left text-xs font-bold text-foreground hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
                           >
                             <Edit3 size={14} />
                             Edit

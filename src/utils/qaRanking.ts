@@ -19,7 +19,7 @@ export type QaLeaderboardEntry = {
   totalScore: number;
 };
 
-export const LOOKBACK_DAYS = 30;
+export const LOOKBACK_DAYS = 90;
 export const BUG_STORY_WEIGHT = 5;
 export const TIP_WEIGHT = 3;
 export const KNOWLEDGE_WEIGHT = 3;

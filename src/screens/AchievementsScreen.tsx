@@ -263,7 +263,7 @@ export function AchievementsScreen({
           {filteredAchievements.length === 0 ? (
             <div className="page-empty text-left md:px-8">
               <div className="flex flex-col items-start gap-5 md:flex-row md:items-center">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground">
+                <div className="empty-float flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground">
                   <Icon icon="solar:stars-bold-duotone" width={22} height={22} />
                 </div>
                 <div className="flex-1">

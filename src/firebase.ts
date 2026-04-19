@@ -243,11 +243,33 @@ export const createBugStory = async (bug: any) => {
   }
 };
 
-export const updateBugReactions = async (bugId: string, reactions: any) => {
+export const updateBugReactions = async (bugId: string, reactions: any, reactedBy?: any) => {
   try {
-    await updateDoc(doc(db, 'bugs', bugId), { reactions });
+    await updateDoc(doc(db, 'bugs', bugId), reactedBy !== undefined ? { reactions, reactedBy } : { reactions });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `bugs/${bugId}`);
+  }
+};
+
+export const getLeaderboardNominees = async (): Promise<{ nominees: { uid: string; blurb: string }[] }> => {
+  try {
+    const snap = await getDoc(doc(db, 'leaderboard', 'config'));
+    return snap.exists() ? (snap.data() as any) : { nominees: [] };
+  } catch {
+    return { nominees: [] };
+  }
+};
+
+export const setLeaderboardNominee = async (uid: string, blurb: string) => {
+  try {
+    const ref = doc(db, 'leaderboard', 'config');
+    const snap = await getDoc(ref);
+    const current: { nominees: { uid: string; blurb: string }[] } = snap.exists() ? (snap.data() as any) : { nominees: [] };
+    const filtered = current.nominees.filter((n: any) => n.uid !== uid);
+    if (blurb.trim()) filtered.push({ uid, blurb: blurb.trim() });
+    await setDoc(ref, { nominees: filtered }, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, 'leaderboard/config');
   }
 };
 

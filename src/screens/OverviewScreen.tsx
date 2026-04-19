@@ -20,6 +20,7 @@ import { timeAgo } from '../utils/timeAgo';
 
 interface OverviewScreenProps {
   onNavigate: (screen: Screen) => void;
+  onNavigateToItem?: (screen: Screen, id: string) => void;
   onShare: () => void;
   bugs: BugStory[];
   tips: Tip[];
@@ -69,6 +70,7 @@ function firstName(displayName: string): string {
 
 export function OverviewScreen({
   onNavigate,
+  onNavigateToItem,
   bugs,
   tips,
   proposals,
@@ -253,7 +255,7 @@ export function OverviewScreen({
         <section className="page-panel px-6 py-5">
           <div className="flex items-baseline justify-between gap-4">
             <div>
-              <p className="page-kicker">Queue is moving</p>
+              <p className="page-kicker">Wall is moving</p>
               <p className="mt-1 text-[13px] text-muted-foreground">
                 <span className="whisper text-[14px]">{closureNumerator} of {closureDenominator}</span>{' '}
                 bugs posted this week have gained a reply.
@@ -436,7 +438,7 @@ export function OverviewScreen({
                 return (
                   <button
                     key={`${item.type}-${item.id}`}
-                    onClick={() => onNavigate(meta.screen)}
+                    onClick={() => onNavigateToItem ? onNavigateToItem(meta.screen, item.id) : onNavigate(meta.screen)}
                     className="flex w-full items-center gap-3 border-b border-border/60 px-4 py-2.5 text-left transition-colors last:border-0 hover:bg-[#FBF9F3]"
                   >
                     <Icon icon={meta.icon} width={15} className={`shrink-0 ${meta.tint}`} aria-hidden />
