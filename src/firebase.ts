@@ -3,6 +3,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 import { getFirestore, doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, updateDoc, serverTimestamp, Timestamp, arrayUnion, deleteDoc, orderBy, collectionGroup, getDocFromServer } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import firebaseConfig from '../firebase-applet-config.json';
+import { isE2EMode } from './e2e';
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
@@ -26,6 +27,10 @@ async function testConnection() {
 testConnection();
 
 export const uploadImage = async (file: File, path: string): Promise<string> => {
+  if (isE2EMode()) {
+    return URL.createObjectURL(file);
+  }
+
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dq5kvfglj';
   const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'soloqahub';
 
@@ -273,9 +278,9 @@ export const setLeaderboardNominee = async (uid: string, blurb: string) => {
   }
 };
 
-export const updateTipReactions = async (tipId: string, reactions: any) => {
+export const updateTipReactions = async (tipId: string, reactions: any, reactedBy?: any) => {
   try {
-    await updateDoc(doc(db, 'tips', tipId), { reactions });
+    await updateDoc(doc(db, 'tips', tipId), reactedBy !== undefined ? { reactions, reactedBy } : { reactions });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `tips/${tipId}`);
   }
@@ -418,6 +423,50 @@ export const getCurrentPresenter = (callback: (presenter: any) => void) => {
       callback(null);
     }
   }, (error) => handleFirestoreError(error, OperationType.GET, 'knowledgeSharing/currentPresenter'));
+};
+
+export const getPresenterCycleState = (callback: (state: { completedPresenterIds: string[] } | null) => void) => {
+  return onSnapshot(doc(db, 'knowledgeSharing', 'presenterCycle'), (snapshot) => {
+    if (!snapshot.exists()) {
+      callback({ completedPresenterIds: [] });
+      return;
+    }
+    const data = snapshot.data();
+    callback({
+      completedPresenterIds: Array.isArray(data.completedPresenterIds)
+        ? data.completedPresenterIds.filter((value: unknown): value is string => typeof value === 'string')
+        : [],
+    });
+  }, (error) => handleFirestoreError(error, OperationType.GET, 'knowledgeSharing/presenterCycle'));
+};
+
+export const markPresenterCompleted = async (
+  presenter: { uid?: string | null; name?: string | null },
+  eligibleMemberIds: string[],
+) => {
+  if (!presenter.uid) return;
+
+  const cycleRef = doc(db, 'knowledgeSharing', 'presenterCycle');
+
+  try {
+    const snapshot = await getDoc(cycleRef);
+    const currentIds = snapshot.exists() && Array.isArray(snapshot.data()?.completedPresenterIds)
+      ? snapshot.data()!.completedPresenterIds.filter((value: unknown): value is string => typeof value === 'string')
+      : [];
+
+    const nextIds = Array.from(new Set([...currentIds, presenter.uid]));
+    const eligibleIds = eligibleMemberIds.filter(Boolean);
+    const shouldReset = eligibleIds.length > 0 && eligibleIds.every((uid) => nextIds.includes(uid));
+
+    await setDoc(cycleRef, {
+      completedPresenterIds: shouldReset ? [] : nextIds,
+      lastCompletedPresenterId: presenter.uid,
+      lastCompletedPresenterName: presenter.name || null,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, 'knowledgeSharing/presenterCycle');
+  }
 };
 
 // Presence tracking
