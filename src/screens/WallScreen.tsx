@@ -1,47 +1,36 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Icon } from '@iconify/react';
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
 import { BugStory, Comment } from '../types';
 import { useAuth } from '../AuthContext';
-import { getComments, uploadImage } from '../firebase';
+import { uploadImage } from '../firebase';
 import { timeAgo } from '../utils/timeAgo';
 import { triggerLumieBot } from '../services/lumieBot';
-
-/**
- * Lumie Wall - social thought-feed for bug stories.
- *
- * Locked decisions (grill-me sessions 2026-04-19):
- *   - Thoughts, not tickets. No severity, no title, no structured fields.
- *   - Feed / Hot tabs only.
- *   - Pinned top composer: text + image + GIF + inline #hashtags.
- *   - Always-visible connector spine between all posts (Threads style).
- *   - Inline thread expansion. One level of replies. Always-visible reply composer.
- *   - Triage actions (edit, resolve, link, delete) in the more menu only.
- *   - Multi-image: grid-cols-2 aspect-square. Single: natural ratio max-h-72.
- *   - Hover tint on posts (no hover border).
- */
+import { e2ePresetGifs, isE2EMode } from '../e2e';
 
 const giphyApiKey = import.meta.env.VITE_GIPHY_API_KEY;
 const gf = giphyApiKey ? new GiphyFetch(giphyApiKey) : null;
-
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
+const E2E_MODE = isE2EMode();
 
 function parseHashtags(text: string): { content: string; tags: string[] } {
   const tags: string[] = [];
   const content = text
-    .replace(/#(\w+)/g, (_, tag) => { tags.push(tag.toLowerCase()); return ''; })
+    .replace(/#(\w+)/g, (_, tag) => {
+      tags.push(tag.toLowerCase());
+      return '';
+    })
     .trim()
     .replace(/\s{2,}/g, ' ');
   return { content, tags };
 }
 
 function hotScore(bug: BugStory): number {
-  const ms = bug.createdAt?.toMillis?.()
-    ?? (bug.createdAt?.seconds ? bug.createdAt.seconds * 1000 : new Date(bug.date).getTime());
+  const ms = typeof bug.createdAt === 'string'
+    ? new Date(bug.createdAt).getTime()
+    : bug.createdAt?.toMillis?.()
+      ?? (bug.createdAt?.seconds ? bug.createdAt.seconds * 1000 : new Date(bug.date).getTime());
   const ageDays = (Date.now() - ms) / 86_400_000;
   if (ageDays > 7) return 0;
   const reactions = Object.values(bug.reactions ?? {}).reduce((a, b) => a + b, 0);
@@ -49,17 +38,24 @@ function hotScore(bug: BugStory): number {
 }
 
 function bugTime(b: BugStory): number {
+  if (typeof b.createdAt === 'string') return new Date(b.createdAt).getTime();
   return b.createdAt?.toMillis?.()
     ?? (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.date).getTime());
 }
 
-// ---------------------------------------------------------------------------
-// TagPills
-// ---------------------------------------------------------------------------
+function commentTime(comment: Comment): number {
+  if (!comment.createdAt && !comment.date) return 0;
+  return new Date(comment.createdAt ?? comment.date).getTime() || 0;
+}
+
+function buildPreviewUrls(files: File[]) {
+  return files.map(file => ({ file, previewUrl: URL.createObjectURL(file) }));
+}
+
 function TagPills({ tags }: { tags: string[] }) {
   if (!tags?.length) return null;
   return (
-    <div className="flex flex-wrap gap-1.5 mt-1.5">
+    <div className="mt-1.5 flex flex-wrap gap-1.5">
       {tags.map(tag => (
         <span
           key={tag}
@@ -73,9 +69,368 @@ function TagPills({ tags }: { tags: string[] }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// WallComposer
-// ---------------------------------------------------------------------------
+function reviewStatusForBug(bug: BugStory): 'pending' | 'review_required' | 'reviewed' {
+  return bug.triage?.review_status ?? (bug.triage?.needs_human_review ? 'review_required' : 'pending');
+}
+
+function reviewEventLabel(status: 'review_required' | 'reviewed') {
+  return status === 'reviewed' ? 'Review completed' : 'Marked for review';
+}
+
+function MediaGallery({
+  imageUrls,
+  imageUrl,
+  gifUrl,
+  maxHeightClass = 'max-h-72',
+}: {
+  imageUrls?: string[] | null;
+  imageUrl?: string | null;
+  gifUrl?: string | null;
+  maxHeightClass?: string;
+}) {
+  const images = imageUrls?.length ? imageUrls : imageUrl ? [imageUrl] : [];
+
+  return (
+    <>
+      {images.length === 1 && (
+        <img
+          src={images[0]}
+          alt="Attachment"
+          className={`mt-3 w-full rounded-[12px] border border-border/20 object-cover ${maxHeightClass}`}
+        />
+      )}
+      {images.length > 1 && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {images.map((url, index) => (
+            <div key={index} className="aspect-square overflow-hidden rounded-[12px] border border-border/20">
+              <img src={url} alt="Attachment" className="h-full w-full object-cover" />
+            </div>
+          ))}
+        </div>
+      )}
+      {gifUrl && (
+        <img
+          src={gifUrl}
+          alt="GIF"
+          className={`mt-3 rounded-[12px] border border-border/20 object-cover ${maxHeightClass.replace('72', '48')}`}
+        />
+      )}
+    </>
+  );
+}
+
+function GifPicker({
+  anchorRef,
+  isOpen,
+  search,
+  onSearchChange,
+  onSelect,
+  onClose,
+}: {
+  anchorRef: React.RefObject<HTMLButtonElement | null>;
+  isOpen: boolean;
+  search: string;
+  onSearchChange: (value: string) => void;
+  onSelect: (url: string) => void;
+  onClose: () => void;
+}) {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (!isOpen || !anchorRef.current) return;
+
+    const reposition = () => {
+      if (!anchorRef.current) return;
+      const rect = anchorRef.current.getBoundingClientRect();
+      const pickerWidth = 288;
+      const pickerHeight = 320;
+      const gutter = 12;
+      const left = Math.max(gutter, Math.min(rect.left, window.innerWidth - pickerWidth - gutter));
+      const preferAbove = rect.top >= pickerHeight + gutter;
+      const top = preferAbove
+        ? rect.top - pickerHeight - 8
+        : Math.min(rect.bottom + 8, window.innerHeight - pickerHeight - gutter);
+      setPosition({ top, left });
+    };
+
+    reposition();
+    const handleDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.closest('.wall-gif-picker') || target.closest('.wall-gif-trigger')) return;
+      onClose();
+    };
+
+    document.addEventListener('mousedown', handleDown);
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
+
+    return () => {
+      document.removeEventListener('mousedown', handleDown);
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
+    };
+  }, [anchorRef, isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const usePresetGrid = E2E_MODE || !gf;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+        transition={{ duration: 0.14 }}
+        style={{ position: 'fixed', top: position.top, left: position.left }}
+        className="wall-gif-picker z-[200] flex h-80 w-72 flex-col overflow-y-auto rounded-[16px] border border-border/20 bg-card p-2 shadow-2xl"
+        onClick={event => event.stopPropagation()}
+      >
+        <div className="mb-2 flex items-center justify-between px-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">GIFs</span>
+          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <Icon icon="solar:close-circle-bold" width={12} />
+          </button>
+        </div>
+
+        <input
+          type="text"
+          value={search}
+          onChange={event => onSearchChange(event.target.value)}
+          placeholder={usePresetGrid ? 'Search preset GIF labels...' : 'Search GIFs...'}
+          className="mb-2 w-full rounded-[10px] border border-border/10 bg-secondary/20 p-2 text-xs transition-all focus:ring-1 focus:ring-primary/20"
+        />
+
+        <div className="custom-scrollbar flex-1 overflow-y-auto">
+          {usePresetGrid ? (
+            <div className="grid grid-cols-2 gap-2 p-1">
+              {e2ePresetGifs
+                .filter(item => item.label.toLowerCase().includes(search.toLowerCase()))
+                .map(item => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      onSelect(item.url);
+                      onClose();
+                    }}
+                    className="overflow-hidden rounded-[12px] border border-border/20 bg-secondary/20 text-left transition-colors hover:border-primary/30 hover:bg-secondary/40"
+                  >
+                    <img src={item.url} alt={item.label} className="h-20 w-full object-cover" />
+                    <span className="block px-2 py-1.5 text-[11px] text-foreground">{item.label}</span>
+                  </button>
+                ))}
+            </div>
+          ) : (
+            <Grid
+              key={search}
+              width={260}
+              columns={2}
+              fetchGifs={async offset => {
+                try {
+                  return search
+                    ? await gf.search(search, { offset, limit: 10 })
+                    : await gf.trending({ offset, limit: 10 });
+                } catch {
+                  return { data: [] } as never;
+                }
+              }}
+              onGifClick={(gif, event) => {
+                event.preventDefault();
+                onSelect(gif.images.fixed_height.url);
+                onClose();
+              }}
+            />
+          )}
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function ComposerMediaPreview({
+  files,
+  gifUrl,
+  onRemoveFile,
+  onRemoveGif,
+}: {
+  files: File[];
+  gifUrl: string | null;
+  onRemoveFile: (index: number) => void;
+  onRemoveGif: () => void;
+}) {
+  const previews = useMemo(() => buildPreviewUrls(files), [files]);
+
+  useEffect(() => () => {
+    previews.forEach(item => URL.revokeObjectURL(item.previewUrl));
+  }, [previews]);
+
+  return (
+    <>
+      {previews.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {previews.map(({ file, previewUrl }, index) => (
+            <div key={`${file.name}-${index}`} className="group relative">
+              <img src={previewUrl} alt="Preview" className="h-24 rounded-[12px] border border-border/20 object-cover" />
+              <button
+                type="button"
+                onClick={() => onRemoveFile(index)}
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <Icon icon="solar:close-circle-bold" width={10} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {gifUrl && (
+        <div className="group relative mt-3 inline-block">
+          <img src={gifUrl} alt="GIF" className="max-h-40 rounded-[12px] border border-border/20 object-cover" />
+          <button
+            type="button"
+            onClick={onRemoveGif}
+            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
+          >
+            <Icon icon="solar:close-circle-bold" width={10} />
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ThreadComposer({
+  placeholder,
+  submitLabel,
+  submitTestId,
+  onSubmit,
+  showToast,
+}: {
+  placeholder: string;
+  submitLabel: string;
+  submitTestId?: string;
+  onSubmit: (payload: { text: string; files: File[]; gifUrl: string | null }) => Promise<void>;
+  showToast?: (msg: string, type?: 'success' | 'error') => void;
+}) {
+  const [text, setText] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [gifUrl, setGifUrl] = useState<string | null>(null);
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [gifSearch, setGifSearch] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const gifButtonRef = useRef<HTMLButtonElement>(null);
+
+  const canSubmit = (text.trim().length > 0 || files.length > 0 || !!gifUrl) && !isSubmitting;
+
+  const submit = async () => {
+    if (!canSubmit) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit({ text, files, gifUrl });
+      setText('');
+      setFiles([]);
+      setGifUrl(null);
+      setGifSearch('');
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    } catch {
+      showToast?.(`Failed to ${submitLabel.toLowerCase()}.`, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 rounded-[18px] border border-border/60 bg-[color:var(--frame)] px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition-all focus-within:border-primary/30 focus-within:bg-card">
+      <textarea
+        ref={textareaRef}
+        rows={1}
+        value={text}
+        placeholder={placeholder}
+        onChange={event => {
+          setText(event.target.value);
+          event.target.style.height = 'auto';
+          event.target.style.height = `${Math.min(event.target.scrollHeight, 84)}px`;
+        }}
+        onKeyDown={event => {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            void submit();
+          }
+        }}
+        className="w-full resize-none bg-transparent border-none p-0 text-[13px] leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0"
+      />
+
+      <ComposerMediaPreview
+        files={files}
+        gifUrl={gifUrl}
+        onRemoveFile={index => setFiles(prev => prev.filter((_, itemIndex) => itemIndex !== index))}
+        onRemoveGif={() => setGifUrl(null)}
+      />
+
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/40 pt-2.5">
+        <div className="flex items-center gap-2 text-muted-foreground/65">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={event => {
+              if (event.target.files) {
+                setFiles(prev => [...prev, ...Array.from(event.target.files ?? [])]);
+              }
+            }}
+          />
+          <button type="button" aria-label="Add image" onClick={() => fileInputRef.current?.click()} className="rounded-full p-1.5 transition-colors hover:bg-secondary/50 hover:text-primary" title="Add image">
+            <Icon icon="solar:gallery-bold-duotone" width={17} />
+          </button>
+          <button
+            ref={gifButtonRef}
+            type="button"
+            aria-label="Add GIF"
+            className="wall-gif-trigger rounded-full p-1.5 transition-colors hover:bg-secondary/50 hover:text-primary"
+            title="Add GIF"
+            onClick={event => {
+              event.stopPropagation();
+              setShowGifPicker(prev => !prev);
+            }}
+          >
+            <Icon icon="solar:emoji-funny-square-bold-duotone" width={17} />
+          </button>
+          <span className="select-none text-[11px] text-muted-foreground/45">Shift+Enter for a new line</span>
+        </div>
+
+        <button
+          type="button"
+          data-testid={submitTestId}
+          onClick={() => void submit()}
+          disabled={!canSubmit}
+          className="shell-action-primary px-3.5 py-1.5 text-[12px] disabled:translate-y-0 disabled:opacity-35"
+          style={{ fontWeight: 590 }}
+        >
+          {isSubmitting ? (
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          ) : (
+            submitLabel
+          )}
+        </button>
+      </div>
+
+      <GifPicker
+        anchorRef={gifButtonRef}
+        isOpen={showGifPicker}
+        search={gifSearch}
+        onSearchChange={setGifSearch}
+        onSelect={setGifUrl}
+        onClose={() => setShowGifPicker(false)}
+      />
+    </div>
+  );
+}
+
 function WallComposer({
   onSubmit,
   showToast,
@@ -89,59 +444,13 @@ function WallComposer({
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [gifSearch, setGifSearch] = useState('');
-  const [gifPickerPos, setGifPickerPos] = useState({ top: 0, left: 0 });
   const [isFocused, setIsFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const gifBtnRef = useRef<HTMLButtonElement>(null);
-  const gifPickerRef = useRef<HTMLDivElement>(null);
-
-  const positionGifPicker = () => {
-    if (!gifBtnRef.current) return;
-    const rect = gifBtnRef.current.getBoundingClientRect();
-    const pickerWidth = 288;
-    const pickerHeight = 320;
-    const gutter = 12;
-    const left = Math.max(gutter, Math.min(rect.left, window.innerWidth - pickerWidth - gutter));
-    const preferAbove = rect.top >= pickerHeight + gutter;
-    const top = preferAbove
-      ? rect.top - pickerHeight - 8
-      : Math.min(rect.bottom + 8, window.innerHeight - pickerHeight - gutter);
-    setGifPickerPos({ top, left });
-  };
-
-  // Close GIF picker on outside click
-  useEffect(() => {
-    if (!showGifPicker) return;
-    const handler = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('.wall-gif-picker') || target.closest('.wall-gif-btn')) return;
-      setShowGifPicker(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showGifPicker]);
-
-  useEffect(() => {
-    if (!showGifPicker) return;
-    positionGifPicker();
-    const reposition = () => positionGifPicker();
-    window.addEventListener('resize', reposition);
-    window.addEventListener('scroll', reposition, true);
-    return () => {
-      window.removeEventListener('resize', reposition);
-      window.removeEventListener('scroll', reposition, true);
-    };
-  }, [showGifPicker]);
 
   const canPost = (text.trim().length > 0 || imageFiles.length > 0 || !!gifUrl) && !isSubmitting;
-
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
-    e.target.style.height = 'auto';
-    e.target.style.height = `${e.target.scrollHeight}px`;
-  };
 
   const handleSubmit = async () => {
     if (!canPost) return;
@@ -149,9 +458,11 @@ function WallComposer({
     const textSnapshot = text;
     const hadImage = imageFiles.length > 0;
     const hadGif = gifUrl;
+
     try {
       const { content, tags } = parseHashtags(textSnapshot);
       const uploadedUrls: string[] = [];
+
       for (const file of imageFiles) {
         try {
           const url = await uploadImage(file, 'bugs');
@@ -160,6 +471,7 @@ function WallComposer({
           showToast?.('Failed to upload image.', 'error');
         }
       }
+
       const bugId = await onSubmit({
         author: profile?.displayName ?? 'Anonymous',
         isAnonymous: false,
@@ -175,91 +487,65 @@ function WallComposer({
         imageUrls: uploadedUrls,
         gifUrl: hadGif ?? null,
       });
+
       setText('');
       setImageFiles([]);
       setGifUrl(null);
       setGifSearch('');
       setIsFocused(false);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
       if (bugId) {
-        triggerLumieBot(bugId, content, hadImage || !!hadGif);
+        showToast?.('Wall post published.', 'success');
+        void triggerLumieBot(bugId, content, hadImage || !!hadGif);
       }
+    } catch {
+      showToast?.('Failed to post bug story. Please try again.', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
-  const avatarSrc = profile?.photoURL
-    ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`;
-
   return (
-    <div className="border-b border-border pb-5 mb-1">
+    <div className="page-panel mb-2 overflow-hidden px-4 py-4 md:px-5" data-testid="wall-composer">
       <div className="flex gap-3">
         <img
-          src={avatarSrc}
+          src={profile?.photoURL ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`}
           alt={profile?.displayName ?? 'Me'}
-          className="w-9 h-9 rounded-full shrink-0 object-cover mt-0.5"
+          className="mt-0.5 h-9 w-9 shrink-0 rounded-full object-cover"
           referrerPolicy="no-referrer"
         />
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
+          <p className="page-kicker mb-2">Wall composer</p>
           <textarea
             ref={textareaRef}
-            value={text}
-            onChange={handleTextChange}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => { if (!text && !imageFiles.length && !gifUrl) setIsFocused(false); }}
-            onKeyDown={handleKeyDown}
-            placeholder="What's the bug story today?"
             rows={1}
-            className="w-full resize-none bg-transparent border-none p-0 text-[15px] text-foreground placeholder:text-muted-foreground/50 focus:ring-0 focus:outline-none leading-relaxed"
+            value={text}
+            placeholder="What's the bug story today?"
+            onChange={event => {
+              setText(event.target.value);
+              event.target.style.height = 'auto';
+              event.target.style.height = `${event.target.scrollHeight}px`;
+            }}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => {
+              if (!text && !imageFiles.length && !gifUrl) setIsFocused(false);
+            }}
+            onKeyDown={event => {
+              if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                event.preventDefault();
+                void handleSubmit();
+              }
+            }}
+            className="w-full resize-none border-none bg-transparent p-0 text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0"
           />
 
-          {/* Image previews */}
-          {imageFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {imageFiles.map((file, idx) => (
-                <div key={idx} className="relative group">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt="Preview"
-                    className="h-24 rounded-[12px] border border-border/20 object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setImageFiles(prev => prev.filter((_, i) => i !== idx))}
-                    className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                  >
-                    <Icon icon="solar:close-bold" width={10} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* GIF preview */}
-          {gifUrl && (
-            <div className="relative mt-3 inline-block group">
-              <img
-                src={gifUrl}
-                alt="GIF"
-                className="max-h-40 rounded-[12px] border border-border/20 object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => setGifUrl(null)}
-                className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
-              >
-                <Icon icon="solar:close-bold" width={10} />
-              </button>
-            </div>
-          )}
+          <ComposerMediaPreview
+            files={imageFiles}
+            gifUrl={gifUrl}
+            onRemoveFile={index => setImageFiles(prev => prev.filter((_, itemIndex) => itemIndex !== index))}
+            onRemoveGif={() => setGifUrl(null)}
+          />
 
           <AnimatePresence>
             {(isFocused || text || imageFiles.length > 0 || gifUrl) && (
@@ -269,113 +555,53 @@ function WallComposer({
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-3">
                   <div className="flex items-center gap-3 text-muted-foreground/60">
                     <input
                       ref={fileInputRef}
                       type="file"
                       multiple
                       accept="image/*"
-                      onChange={e => {
-                        if (e.target.files)
-                          setImageFiles(prev => [...prev, ...Array.from(e.target.files!)]);
-                      }}
                       className="hidden"
+                      onChange={event => {
+                        if (event.target.files) {
+                          setImageFiles(prev => [...prev, ...Array.from(event.target.files ?? [])]);
+                        }
+                      }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="hover:text-primary transition-colors"
-                      title="Add image"
-                    >
+                    <button type="button" aria-label="Add image" onClick={() => fileInputRef.current?.click()} className="rounded-full p-1.5 transition-colors hover:bg-secondary/50 hover:text-primary" title="Add image">
                       <Icon icon="solar:gallery-bold-duotone" width={18} />
                     </button>
-
-                    {/* GIF button */}
-                    <div className="relative">
-                      <button
-                        ref={gifBtnRef}
-                        type="button"
-                        className="wall-gif-btn hover:text-primary transition-colors"
-                        title="Add GIF"
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (!showGifPicker) positionGifPicker();
-                          setShowGifPicker(p => !p);
-                        }}
-                      >
-                        <Icon icon="solar:emoji-funny-square-bold-duotone" width={18} />
-                      </button>
-
-                      <AnimatePresence>
-                        {showGifPicker && (
-                          <motion.div
-                            ref={gifPickerRef}
-                            initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                            transition={{ duration: 0.14 }}
-                            style={{ position: 'fixed', top: gifPickerPos.top, left: gifPickerPos.left }}
-                            className="wall-gif-picker z-[200] bg-card border border-border/20 p-2 rounded-[16px] shadow-2xl w-72 h-80 overflow-y-auto flex flex-col"
-                            onClick={e => e.stopPropagation()}
-                          >
-                            <div className="flex justify-between items-center mb-2 px-2">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">GIFs</span>
-                              <button type="button" onClick={() => setShowGifPicker(false)} className="text-muted-foreground hover:text-foreground">
-                                <Icon icon="solar:close-bold" width={12} />
-                              </button>
-                            </div>
-                            <input
-                              type="text"
-                              placeholder="Search GIFs..."
-                              value={gifSearch}
-                              onChange={e => setGifSearch(e.target.value)}
-                              className="w-full bg-secondary/20 border border-border/10 rounded-[10px] p-2 text-xs mb-2 focus:ring-1 focus:ring-primary/20 transition-all"
-                            />
-                            <div className="flex-1 overflow-y-auto custom-scrollbar">
-                              {gf ? (
-                                <Grid
-                                  key={gifSearch}
-                                  width={260}
-                                  columns={2}
-                                  fetchGifs={async (offset) => {
-                                    try {
-                                      return gifSearch
-                                        ? await gf.search(gifSearch, { offset, limit: 10 })
-                                        : await gf.trending({ offset, limit: 10 });
-                                    } catch {
-                                      return { data: [] } as any;
-                                    }
-                                  }}
-                                  onGifClick={(gif, e) => {
-                                    e.preventDefault();
-                                    setGifUrl(gif.images.fixed_height.url);
-                                    setShowGifPicker(false);
-                                  }}
-                                />
-                              ) : (
-                                <p className="text-[11px] text-muted-foreground text-center p-4">Giphy API key not configured.</p>
-                              )}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-
-                    <span className="text-[11px] text-muted-foreground/40 select-none">
-                      #hashtag | Ctrl+Enter post
-                    </span>
+                    <button
+                      ref={gifBtnRef}
+                      type="button"
+                      data-testid="wall-post-gif-trigger"
+                      aria-label="Add GIF"
+                      className="wall-gif-trigger rounded-full p-1.5 transition-colors hover:bg-secondary/50 hover:text-primary"
+                      title="Add GIF"
+                      onClick={event => {
+                        event.stopPropagation();
+                        setShowGifPicker(prev => !prev);
+                      }}
+                    >
+                      <Icon icon="solar:emoji-funny-square-bold-duotone" width={18} />
+                    </button>
+                    <span className="select-none text-[11px] text-muted-foreground/40">#hashtag | Ctrl+Enter post</span>
                   </div>
+
                   <button
                     type="button"
-                    onClick={handleSubmit}
+                    data-testid="wall-post-submit"
+                    onClick={() => void handleSubmit()}
                     disabled={!canPost}
-                    className="rounded-full bg-foreground px-4 py-1.5 text-[13px] text-background disabled:opacity-30 transition-all hover:opacity-90 active:scale-95 flex items-center gap-1.5"
+                    className="shell-action-primary px-4 py-2 text-[13px] disabled:translate-y-0 disabled:opacity-30"
                     style={{ fontWeight: 590 }}
                   >
                     {isSubmitting ? (
-                      <div className="w-3.5 h-3.5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                    ) : 'Post'}
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-background/30 border-t-background" />
+                    ) : (
+                      'Post'
+                    )}
                   </button>
                 </div>
               </motion.div>
@@ -383,157 +609,248 @@ function WallComposer({
           </AnimatePresence>
         </div>
       </div>
+
+      <GifPicker
+        anchorRef={gifBtnRef}
+        isOpen={showGifPicker}
+        search={gifSearch}
+        onSearchChange={setGifSearch}
+        onSelect={setGifUrl}
+        onClose={() => setShowGifPicker(false)}
+      />
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// ReplyThread
-// ---------------------------------------------------------------------------
-function ReplyThread({
-  bugId,
-  onComment,
-}: {
+const ThreadComment: React.FC<{
   bugId: string;
+  comment: Comment;
+  isLast: boolean;
+  isReplying: boolean;
+  onStartReply: () => void;
+  onReactComment: (bugId: string, commentId: string, currentUserId: string) => void;
+  onReply: (commentId: string, payload: { text: string; files: File[]; gifUrl: string | null }) => Promise<void>;
+  showToast?: (msg: string, type?: 'success' | 'error') => void;
+}> = ({
+  bugId,
+  comment,
+  isLast,
+  isReplying,
+  onStartReply,
+  onReactComment,
+  onReply,
+  showToast,
+}) => {
+  const { profile } = useAuth();
+  const likes = comment.likes ?? [];
+  const hasLiked = profile?.uid ? likes.includes(profile.uid) : false;
+  const avatarSrc = comment.authorPhotoURL
+    ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.authorId ?? comment.author}`;
+
+  return (
+    <div className="mb-3 flex gap-3" data-testid={`wall-comment-${comment.id}`}>
+      <div className="flex shrink-0 flex-col items-center">
+        {comment.isBot ? (
+          <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-primary/12">
+            <Icon icon="solar:magic-stick-3-bold-duotone" width={14} className="text-primary" />
+          </span>
+        ) : (
+          <img src={avatarSrc} alt={comment.author} className="h-7 w-7 rounded-full object-cover" referrerPolicy="no-referrer" />
+        )}
+        {!isLast && <div className="mt-1 min-h-[12px] w-px flex-1 bg-border/40" />}
+      </div>
+
+      <div className="min-w-0 flex-1 pb-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[13px] text-foreground" style={{ fontWeight: 590 }}>
+            {comment.isAnonymous ? 'Anonymous' : comment.author}
+          </span>
+          {comment.isBot && (
+            <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] text-primary" style={{ fontWeight: 600, letterSpacing: '0.05em' }}>
+              AI
+            </span>
+          )}
+          <span className="text-[11px] text-muted-foreground">{timeAgo(comment.createdAt ?? comment.date)}</span>
+        </div>
+
+        <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-relaxed text-foreground/90">{comment.text}</p>
+        <MediaGallery imageUrls={comment.imageUrls} imageUrl={comment.imageUrl} gifUrl={comment.gifUrl} maxHeightClass="max-h-40" />
+
+        <div className="mt-2 flex items-center gap-4 text-[12px] text-muted-foreground/65">
+          <button
+            type="button"
+            onClick={() => profile?.uid && onReactComment(bugId, comment.id, profile.uid)}
+            className={`flex items-center gap-1 transition-colors hover:text-destructive ${hasLiked ? 'text-destructive' : ''}`}
+          >
+            <Icon icon={hasLiked ? 'solar:heart-bold' : 'solar:heart-linear'} width={14} />
+            {likes.length > 0 && <span>{likes.length}</span>}
+          </button>
+          <button type="button" onClick={onStartReply} className="transition-colors hover:text-primary">
+            Reply
+          </button>
+        </div>
+
+        {(comment.replies?.length ?? 0) > 0 && (
+          <div className="mt-3 space-y-3 border-l border-border/40 pl-4">
+            {(comment.replies ?? [])
+              .slice()
+              .sort((a, b) => commentTime(a) - commentTime(b))
+              .map(reply => (
+                <div key={reply.id} className="flex gap-3" data-testid={`wall-reply-${reply.id}`}>
+                  <img
+                    src={reply.authorPhotoURL ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.authorId ?? reply.author}`}
+                    alt={reply.author}
+                    className="mt-0.5 h-6 w-6 rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[12px] text-foreground" style={{ fontWeight: 590 }}>
+                        {reply.isAnonymous ? 'Anonymous' : reply.author}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{timeAgo(reply.createdAt ?? reply.date)}</span>
+                    </div>
+                    <p className="mt-0.5 whitespace-pre-wrap text-[12px] leading-relaxed text-foreground/85">{reply.text}</p>
+                    <MediaGallery imageUrls={reply.imageUrls} imageUrl={reply.imageUrl} gifUrl={reply.gifUrl} maxHeightClass="max-h-32" />
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+
+        <AnimatePresence>
+          {isReplying && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <ThreadComposer
+                placeholder="Write a reply..."
+                submitLabel="Reply"
+                submitTestId={`reply-submit-${comment.id}`}
+                onSubmit={payload => onReply(comment.id, payload)}
+                showToast={showToast}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function ReplyThread({
+  bug,
+  onComment,
+  onReplyComment,
+  onReactComment,
+  showToast,
+}: {
+  bug: BugStory;
   onComment: (...args: any[]) => void;
+  onReplyComment: (bugId: string, commentId: string, reply: any) => void;
+  onReactComment: (bugId: string, commentId: string, currentUserId: string) => void;
+  showToast?: (msg: string, type?: 'success' | 'error') => void;
 }) {
   const { profile } = useAuth();
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [replyText, setReplyText] = useState('');
-  const [isSending, setIsSending] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [replyingToCommentId, setReplyingToCommentId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const unsub = getComments(bugId, setComments);
-    return () => unsub?.();
-  }, [bugId]);
+  const sortedComments = useMemo(
+    () => [...(bug.comments ?? [])].sort((a, b) => commentTime(a) - commentTime(b)),
+    [bug.comments]
+  );
 
-  const handleSend = async () => {
-    if (!replyText.trim() || isSending) return;
-    setIsSending(true);
+  const createUploads = async (files: File[], folder: 'comments' | 'replies') => {
+    const imageUrls: string[] = [];
+    for (const file of files) {
+      const url = await uploadImage(file, folder);
+      if (url) imageUrls.push(url);
+    }
+    return imageUrls;
+  };
+
+  const submitComment = async ({ text, files, gifUrl }: { text: string; files: File[]; gifUrl: string | null }) => {
     try {
-      onComment(
-        bugId,
-        replyText.trim(),
+      const imageUrls = await createUploads(files, 'comments');
+      await onComment(
+        bug.id,
+        text.trim(),
         profile?.displayName ?? 'Anonymous',
         false,
         profile?.photoURL ?? undefined,
         profile?.uid ?? undefined,
+        imageUrls[0] ?? undefined,
+        gifUrl ?? undefined,
+        imageUrls
       );
-      setReplyText('');
-      if (textareaRef.current) textareaRef.current.style.height = 'auto';
-    } finally {
-      setIsSending(false);
+      showToast?.('Comment posted successfully!', 'success');
+    } catch {
+      showToast?.('Failed to post comment.', 'error');
+      throw new Error('comment-submit-failed');
+    }
+  };
+
+  const submitReply = async (commentId: string, { text, files, gifUrl }: { text: string; files: File[]; gifUrl: string | null }) => {
+    try {
+      const imageUrls = await createUploads(files, 'replies');
+      await onReplyComment(bug.id, commentId, {
+        text: text.trim(),
+        author: profile?.displayName ?? 'Anonymous',
+        authorId: profile?.uid ?? null,
+        authorPhotoURL: profile?.photoURL ?? null,
+        date: 'Just now',
+        isAnonymous: false,
+        imageUrl: imageUrls[0] ?? null,
+        imageUrls,
+        gifUrl: gifUrl ?? null,
+      });
+      setReplyingToCommentId(null);
+      showToast?.('Reply posted successfully!', 'success');
+    } catch {
+      showToast?.('Failed to post reply.', 'error');
+      throw new Error('reply-submit-failed');
     }
   };
 
   return (
-    <div className="mt-2">
-      {comments.map((c, idx) => {
-        const isLast = idx === comments.length - 1;
-        const avatarSrc = c.authorPhotoURL
-          ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.authorId ?? c.author}`;
-        return (
-          <div key={c.id} className="flex gap-3 mb-3">
-            <div className="flex flex-col items-center shrink-0">
-              {c.isBot ? (
-                <span className="w-7 h-7 rounded-[8px] bg-primary/12 flex items-center justify-center shrink-0">
-                  <Icon icon="solar:magic-stick-3-bold-duotone" width={14} className="text-primary" />
-                </span>
-              ) : (
-                <img
-                  src={avatarSrc}
-                  alt={c.author}
-                  className="w-7 h-7 rounded-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              )}
-              {!isLast && <div className="w-px flex-1 bg-border/40 mt-1 min-h-[12px]" />}
-            </div>
-            <div className="flex-1 min-w-0 pb-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[13px] text-foreground" style={{ fontWeight: 590 }}>
-                  {c.isAnonymous ? 'Anonymous' : c.author}
-                </span>
-                {c.isBot && (
-                  <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] text-primary" style={{ fontWeight: 600, letterSpacing: '0.05em' }}>
-                    AI
-                  </span>
-                )}
-                <span className="text-[11px] text-muted-foreground">
-                  {timeAgo(c.createdAt ?? c.date)}
-                </span>
-              </div>
-              <p className="mt-0.5 text-[13px] leading-relaxed text-foreground/90 whitespace-pre-wrap">
-                {c.text}
-              </p>
-              {(c.imageUrls?.length || c.imageUrl) && (
-                <img
-                  src={c.imageUrls?.[0] ?? c.imageUrl!}
-                  alt="Attachment"
-                  className="mt-2 max-h-40 rounded-[10px] border border-border/20 object-cover"
-                />
-              )}
-            </div>
-          </div>
-        );
-      })}
+    <div className="mt-3" data-testid={`wall-thread-${bug.id}`}>
+      {sortedComments.map((comment, index) => (
+        <ThreadComment
+          key={comment.id}
+          bugId={bug.id}
+          comment={comment}
+          isLast={index === sortedComments.length - 1}
+          isReplying={replyingToCommentId === comment.id}
+          onStartReply={() => setReplyingToCommentId(prev => prev === comment.id ? null : comment.id)}
+          onReactComment={onReactComment}
+          onReply={submitReply}
+          showToast={showToast}
+        />
+      ))}
 
-      {/* Reply composer */}
-      <div className="flex gap-3 mt-2">
+      <div className="mt-2 flex gap-3">
         <img
           src={profile?.photoURL ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.uid}`}
           alt="Me"
-          className="w-7 h-7 rounded-full shrink-0 object-cover mt-0.5"
+          className="mt-0.5 h-7 w-7 shrink-0 rounded-full object-cover"
           referrerPolicy="no-referrer"
         />
-        <div className="flex flex-1 items-center gap-2 rounded-full border border-border/50 bg-secondary/20 px-3 py-1.5 focus-within:border-primary/30 focus-within:bg-card transition-all">
-          <textarea
-            ref={textareaRef}
-            value={replyText}
-            onChange={e => {
-              setReplyText(e.target.value);
-              e.target.style.height = 'auto';
-              e.target.style.height = `${Math.min(e.target.scrollHeight, 80)}px`;
-            }}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="Add to the thread…"
-            rows={1}
-            className="flex-1 resize-none bg-transparent border-none p-0 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-0 focus:outline-none leading-relaxed"
+        <div className="flex-1">
+          <ThreadComposer
+            placeholder="Add to the thread..."
+            submitLabel="Comment"
+            submitTestId={`comment-submit-${bug.id}`}
+            onSubmit={submitComment}
+            showToast={showToast}
           />
-          <AnimatePresence>
-            {replyText.trim() && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.12 }}
-                type="button"
-                onClick={handleSend}
-                disabled={isSending}
-                className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white disabled:opacity-40 transition-all"
-              >
-                {isSending
-                  ? <div className="h-3 w-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                  : <Icon icon="solar:arrow-up-bold" width={12} />
-                }
-              </motion.button>
-            )}
-          </AnimatePresence>
         </div>
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// More menu (··· triage actions)
-// ---------------------------------------------------------------------------
 function MoreMenu({
   isOwner,
   onEdit,
@@ -548,8 +865,8 @@ function MoreMenu({
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const handler = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -559,8 +876,8 @@ function MoreMenu({
     <div ref={ref} className="relative shrink-0">
       <button
         type="button"
-        onClick={() => setOpen(p => !p)}
-        className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground/50 hover:bg-secondary/40 hover:text-foreground transition-colors"
+        onClick={() => setOpen(prev => !prev)}
+        className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground/50 transition-colors hover:bg-secondary/40 hover:text-foreground"
         aria-label="More options"
       >
         <Icon icon="solar:menu-dots-bold" width={14} />
@@ -577,24 +894,21 @@ function MoreMenu({
             {isOwner && (
               <button
                 type="button"
-                onClick={() => { onEdit(); setOpen(false); }}
-                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary/30 transition-colors"
+                onClick={() => {
+                  onEdit();
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-[13px] text-foreground transition-colors hover:bg-secondary/30"
               >
                 <Icon icon="solar:pen-linear" width={13} className="text-muted-foreground" />
                 Edit post
               </button>
             )}
-            <button
-              type="button"
-              className="flex w-full items-center gap-2.5 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary/30 transition-colors"
-            >
+            <button type="button" className="flex w-full items-center gap-2.5 px-3 py-2.5 text-[13px] text-foreground transition-colors hover:bg-secondary/30">
               <Icon icon="solar:check-circle-linear" width={13} className="text-muted-foreground" />
               Mark resolved
             </button>
-            <button
-              type="button"
-              className="flex w-full items-center gap-2.5 px-3 py-2.5 text-[13px] text-foreground hover:bg-secondary/30 transition-colors"
-            >
+            <button type="button" className="flex w-full items-center gap-2.5 px-3 py-2.5 text-[13px] text-foreground transition-colors hover:bg-secondary/30">
               <Icon icon="solar:link-linear" width={13} className="text-muted-foreground" />
               Link regression
             </button>
@@ -603,8 +917,11 @@ function MoreMenu({
                 <div className="mx-3 border-t border-border/50" />
                 <button
                   type="button"
-                  onClick={() => { onDelete(); setOpen(false); }}
-                  className="flex w-full items-center gap-2.5 px-3 py-2.5 text-[13px] text-destructive hover:bg-secondary/30 transition-colors"
+                  onClick={() => {
+                    onDelete();
+                    setOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2.5 text-[13px] text-destructive transition-colors hover:bg-secondary/30"
                 >
                   <Icon icon="solar:trash-bin-trash-linear" width={13} />
                   Delete
@@ -618,9 +935,6 @@ function MoreMenu({
   );
 }
 
-// ---------------------------------------------------------------------------
-// WallPost
-// ---------------------------------------------------------------------------
 function WallPost({
   bug,
   isExpanded,
@@ -628,8 +942,13 @@ function WallPost({
   onToggle,
   onReact,
   onComment,
+  onReplyComment,
+  onReactComment,
   onEdit,
   onDelete,
+  onMarkForReview,
+  onMarkReviewed,
+  showToast,
 }: {
   bug: BugStory;
   isExpanded: boolean;
@@ -637,8 +956,13 @@ function WallPost({
   onToggle: () => void;
   onReact: (bugId: string, emoji: string, currentUserName?: string) => void;
   onComment: (...args: any[]) => void;
+  onReplyComment: (bugId: string, commentId: string, reply: any) => void;
+  onReactComment: (bugId: string, commentId: string, currentUserId: string) => void;
   onEdit: (bug: BugStory) => void;
   onDelete: (bugId: string) => void;
+  onMarkForReview: (bugId: string) => void;
+  onMarkReviewed: (bugId: string) => void;
+  showToast?: (msg: string, type?: 'success' | 'error') => void;
 }) {
   const { profile } = useAuth();
   const reduce = useReducedMotion();
@@ -646,112 +970,152 @@ function WallPost({
   const heartCount = bug.reactions?.['❤️'] ?? 0;
   const commentCount = bug.comments?.length ?? 0;
   const hasLiked = profile?.uid ? (bug.reactedBy?.['❤️'] ?? []).includes(profile.uid) : false;
-
   const avatarSrc = bug.isAnonymous
-    ? `https://api.dicebear.com/7.x/bottts/svg?seed=anon`
+    ? 'https://api.dicebear.com/7.x/bottts/svg?seed=anon'
     : (bug.authorPhotoURL ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${bug.authorId ?? bug.author}`);
-
-  const images = bug.imageUrls?.length
-    ? bug.imageUrls
-    : bug.imageUrl ? [bug.imageUrl] : [];
+  const triageStatus = reviewStatusForBug(bug);
 
   return (
-    <div className="border-b border-border/50 last:border-0 hover:bg-[var(--surface-low)]/60 transition-colors rounded-sm">
-      {/* Main row: avatar spine + content */}
-      <div className="flex gap-3 pt-4 px-1">
-
-        {/* Avatar + always-visible connector spine */}
+    <div className="rounded-sm border-b border-border/50 transition-colors hover:bg-[var(--surface-low)]/60" data-testid={`wall-post-${bug.id}`}>
+      <div className="flex gap-3 px-1 pt-4">
         <div className="flex shrink-0 flex-col items-center">
-          <img
-            src={avatarSrc}
-            alt={bug.isAnonymous ? 'Anonymous' : bug.author}
-            className="h-9 w-9 rounded-full object-cover shrink-0"
-            referrerPolicy="no-referrer"
-          />
-          {!isLast && (
-            <div className="mt-2 w-px flex-1 min-h-[20px] bg-border/40" />
-          )}
+          <img src={avatarSrc} alt={bug.isAnonymous ? 'Anonymous' : bug.author} className="h-9 w-9 rounded-full object-cover" referrerPolicy="no-referrer" />
+          {!isLast && <div className="mt-2 min-h-[20px] w-px flex-1 bg-border/40" />}
         </div>
 
-        {/* Content column — includes inline thread so connector spans full height */}
-        <div className="flex-1 min-w-0 pb-4">
-          {/* Header */}
+        <div className="min-w-0 flex-1 pb-4">
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex items-baseline gap-2 flex-wrap">
+            <div className="min-w-0 flex flex-wrap items-baseline gap-2">
               <span className="text-[14px] text-foreground" style={{ fontWeight: 590 }}>
                 {bug.isAnonymous ? 'Anonymous' : bug.author}
               </span>
-              <span className="text-[12px] text-muted-foreground shrink-0">
-                {timeAgo(bug.createdAt ?? bug.date)}
-              </span>
+              <span className="shrink-0 text-[12px] text-muted-foreground">{timeAgo(bug.createdAt ?? bug.date)}</span>
             </div>
-            <MoreMenu
-              isOwner={isOwner}
-              onEdit={() => onEdit(bug)}
-              onDelete={() => onDelete(bug.id)}
-            />
+            <MoreMenu isOwner={isOwner} onEdit={() => onEdit(bug)} onDelete={() => onDelete(bug.id)} />
           </div>
 
-          {/* Tags */}
           <TagPills tags={bug.tags ?? []} />
-
-          {/* Thought text */}
           {bug.discovery && (
-            <p className="mt-2 text-[15px] leading-relaxed text-foreground whitespace-pre-wrap break-words">
-              {bug.discovery}
-            </p>
+            <p className="mt-2 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground">{bug.discovery}</p>
           )}
+          {bug.triage && (
+            <div
+              className={`mt-3 rounded-[14px] px-3 py-3 ${
+                triageStatus === 'review_required'
+                  ? 'border border-amber-500/20 bg-amber-500/8'
+                  : triageStatus === 'reviewed'
+                    ? 'border border-emerald-500/18 bg-emerald-500/7'
+                    : 'border border-primary/12 bg-primary/5'
+              }`}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
+                  <Icon icon="solar:danger-triangle-linear" width={13} />
+                  AI triage
+                </span>
+                <span
+                  className={`rounded-full px-2 py-1 text-[11px] font-medium ${
+                    triageStatus === 'review_required'
+                      ? 'bg-amber-500/12 text-amber-700'
+                      : triageStatus === 'reviewed'
+                        ? 'bg-emerald-500/12 text-emerald-700'
+                        : 'bg-white/80 text-foreground/80'
+                  }`}
+                >
+                  {triageStatus === 'review_required'
+                    ? 'Review required'
+                    : triageStatus === 'reviewed'
+                      ? 'Reviewed'
+                      : 'Pending review'}
+                </span>
+                <span className="rounded-full bg-white/80 px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {bug.triage.category.replace('_', ' ')}
+                </span>
+                <span className="rounded-full bg-white/80 px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {bug.triage.severity}
+                </span>
+                <span className="rounded-full bg-white/80 px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {bug.triage.confidence}% confidence
+                </span>
+              </div>
 
-          {/* Images — grid for multiple, natural ratio for single */}
-          {images.length === 1 && (
-            <img
-              src={images[0]}
-              alt="Attachment"
-              className="mt-3 max-h-72 w-full rounded-[12px] border border-border/20 object-cover"
-            />
-          )}
-          {images.length > 1 && (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {images.map((url, i) => (
-                <div key={i} className="aspect-square rounded-[12px] overflow-hidden border border-border/20">
-                  <img src={url} alt="Attachment" className="w-full h-full object-cover" />
+              {triageStatus === 'review_required' && (
+                <p className="mt-2 rounded-[10px] bg-white/60 px-2.5 py-2 text-[12px] leading-relaxed text-amber-900/90">
+                  This item should be checked by a person before the triage result is treated as final.
+                </p>
+              )}
+
+              <p className="mt-2 text-[13px] leading-relaxed text-foreground/90">
+                <span className="font-semibold text-foreground">Summary:</span> {bug.triage.summary}
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-foreground/90">
+                <span className="font-semibold text-foreground">Next step:</span> {bug.triage.suggested_next_step}
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                {bug.triage.reasoning_short}
+              </p>
+              {bug.triage.review_note && (
+                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                  {bug.triage.review_note}
+                </p>
+              )}
+              {bug.triage.review_history && bug.triage.review_history.length > 0 && (
+                <div className="mt-3 rounded-[12px] border border-border/50 bg-white/55 px-2.5 py-2">
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Review history</p>
+                  <div className="mt-2 space-y-1.5">
+                    {[...bug.triage.review_history].slice(-3).reverse().map((event, index) => (
+                      <div key={`${event.timestamp}-${index}`} className="rounded-[10px] bg-white/70 px-2 py-1.5">
+                        <p className="text-[12px] text-foreground" style={{ fontWeight: 600 }}>
+                          {reviewEventLabel(event.status)}
+                        </p>
+                        <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">{event.note}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground/80">
+                          {timeAgo(event.timestamp)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              )}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {triageStatus !== 'review_required' && (
+                  <button
+                    type="button"
+                    onClick={() => onMarkForReview(bug.id)}
+                    className="rounded-full border border-amber-500/20 bg-white/80 px-3 py-1.5 text-[12px] text-amber-800 transition-colors hover:bg-amber-50"
+                  >
+                    Mark for human review
+                  </button>
+                )}
+                {triageStatus === 'review_required' && (
+                  <button
+                    type="button"
+                    onClick={() => onMarkReviewed(bug.id)}
+                    className="rounded-full border border-emerald-500/20 bg-white/80 px-3 py-1.5 text-[12px] text-emerald-800 transition-colors hover:bg-emerald-50"
+                  >
+                    Mark review complete
+                  </button>
+                )}
+              </div>
             </div>
           )}
-          {bug.gifUrl && (
-            <img
-              src={bug.gifUrl}
-              alt="GIF"
-              className="mt-3 max-h-48 rounded-[12px] border border-border/20 object-cover"
-            />
-          )}
+          <MediaGallery imageUrls={bug.imageUrls} imageUrl={bug.imageUrl} gifUrl={bug.gifUrl} />
 
-          {/* Reaction row */}
           <div className="mt-3 flex items-center gap-5 text-muted-foreground/60">
             <button
               type="button"
               onClick={() => onReact(bug.id, '❤️', profile?.displayName)}
               className={`group flex items-center gap-1.5 text-[13px] transition-colors hover:text-destructive ${hasLiked ? 'text-destructive' : ''}`}
             >
-              <Icon
-                icon={hasLiked ? 'solar:heart-bold' : 'solar:heart-linear'}
-                width={16}
-                className="transition-transform group-hover:scale-110"
-              />
+              <Icon icon={hasLiked ? 'solar:heart-bold' : 'solar:heart-linear'} width={16} className="transition-transform group-hover:scale-110" />
               {heartCount > 0 && <span>{heartCount}</span>}
             </button>
-            <button
-              type="button"
-              onClick={onToggle}
-              className="flex items-center gap-1.5 text-[13px] transition-colors hover:text-primary"
-            >
+            <button type="button" data-testid={`toggle-thread-${bug.id}`} onClick={onToggle} className="flex items-center gap-1.5 text-[13px] transition-colors hover:text-primary">
               <Icon icon="solar:chat-round-dots-linear" width={16} />
               {commentCount > 0 && <span>{commentCount}</span>}
             </button>
           </div>
 
-          {/* Inline thread — inside content column so connector spans it */}
           <AnimatePresence>
             {isExpanded && (
               <motion.div
@@ -761,7 +1125,13 @@ function WallPost({
                 transition={{ type: 'spring', stiffness: 380, damping: 36 }}
                 className="overflow-hidden"
               >
-                <ReplyThread bugId={bug.id} onComment={onComment} />
+                <ReplyThread
+                  bug={bug}
+                  onComment={onComment}
+                  onReplyComment={onReplyComment}
+                  onReactComment={onReactComment}
+                  showToast={showToast}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -771,10 +1141,7 @@ function WallPost({
   );
 }
 
-// ---------------------------------------------------------------------------
-// WallScreen
-// ---------------------------------------------------------------------------
-type TabKey = 'feed' | 'hot';
+type TabKey = 'feed' | 'hot' | 'review';
 
 interface WallScreenProps {
   bugs: BugStory[];
@@ -797,6 +1164,8 @@ interface WallScreenProps {
   onAddBugSubmit: (bug: any) => Promise<string | void>;
   onDeleteComment?: (bugId: string, commentId: string) => void;
   onEditComment?: (bugId: string, commentId: string, text: string) => void;
+  onMarkBugForReview: (bugId: string) => void;
+  onMarkBugReviewed: (bugId: string) => void;
   searchQuery: string;
   selectedItemId: string | null;
   onClearSelection: () => void;
@@ -807,9 +1176,13 @@ export function WallScreen({
   bugs,
   onReact,
   onComment,
+  onReactComment,
+  onReplyComment,
   onDeleteBug,
   onEditBug,
   onAddBugSubmit,
+  onMarkBugForReview,
+  onMarkBugReviewed,
   searchQuery,
   selectedItemId,
   onClearSelection,
@@ -826,77 +1199,163 @@ export function WallScreen({
   const displayedBugs = useMemo(() => {
     let list = [...bugs];
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(b =>
-        b.discovery?.toLowerCase().includes(q) ||
-        b.tags?.some(t => t.toLowerCase().includes(q)) ||
-        b.author?.toLowerCase().includes(q)
+      const query = searchQuery.toLowerCase();
+      list = list.filter(bug =>
+        bug.discovery?.toLowerCase().includes(query)
+        || bug.tags?.some(tag => tag.toLowerCase().includes(query))
+        || bug.author?.toLowerCase().includes(query)
       );
     }
     if (activeTab === 'hot') {
-      return list.filter(b => hotScore(b) > 0).sort((a, b) => hotScore(b) - hotScore(a));
+      return list.filter(bug => hotScore(bug) > 0).sort((a, b) => hotScore(b) - hotScore(a));
+    }
+    if (activeTab === 'review') {
+      return list
+        .filter(bug => bug.triage && reviewStatusForBug(bug) === 'review_required')
+        .sort((a, b) => bugTime(b) - bugTime(a));
     }
     return list.sort((a, b) => bugTime(b) - bugTime(a));
-  }, [bugs, searchQuery, activeTab]);
+  }, [activeTab, bugs, searchQuery]);
 
-  const tabs: { key: TabKey; label: string }[] = [
-    { key: 'feed', label: 'Feed' },
-    { key: 'hot', label: 'Hot' },
-  ];
+  const reviewQueue = useMemo(
+    () => bugs
+      .filter(bug => bug.triage && reviewStatusForBug(bug) === 'review_required')
+      .sort((a, b) => bugTime(b) - bugTime(a))
+      .slice(0, 5),
+    [bugs]
+  );
 
   return (
-    <div className="max-w-[640px] mx-auto">
-      {/* Tabs */}
-      <div className="mb-5 flex items-center gap-1">
-        {tabs.map(tab => (
+    <div className="mx-auto max-w-[640px]" data-testid="wall-screen">
+      <div className="mb-5 flex flex-col gap-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="page-kicker">Living thread</p>
+            <h1 className="page-title-serif mt-1 text-[30px] text-foreground">Wall</h1>
+            <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+              Keep bug stories conversational, specific, and easy to continue.
+            </p>
+          </div>
+          <div className="rounded-[16px] border border-border bg-card/70 px-4 py-3">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Flow</p>
+            <p className="mt-1 text-[13px] text-foreground" style={{ fontWeight: 600 }}>
+              {activeTab === 'feed'
+                ? 'Latest discussion first'
+                : activeTab === 'hot'
+                  ? 'Surface posts getting traction'
+                  : 'Focus only on items waiting for review'}
+            </p>
+          </div>
+        </div>
+
+        <div className="shell-tab-group wall-tab-group w-full overflow-x-auto">
+        {[
+          { key: 'feed' as const, label: 'Feed' },
+          { key: 'hot' as const, label: 'Hot' },
+          { key: 'review' as const, label: `Review${reviewQueue.length > 0 ? ` (${reviewQueue.length})` : ''}` },
+        ].map(tab => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
-            className={`rounded-[8px] px-3 py-1.5 text-[13px] transition-colors ${
-              activeTab === tab.key
-                ? 'bg-[var(--surface-low)] text-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-[var(--surface-low)]/70'
-            }`}
-            style={{ fontWeight: activeTab === tab.key ? 590 : 400 }}
+            aria-pressed={activeTab === tab.key}
+            className={`shell-tab wall-tab ${activeTab === tab.key ? 'shell-tab-active' : ''}`}
+            style={{ fontWeight: activeTab === tab.key ? 620 : 520 }}
           >
-            {tab.label}
+            <span className="text-[13px]">{tab.label}</span>
           </button>
         ))}
+        </div>
       </div>
 
-      {/* Pinned composer */}
       <WallComposer onSubmit={onAddBugSubmit} showToast={showToast} />
 
-      {/* Feed */}
+      {reviewQueue.length > 0 && activeTab !== 'review' && (
+        <div className="mb-4 rounded-[18px] border border-amber-500/20 bg-amber-500/8 px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-amber-700">Reviewer Queue</p>
+              <p className="mt-1 text-[14px] text-foreground" style={{ fontWeight: 600 }}>
+                {reviewQueue.length} item{reviewQueue.length !== 1 ? 's' : ''} waiting for human review
+              </p>
+            </div>
+            <span className="rounded-full bg-white/70 px-2 py-1 text-[11px] font-medium text-amber-800">
+              QA checkpoint
+            </span>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {reviewQueue.map(bug => (
+              <div
+                key={`review-queue-${bug.id}`}
+                className="flex items-center justify-between gap-3 rounded-[14px] border border-amber-500/12 bg-white/65 px-3 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] text-foreground" style={{ fontWeight: 600 }}>
+                    {bug.title || 'Wall post'}
+                  </p>
+                  <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
+                    {bug.triage?.summary || bug.discovery}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('review');
+                      setExpandedId(bug.id);
+                      onClearSelection();
+                    }}
+                    className="rounded-full border border-border/60 bg-white/80 px-3 py-1.5 text-[12px] text-foreground transition-colors hover:bg-secondary/30"
+                  >
+                    Open
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void onMarkBugReviewed(bug.id)}
+                    className="rounded-full border border-emerald-500/20 bg-white/80 px-3 py-1.5 text-[12px] text-emerald-800 transition-colors hover:bg-emerald-50"
+                  >
+                    Complete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {displayedBugs.length === 0 ? (
         <div className="py-16 text-center">
-          <p className="font-serif italic text-[22px] text-foreground/80">
+          <p className="font-serif text-[22px] italic text-foreground/80">
             {searchQuery
               ? 'Nothing matched.'
               : activeTab === 'hot'
-              ? 'Nothing hot yet.'
-              : 'The wall is quiet.'}
+                ? 'Nothing hot yet.'
+                : activeTab === 'review'
+                  ? 'No review items right now.'
+                  : 'The wall is quiet.'}
           </p>
           <p className="mt-1.5 text-[13px] text-muted-foreground">
             {searchQuery
               ? 'Try different keywords or a #tag.'
-              : 'Post the first thought to start the conversation.'}
+              : activeTab === 'review'
+                ? 'New items that need a human checkpoint will show up here.'
+                : 'Post the first thought to start the conversation.'}
           </p>
         </div>
       ) : (
         <div>
-          {displayedBugs.map((bug, i) => (
+          {displayedBugs.map((bug, index) => (
             <motion.div
               key={bug.id}
               initial={reduce ? false : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.18, delay: Math.min(i * 0.035, 0.18) }}
+              transition={{ duration: 0.18, delay: Math.min(index * 0.035, 0.18) }}
             >
               <WallPost
                 bug={bug}
                 isExpanded={expandedId === bug.id}
-                isLast={i === displayedBugs.length - 1}
+                isLast={index === displayedBugs.length - 1}
                 onToggle={() => {
                   const closing = expandedId === bug.id;
                   setExpandedId(closing ? null : bug.id);
@@ -904,8 +1363,13 @@ export function WallScreen({
                 }}
                 onReact={onReact}
                 onComment={onComment}
+                onReplyComment={onReplyComment}
+                onReactComment={onReactComment}
                 onEdit={onEditBug}
                 onDelete={onDeleteBug}
+                onMarkForReview={onMarkBugForReview}
+                onMarkReviewed={onMarkBugReviewed}
+                showToast={showToast}
               />
             </motion.div>
           ))}
@@ -914,4 +1378,3 @@ export function WallScreen({
     </div>
   );
 }
-

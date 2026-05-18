@@ -23,6 +23,8 @@ interface ContributeScreenProps {
   onAddProposal: () => void;
   onDeleteProposal: (proposalId: string) => void;
   onEditProposal: (proposal: Proposal) => void;
+  onUpdateProposal: (proposalId: string, proposal: Partial<Proposal>) => void | Promise<void>;
+  isAdmin?: boolean;
   searchQuery: string;
   selectedItemId: string | null;
   onClearSelection: () => void;
@@ -39,6 +41,8 @@ export function ContributeScreen({
   onAddProposal,
   onDeleteProposal,
   onEditProposal,
+  onUpdateProposal,
+  isAdmin = false,
   searchQuery,
   selectedItemId,
   onClearSelection,
@@ -56,32 +60,41 @@ export function ContributeScreen({
 
   return (
     <div className="space-y-5">
-      {/* Header + tab switcher */}
       <div className="space-y-4">
-        <div>
-          <h1 className="page-title-serif text-[28px] text-foreground">
-            <span style={{ fontStyle: 'italic' }}>Contribute</span>
-          </h1>
-          <p className="mt-1 text-[13px] text-muted-foreground">Share tips and knowledge with the team.</p>
+        <div className="page-hero px-6 py-6 md:px-8">
+          <p className="page-kicker">Shared craft</p>
+          <div className="mt-3 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <h1 className="page-title-serif text-[32px] text-foreground">
+                Contribute
+              </h1>
+              <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
+                Keep the team useful to itself. Publish a practical tip or turn a lesson into a reusable knowledge post.
+              </p>
+            </div>
+            <div className="rounded-[18px] border border-border bg-card/70 px-4 py-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Mode</p>
+              <p className="mt-1 text-[14px] text-foreground" style={{ fontWeight: 600 }}>
+                {activeTab === 'tips' ? 'Fast operational advice' : 'Longer-form reusable knowledge'}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 border-b border-border">
+        <div className="shell-tab-group contribute-tab-group w-full overflow-x-auto scrollbar-hide">
           {tabs.map(tab => {
             const isActive = activeTab === tab.key;
             return (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-[13px] border-b-2 transition-colors -mb-px ${
-                  isActive
-                    ? 'border-primary text-foreground'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-                style={{ fontWeight: isActive ? 510 : 400 }}
+                aria-pressed={isActive}
+                className={`shell-tab contribute-tab ${isActive ? 'shell-tab-active' : ''}`}
+                style={{ fontWeight: isActive ? 620 : 520 }}
               >
-                <Icon icon={tab.icon} width={14} height={14} />
-                {tab.label}
-                <span className={`text-[11px] tabular-nums ${isActive ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}>
+                <Icon icon={tab.icon} width={15} height={15} />
+                <span className="text-[13px] leading-tight sm:whitespace-nowrap">{tab.label}</span>
+                <span className={`shell-tab-count tabular-nums ${isActive ? 'bg-white/14 text-white' : 'bg-secondary/70 text-muted-foreground'}`}>
                   {tab.count}
                 </span>
               </button>
@@ -115,9 +128,11 @@ export function ContributeScreen({
             onAddProposal={onAddProposal}
             onDeleteProposal={onDeleteProposal}
             onEditProposal={onEditProposal}
+            onUpdateProposal={onUpdateProposal}
             searchQuery={searchQuery}
             selectedItemId={selectedItemId}
             onClearSelection={onClearSelection}
+            isAdmin={isAdmin}
           />
         )}
       </React.Suspense>
