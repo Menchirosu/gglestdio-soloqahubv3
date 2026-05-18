@@ -1,5 +1,28 @@
 export type Screen = 'dashboard' | 'bug-wall' | 'tips-tricks' | 'knowledge-sharing' | 'achievements' | 'focus-zone' | 'admin-dashboard' | 'leaderboard';
 
+export type TriageCategory = 'bug' | 'question' | 'feature_request' | 'process_issue' | 'noise';
+export type TriageSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type TriageReviewStatus = 'pending' | 'review_required' | 'reviewed';
+
+export interface TriageReviewEvent {
+  status: Exclude<TriageReviewStatus, 'pending'>;
+  note: string;
+  timestamp: string;
+}
+
+export interface BugTriage {
+  category: TriageCategory;
+  severity: TriageSeverity;
+  confidence: number;
+  summary: string;
+  suggested_next_step: string;
+  needs_human_review: boolean;
+  reasoning_short: string;
+  review_status?: TriageReviewStatus;
+  review_note?: string;
+  review_history?: TriageReviewEvent[];
+}
+
 export interface Comment {
   id: string;
   author: string;
@@ -37,6 +60,7 @@ export interface BugStory {
   imageUrl?: string;
   imageUrls?: string[];
   gifUrl?: string;
+  triage?: BugTriage;
 }
 
 export interface Tip {
@@ -52,12 +76,13 @@ export interface Tip {
   createdAt?: any;
   highlight?: boolean;
   reactions?: Record<string, number>;
+  reactedBy?: Record<string, string[]>;
 }
 
 
 export interface Notification {
   id: string;
-  type: 'like' | 'comment' | 'system';
+  type: 'like' | 'comment' | 'system' | 'meeting';
   title: string;
   desc: string;
   time: string;
@@ -67,16 +92,34 @@ export interface Notification {
   recipientId: string;
 }
 
+export interface ProposalMeeting {
+  scheduledFor: string;
+  link?: string;
+  agenda?: string;
+  scheduledBy?: string;
+  scheduledById?: string;
+  updatedAt?: any;
+}
+
 export interface Proposal {
   id: string;
   title: string;
-  scope: string;
+  summary: string;
+  content: string;
   author: string;
   authorId?: string;
+  authorPhotoURL?: string;
   date: string;
   createdAt?: any;
   type?: 'Session' | 'Resource';
   tags?: string[];
+  status?: 'idea' | 'scheduled' | 'presented';
+  scope?: string;
+  meeting?: ProposalMeeting | null;
+  presenterId?: string | null;
+  presenterName?: string | null;
+  presentedAt?: any;
+  presentedById?: string | null;
 }
 
 export interface Achievement {
