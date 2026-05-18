@@ -132,14 +132,6 @@ export function OverviewScreen({
   const recentProposals = proposals.filter(p => toMs(p) >= weekAgo).length;
   const recentAchievements = achievements.filter(a => toMs(a) >= weekAgo).length;
 
-  // --- Needs Attention: bugs with zero comments --------------------------
-  const needsAttention = useMemo(() => {
-    return bugs
-      .filter(b => !b.comments || b.comments.length === 0)
-      .sort((a, b) => toMs(b) - toMs(a))
-      .slice(0, 4);
-  }, [bugs]);
-
   // --- Activity stream ---------------------------------------------------
   const activityFeed = useMemo((): ActivityItem[] => {
     const all: ActivityItem[] = [
@@ -175,19 +167,19 @@ export function OverviewScreen({
   const now = new Date();
   const greeting = `${timeOfDayGreeting(now)}, ${firstName(userName)}.`;
 
-  // Conversational line — tied to what actually needs attention.
+  // Conversational line — tied to live activity rather than a duplicate queue surface.
   const conversationalLine = useMemo(() => {
-    if (needsAttention.length === 0 && recentBugs === 0) {
-      return 'The queue is clear. This is a good moment to look ahead.';
+    if (liveSignalCount === 0) {
+      return 'The room is quiet. This is a good moment to plant the next useful note.';
     }
-    if (needsAttention.length === 1) {
-      return '1 bug story is waiting for its first read.';
+    if (recentBugs > 0) {
+      return `${recentBugs} bug stor${recentBugs === 1 ? 'y has' : 'ies have'} landed this week.`;
     }
-    if (needsAttention.length > 1) {
-      return `${needsAttention.length} bug stories are waiting for their first read.`;
+    if (closureDenominator > 0) {
+      return `${closureNumerator} of ${closureDenominator} bug stories picked up a reply this week.`;
     }
-    return 'The queue has moved. Nothing stalled yet.';
-  }, [needsAttention.length, recentBugs]);
+    return 'The wall is moving. Keep the next note practical.';
+  }, [liveSignalCount, recentBugs, closureDenominator, closureNumerator]);
 
   const stagger = reduceMotion ? 0 : 0.05;
 
@@ -201,7 +193,7 @@ export function OverviewScreen({
           initial={reduceMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: [0.25, 0, 0, 1] }}
-          className="flex items-start justify-between gap-4"
+          className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between"
         >
           <div className="min-w-0">
             <p className="page-kicker">Overview</p>
@@ -214,7 +206,8 @@ export function OverviewScreen({
           </div>
 
           {/* Drift pill (Q9) — only renders if count grew since arrival */}
-          {drift > 0 && (
+          <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+            {drift > 0 && (
             <motion.button
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -223,12 +216,23 @@ export function OverviewScreen({
                 initialSignalCount.current = liveSignalCount;
               }}
               title="Sync snapshot"
-              className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-[rgba(200,105,72,0.24)] bg-[rgba(200,105,72,0.08)] px-3 py-1.5 text-[12px] text-[var(--terracotta)] hover:bg-[rgba(200,105,72,0.14)] transition-colors"
+              className="shell-action-secondary px-3 py-2 text-[12px] text-[var(--terracotta)]"
+              style={{ fontWeight: 600 }}
             >
               <Icon icon="solar:refresh-bold-duotone" width={13} aria-hidden />
               <span>{drift} new since you arrived</span>
             </motion.button>
           )}
+            <button
+              type="button"
+              onClick={() => onNavigate('bug-wall')}
+              className="shell-action-primary px-4 py-2 text-[13px]"
+              style={{ fontWeight: 620 }}
+            >
+              <Icon icon="solar:pen-new-square-bold-duotone" width={15} aria-hidden />
+              Open wall
+            </button>
+          </div>
         </motion.div>
 
         {/* Streak chip — secondary, quiet */}
@@ -237,7 +241,7 @@ export function OverviewScreen({
             initial={reduceMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: stagger * 4 }}
-            className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-[var(--frame)] px-3 py-1 text-[12px] text-muted-foreground"
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-[var(--frame)] px-3 py-1 text-[12px] text-muted-foreground shadow-[0_8px_20px_rgba(26,23,20,0.05)]"
           >
             <Icon icon="solar:fire-bold-duotone" width={13} className="text-[var(--terracotta)]" aria-hidden />
             <span>
@@ -290,7 +294,7 @@ export function OverviewScreen({
        *  Stat tiles — big serif numbers, Iconify Solar icons
        * ====================================================== */}
       <section
-        className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+        className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-4"
         aria-label="This week at a glance"
       >
         <StatTile
@@ -338,90 +342,60 @@ export function OverviewScreen({
       {/* ========================================================
        *  Two-column lower layout
        * ====================================================== */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        {/* Needs Attention */}
-        <section className="lg:col-span-2 space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-[13px] text-foreground" style={{ fontWeight: 590 }}>
-              Needs attention
-            </h2>
-            <button
-              onClick={() => onNavigate('bug-wall')}
-              className="text-[12px] text-[var(--terracotta)] hover:underline focus-visible:outline-none"
-            >
-              View queue
-              <Icon icon="solar:arrow-right-linear" width={11} className="ml-0.5 inline-block" aria-hidden />
-            </button>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.6fr)]">
+        <section className="space-y-3">
+          <h2 className="text-[13px] text-foreground" style={{ fontWeight: 590 }}>
+            Online now
+          </h2>
+
+          <div className="page-panel shell-card-hover rounded-[14px] p-4">
+            {activeUsers.length > 0 ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  {activeUsers.slice(0, 8).map(u => (
+                    <div key={u.uid} className="relative" title={u.displayName}>
+                      <img
+                        src={u.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.uid}`}
+                        alt={u.displayName}
+                        className="h-9 w-9 rounded-full border border-border object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                      <span className="absolute bottom-0 right-0 block h-2 w-2 rounded-full bg-[var(--sage)] ring-2 ring-[var(--frame)]" />
+                    </div>
+                  ))}
+                  {activeUsers.length > 8 && (
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-[var(--surface-low)] text-[11px] text-muted-foreground">
+                      +{activeUsers.length - 8}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-3 text-[12px] leading-6 text-muted-foreground">
+                  {activeUsers.length} teammate{activeUsers.length === 1 ? '' : 's'} around right now.
+                </p>
+              </>
+            ) : (
+              <div className="page-empty">
+                <p className="whisper text-[18px]">Quiet for the moment.</p>
+                <p className="mt-1 text-[12px] text-muted-foreground">The room is ready when the next note lands.</p>
+              </div>
+            )}
           </div>
 
-          {needsAttention.length === 0 ? (
-            <div className="page-empty">
-              <p className="whisper text-[18px]">Nothing is stalled.</p>
-              <p className="mt-1 text-[12px] text-muted-foreground">Every bug has activity.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {needsAttention.map(bug => (
-                <button
-                  key={bug.id}
-                  onClick={() => onNavigate('bug-wall')}
-                  className="w-full rounded-[12px] border border-border bg-[var(--frame)] p-3.5 text-left transition-colors hover:border-[rgba(200,105,72,0.24)] hover:bg-[#FBF9F3]"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-[13px] text-foreground leading-snug line-clamp-2" style={{ fontWeight: 520 }}>
-                      {bug.title}
-                    </p>
-                    <Icon
-                      icon="solar:arrow-right-linear"
-                      width={13}
-                      className="shrink-0 mt-0.5 text-muted-foreground/50"
-                      aria-hidden
-                    />
-                  </div>
-                  <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Icon icon="solar:clock-circle-linear" width={11} aria-hidden />
-                      {timeAgo(bug.createdAt ?? bug.date)}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Icon icon="solar:chat-round-dots-linear" width={11} aria-hidden />
-                      no replies yet
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {activeUsers.length > 0 && (
-            <div className="pt-2">
-              <h2 className="mb-2 text-[13px] text-foreground" style={{ fontWeight: 590 }}>
-                Online now
-              </h2>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {activeUsers.slice(0, 8).map(u => (
-                  <div key={u.uid} className="relative" title={u.displayName}>
-                    <img
-                      src={u.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.uid}`}
-                      alt={u.displayName}
-                      className="h-7 w-7 rounded-full border border-border object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                    <span className="absolute bottom-0 right-0 block h-1.5 w-1.5 rounded-full bg-[var(--sage)] ring-1 ring-[var(--frame)]" />
-                  </div>
-                ))}
-                {activeUsers.length > 8 && (
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-[var(--surface-low)] text-[10px] text-muted-foreground">
-                    +{activeUsers.length - 8}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
+          <button
+            onClick={() => onNavigate('leaderboard')}
+            className="page-panel shell-card-hover w-full rounded-[14px] p-4 text-left"
+          >
+            <p className="page-kicker">Queue follow-up moved</p>
+            <p className="mt-2 text-[15px] text-foreground" style={{ fontWeight: 520 }}>
+              Jump In now lives on Leaderboard.
+            </p>
+            <p className="mt-1 text-[12px] leading-6 text-muted-foreground">
+              Use that screen for unengaged wall posts instead of duplicating the queue here.
+            </p>
+          </button>
         </section>
 
-        {/* Activity Stream */}
-        <section className="lg:col-span-3 space-y-3">
+        <section className="space-y-3">
           <h2 className="text-[13px] text-foreground" style={{ fontWeight: 590 }}>
             Activity stream
           </h2>
@@ -432,14 +406,14 @@ export function OverviewScreen({
               <p className="mt-1 text-[12px] text-muted-foreground">Post something to get the stream moving.</p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-[14px] border border-border bg-[var(--frame)]">
+            <div className="overflow-hidden rounded-[14px] border border-border bg-[var(--frame)] shadow-[0_10px_26px_rgba(26,23,20,0.05)]">
               {activityFeed.map(item => {
                 const meta = activityMeta[item.type];
                 return (
                   <button
                     key={`${item.type}-${item.id}`}
                     onClick={() => onNavigateToItem ? onNavigateToItem(meta.screen, item.id) : onNavigate(meta.screen)}
-                    className="flex w-full items-center gap-3 border-b border-border/60 px-4 py-2.5 text-left transition-colors last:border-0 hover:bg-[#FBF9F3]"
+                    className="flex w-full items-center gap-3 border-b border-border/60 px-4 py-3 text-left transition-colors last:border-0 hover:bg-[var(--surface-low)]/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
                   >
                     <Icon icon={meta.icon} width={15} className={`shrink-0 ${meta.tint}`} aria-hidden />
                     <div className="min-w-0 flex-1">
@@ -493,7 +467,7 @@ function StatTile({
       transition={{ duration: 0.3, delay: stagger * (index + 1), ease: [0.25, 0, 0, 1] }}
       whileHover={{ y: -2 }}
       onClick={() => onNavigate(screen)}
-      className="group flex flex-col justify-between gap-4 rounded-[16px] border border-border bg-[var(--frame)] p-5 text-left shadow-[0_1px_2px_rgba(26,23,20,0.04)] transition-shadow hover:shadow-[0_4px_14px_rgba(26,23,20,0.08)]"
+      className="group flex flex-col justify-between gap-3 rounded-[16px] border border-border bg-[var(--frame)] p-4 text-left shadow-[0_1px_2px_rgba(26,23,20,0.04)] transition-shadow hover:shadow-[0_4px_14px_rgba(26,23,20,0.08)] sm:gap-4 sm:p-5"
       aria-label={`${label}: ${value}`}
     >
       <div className="flex items-start justify-between">
