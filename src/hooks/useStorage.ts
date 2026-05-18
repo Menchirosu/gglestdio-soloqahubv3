@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { BugStory, Tip, Proposal, Notification, Comment, Achievement } from '../types';
-import { db, auth, createBugStory, updateBugReactions, updateTipReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType, getFirebaseDebugInfo } from '../firebase';
+import { BugStory, Tip, Proposal, Notification, Comment, Achievement, BugTriage } from '../types';
+import { db, auth, updateBugReactions, updateTipReactions, updateBugStory, addComment, deleteCommentDoc, updateCommentDoc, reactToComment as firebaseReactToComment, addReply as firebaseReplyToComment, createNotification, markNotificationRead, handleFirestoreError, OperationType, getFirebaseDebugInfo } from '../firebase';
 import { collection, onSnapshot, query, orderBy, where, writeBatch, doc, setDoc, serverTimestamp, updateDoc, deleteDoc, collectionGroup } from 'firebase/firestore';
 import { useAuth } from '../AuthContext';
+import { createE2ESeedBugs, e2eMockUser, isE2EMode } from '../e2e';
 
 function toDate(ts: any): number {
   if (!ts) return 0;
@@ -13,11 +14,22 @@ function toDate(ts: any): number {
 
 export function useStorage(activeScreen?: string) {
   const { user, loading } = useAuth();
-  const [bugs, setBugs] = useState<BugStory[]>([]);
+  const e2eMode = isE2EMode();
+  const actor = e2eMode ? e2eMockUser : user;
+  const [bugs, setBugs] = useState<BugStory[]>(() => (e2eMode ? createE2ESeedBugs() : []));
   const [tips, setTips] = useState<Tip[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    if (!e2eMode) return;
+    setBugs(createE2ESeedBugs());
+    setTips([]);
+    setProposals([]);
+    setAchievements([]);
+    setNotifications([]);
+  }, [e2eMode]);
 
   const fetchAchievements = async () => {
     try {
@@ -44,6 +56,12 @@ export function useStorage(activeScreen?: string) {
   useEffect(() => {
     let unsubscribers: Array<() => void> = [];
     let cancelled = false;
+
+    if (e2eMode) {
+      return () => {
+        cancelled = true;
+      };
+    }
 
     if (loading) {
       return () => {
@@ -83,7 +101,11 @@ export function useStorage(activeScreen?: string) {
         setBugs(prevBugs => {
           return bugsData.map(bug => {
             const existingBug = prevBugs.find(b => b.id === bug.id);
-            return { ...bug, comments: existingBug?.comments || bug.comments || [] };
+            return {
+              ...bug,
+              comments: existingBug?.comments || bug.comments || [],
+              triage: existingBug?.triage,
+            };
           });
         });
       }, (error) => handleFirestoreError(error, OperationType.GET, 'bugs'));
@@ -127,12 +149,13 @@ export function useStorage(activeScreen?: string) {
       cancelled = true;
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  }, [loading, user?.uid]);
+  }, [e2eMode, loading, user?.uid]);
 
   // Deferred: comments + replies collectionGroup listeners — only active on bug-wall
   // These are the most expensive queries (fan-out across all documents) so we defer
   // them until the user actually navigates to the Bug Wall screen.
   useEffect(() => {
+    if (e2eMode) return;
     if (!user || loading || activeScreen !== 'bug-wall') return;
 
     const unsubscribers: Array<() => void> = [];
@@ -185,28 +208,139 @@ export function useStorage(activeScreen?: string) {
 
     unsubscribers.push(unsubscribeComments, unsubscribeReplies);
     return () => unsubscribers.forEach(u => u());
-  }, [user?.uid, loading, activeScreen]);
+  }, [e2eMode, user?.uid, loading, activeScreen]);
 
   const addBug = async (bug: Omit<BugStory, 'id' | 'date' | 'reactions' | 'comments'>): Promise<string> => {
-    const bugId = await createBugStory({
-      ...bug,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      reactions: {},
-      comments: [],
+    if (e2eMode) {
+      const bugId = crypto.randomUUID();
+      const createdAt = new Date().toISOString();
+      setBugs(prev => [
+        {
+          ...bug,
+          id: bugId,
+          date: 'Just now',
+          reactions: {},
+          reactedBy: {},
+          comments: [],
+          createdAt,
+        } as BugStory,
+        ...prev,
+      ]);
+      return bugId;
+    }
+
+    const idToken = await actor?.getIdToken();
+    const response = await fetch('/api/bugs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+      },
+      body: JSON.stringify({ bug }),
     });
 
-    // Notify everyone
-    await createNotification({
-      type: 'system',
-      title: 'New Bug Story',
-      desc: `${bug.author} shared a new story: "${bug.title}"`,
-      targetId: bugId,
-      targetScreen: 'bug-wall',
-      recipientId: 'all',
-      isRead: false,
-      time: 'Just now'
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        JSON.stringify({
+          error: result?.error || 'Failed to create bug story',
+          operationType: OperationType.WRITE,
+          path: result?.path || 'api/bugs',
+        })
+      );
+    }
+
+    return result?.id as string;
+  };
+
+  const setBugTriage = (bugId: string, triage: BugTriage) => {
+    const normalizedTriage: BugTriage = {
+      review_status: triage.needs_human_review ? 'review_required' : 'pending',
+      review_history: triage.review_history ?? [],
+      ...triage,
+    };
+    setBugs(prev => prev.map(item => (item.id === bugId ? { ...item, triage: normalizedTriage } : item)));
+  };
+
+  const updateBugTriageState = (bugId: string, updater: (triage: BugTriage) => BugTriage) => {
+    setBugs(prev => prev.map(item => {
+      if (item.id !== bugId || !item.triage) return item;
+      return { ...item, triage: updater(item.triage) };
+    }));
+  };
+
+  const requestBugTriage = async (bugId: string, postText: string) => {
+    const response = await fetch('/api/triage', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ bugId, postText }),
     });
-    return bugId;
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok || !result?.triage) {
+      throw new Error(
+        JSON.stringify({
+          error: result?.error || 'Failed to triage bug story',
+          operationType: OperationType.WRITE,
+          path: result?.path || 'api/triage',
+        })
+      );
+    }
+
+    setBugTriage(bugId, result.triage as BugTriage);
+    return result.triage as BugTriage;
+  };
+
+  const persistBugTriageReview = async (bugId: string, action: 'mark_for_review' | 'mark_reviewed') => {
+    const bug = bugs.find(item => item.id === bugId);
+    if (!bug?.triage) {
+      throw new Error(
+        JSON.stringify({
+          error: 'Missing triage state for bug review action',
+          operationType: OperationType.WRITE,
+          path: 'local/triage',
+        })
+      );
+    }
+
+    const response = await fetch('/api/triage/review', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        bugId,
+        triage: bug.triage,
+        action,
+      }),
+    });
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok || !result?.triage) {
+      throw new Error(
+        JSON.stringify({
+          error: result?.error || 'Failed to persist triage review state',
+          operationType: OperationType.WRITE,
+          path: result?.path || 'api/triage/review',
+        })
+      );
+    }
+
+    updateBugTriageState(bugId, () => result.triage as BugTriage);
+    return result.triage as BugTriage;
+  };
+
+  const markBugForHumanReview = async (bugId: string) => {
+    return persistBugTriageReview(bugId, 'mark_for_review');
+  };
+
+  const markBugTriageReviewed = async (bugId: string) => {
+    return persistBugTriageReview(bugId, 'mark_reviewed');
   };
 
   const addTip = async (tip: Omit<Tip, 'id' | 'time'>) => {
@@ -214,7 +348,7 @@ export function useStorage(activeScreen?: string) {
     await setDoc(tipRef, {
       ...tip,
       id: tipRef.id,
-      authorId: auth.currentUser?.uid || null,
+      authorId: actor?.uid || null,
       time: 'Just now',
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       createdAt: serverTimestamp(),
@@ -235,11 +369,23 @@ export function useStorage(activeScreen?: string) {
 
 const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) => {
     const proposalRef = doc(collection(db, 'proposals'));
-    const author = auth.currentUser?.displayName || 'Anonymous';
-    await setDoc(proposalRef, {
+    const author = actor?.displayName || 'Anonymous';
+    const payload = {
       ...proposal,
+      summary: proposal.summary || proposal.scope || '',
+      content: proposal.content || proposal.scope || '',
+      scope: proposal.scope || proposal.summary || '',
+      status: proposal.status || (proposal.meeting ? 'scheduled' : 'idea'),
+      presenterId: proposal.presenterId || actor?.uid || null,
+      presenterName: proposal.presenterName || author,
+      meeting: proposal.meeting || null,
+    };
+
+    await setDoc(proposalRef, {
+      ...payload,
       id: proposalRef.id,
-      authorId: auth.currentUser?.uid || null,
+      authorId: actor?.uid || null,
+      authorPhotoURL: actor?.photoURL || null,
       date: 'Just now',
       author,
       createdAt: serverTimestamp(),
@@ -256,14 +402,27 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
       isRead: false,
       time: 'Just now'
     });
+
+    if (payload.meeting?.scheduledFor) {
+      await createNotification({
+        type: 'meeting',
+        title: 'Knowledge session scheduled',
+        desc: `${author} scheduled "${proposal.title}" for ${payload.meeting.scheduledFor}.`,
+        targetId: proposalRef.id,
+        targetScreen: 'knowledge-sharing',
+        recipientId: 'all',
+        isRead: false,
+        time: 'Just now',
+      });
+    }
   };
 
   const addAchievement = async (achievement: Omit<Achievement, 'id' | 'date' | 'author'>) => {
-    const idToken = await auth.currentUser?.getIdToken();
+    const idToken = await actor?.getIdToken();
 
     console.info('Achievement create attempt', {
       firebase: getFirebaseDebugInfo(),
-      uid: auth.currentUser?.uid || null,
+      uid: actor?.uid || null,
       path: 'api/achievements',
       hasIdToken: Boolean(idToken),
       payload: achievement,
@@ -278,9 +437,9 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
       body: JSON.stringify({
         achievement,
         auth: {
-          uid: auth.currentUser?.uid || null,
-          displayName: auth.currentUser?.displayName || null,
-          photoURL: auth.currentUser?.photoURL || null,
+          uid: actor?.uid || null,
+          displayName: actor?.displayName || null,
+          photoURL: actor?.photoURL || null,
         },
       }),
     });
@@ -304,7 +463,7 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
   };
 
   const reactToBug = async (bugId: string, emoji: string, currentUserName?: string) => {
-    const uid = auth.currentUser?.uid;
+    const uid = actor?.uid;
     if (!uid) return;
     const bug = bugs.find(b => b.id === bugId);
     if (!bug) return;
@@ -322,6 +481,22 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
       reactions[emoji] = (reactions[emoji] || 0) + 1;
       reactedBy[emoji] = [...(reactedBy[emoji] ?? []), uid];
       if (currentUserName && bug.authorId && bug.authorId !== uid) {
+        if (e2eMode) {
+          setNotifications(prev => [
+            {
+              id: crypto.randomUUID(),
+              type: 'like',
+              title: 'New Bug Reaction',
+              desc: `${currentUserName} reacted ${emoji} to your story: "${bug.title}"`,
+              targetId: bug.id,
+              targetScreen: 'bug-wall',
+              recipientId: bug.authorId,
+              isRead: false,
+              time: 'Just now',
+            },
+            ...prev,
+          ]);
+        } else {
         await createNotification({
           type: 'like',
           title: 'New Bug Reaction',
@@ -332,22 +507,41 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
           isRead: false,
           time: 'Just now'
         });
+        }
       }
+    }
+
+    if (e2eMode) {
+      setBugs(prev => prev.map(item => item.id === bugId ? { ...item, reactions, reactedBy } : item));
+      return;
     }
 
     await updateBugReactions(bugId, reactions, reactedBy);
   };
 
   const reactToTip = async (tipId: string, emoji: string, currentUserName?: string) => {
+    const uid = actor?.uid;
+    if (!uid) return;
     const tip = tips.find(t => t.id === tipId);
     if (!tip) return;
 
     const reactions = { ...(tip.reactions || {}) };
-    reactions[emoji] = (reactions[emoji] || 0) + 1;
+    const reactedBy = { ...(tip.reactedBy ?? {}) };
+    const alreadyReacted = (reactedBy[emoji] ?? []).includes(uid);
 
-    await updateTipReactions(tipId, reactions);
+    if (alreadyReacted) {
+      reactions[emoji] = Math.max(0, (reactions[emoji] || 1) - 1);
+      if (!reactions[emoji]) delete reactions[emoji];
+      reactedBy[emoji] = (reactedBy[emoji] ?? []).filter(id => id !== uid);
+      if (!reactedBy[emoji].length) delete reactedBy[emoji];
+    } else {
+      reactions[emoji] = (reactions[emoji] || 0) + 1;
+      reactedBy[emoji] = [...(reactedBy[emoji] ?? []), uid];
+    }
 
-    if (currentUserName && tip.authorId && tip.authorId !== auth.currentUser?.uid) {
+    await updateTipReactions(tipId, reactions, reactedBy);
+
+    if (!alreadyReacted && currentUserName && tip.authorId && tip.authorId !== uid) {
       await createNotification({
         type: 'like',
         title: 'New Tip Reaction',
@@ -364,6 +558,26 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
   const addCommentToBug = async (bugId: string, text: string, author: string, isAnonymous: boolean = false, authorPhotoURL?: string, authorId?: string, imageUrl?: string, gifUrl?: string, imageUrls?: string[]) => {
     const bug = bugs.find(b => b.id === bugId);
     if (!bug) return;
+
+    if (e2eMode) {
+      const newComment: Comment = {
+        id: crypto.randomUUID(),
+        author,
+        authorId: authorId || actor?.uid || null || undefined,
+        authorPhotoURL: authorPhotoURL || actor?.photoURL || undefined,
+        text,
+        date: 'Just now',
+        createdAt: new Date().toISOString(),
+        isAnonymous,
+        imageUrl: imageUrl || null || undefined,
+        imageUrls: imageUrls || null || undefined,
+        gifUrl: gifUrl || null || undefined,
+        likes: [],
+        replies: [],
+      };
+      setBugs(prev => prev.map(item => item.id === bugId ? { ...item, comments: [...(item.comments || []), newComment] } : item));
+      return;
+    }
 
     await addComment(bugId, {
       author,
@@ -408,15 +622,31 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
       ? likes.filter(id => id !== currentUserId)
       : [...likes, currentUserId];
 
+    if (e2eMode) {
+      setBugs(prevBugs =>
+        prevBugs.map(item =>
+          item.id === bugId
+            ? {
+                ...item,
+                comments: (item.comments || []).map(entry =>
+                  entry.id === commentId ? { ...entry, likes: newLikes } : entry
+                ),
+              }
+            : item
+        )
+      );
+      return;
+    }
+
     await firebaseReactToComment(bugId, commentId, newLikes);
 
     // Notify comment author if it's a new like
     if (!likes.includes(currentUserId) && comment.authorId && comment.authorId !== currentUserId) {
-      const actor = auth.currentUser?.displayName || 'Someone';
+      const actorName = actor?.displayName || 'Someone';
       await createNotification({
         type: 'like',
         title: 'New Comment Reaction',
-        desc: `Someone liked your comment on "${bug.title}"`,
+        desc: `${actorName} liked your comment on "${bug.title}"`,
         targetId: bug.id,
         targetScreen: 'bug-wall',
         recipientId: comment.authorId,
@@ -431,6 +661,29 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
     if (!bug) return;
     const comment = bug.comments?.find(c => c.id === commentId);
     if (!comment) return;
+
+    if (e2eMode) {
+      const newReply: Comment = {
+        ...reply,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+      setBugs(prevBugs =>
+        prevBugs.map(item =>
+          item.id === bugId
+            ? {
+                ...item,
+                comments: (item.comments || []).map(entry =>
+                  entry.id === commentId
+                    ? { ...entry, replies: [...(entry.replies || []), newReply] }
+                    : entry
+                ),
+              }
+            : item
+        )
+      );
+      return;
+    }
 
     await firebaseReplyToComment(bugId, commentId, reply);
 
@@ -450,11 +703,19 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
   };
 
   const markNotificationAsRead = async (id: string) => {
+    if (e2eMode) {
+      setNotifications(prev => prev.map(item => item.id === id ? { ...item, isRead: true } : item));
+      return;
+    }
     await markNotificationRead(id);
   };
 
   const markAllNotificationsAsRead = async () => {
-    if (!auth.currentUser) return;
+    if (!actor) return;
+    if (e2eMode) {
+      setNotifications(prev => prev.map(item => ({ ...item, isRead: true })));
+      return;
+    }
     const unreadNotifs = notifications.filter(n => !n.isRead);
     if (unreadNotifs.length === 0) return;
 
@@ -466,6 +727,16 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
   };
 
   const updateUserAvatars = async (uid: string, newPhotoURL: string, authorName?: string) => {
+    if (e2eMode) {
+      setBugs(prev =>
+        prev.map(bug => {
+          const isAuthor = bug.authorId === uid || (!bug.authorId && authorName && bug.author === authorName);
+          return isAuthor ? { ...bug, authorPhotoURL: newPhotoURL, authorId: uid } : bug;
+        })
+      );
+      return;
+    }
+
     // Update bugs where this user is the author
     const batch = writeBatch(db);
     let count = 0;
@@ -487,6 +758,10 @@ const addProposal = async (proposal: Omit<Proposal, 'id' | 'date' | 'author'>) =
   };
 
 const deleteBug = async (bugId: string) => {
+    if (e2eMode) {
+      setBugs(prev => prev.filter(item => item.id !== bugId));
+      return;
+    }
     try {
       await deleteDoc(doc(db, 'bugs', bugId));
     } catch (error) {
@@ -495,6 +770,10 @@ const deleteBug = async (bugId: string) => {
   };
 
   const editBug = async (bugId: string, bug: Partial<BugStory>) => {
+    if (e2eMode) {
+      setBugs(prev => prev.map(item => item.id === bugId ? { ...item, ...bug } : item));
+      return;
+    }
     await updateBugStory(bugId, bug);
   };
 
@@ -525,13 +804,35 @@ const deleteProposal = async (proposalId: string) => {
   const editProposal = async (proposalId: string, proposal: Partial<Proposal>) => {
     try {
       await updateDoc(doc(db, 'proposals', proposalId), proposal);
+
+      const existing = proposals.find((item) => item.id === proposalId);
+      const nextMeeting = proposal.meeting;
+      const hadMeeting = Boolean(existing?.meeting?.scheduledFor);
+      const hasMeeting = Boolean(nextMeeting?.scheduledFor);
+
+      if (hasMeeting) {
+        await createNotification({
+          type: 'meeting',
+          title: hadMeeting ? 'Knowledge session updated' : 'Knowledge session scheduled',
+          desc: `${proposal.presenterName || existing?.presenterName || existing?.author || 'A teammate'} scheduled "${proposal.title || existing?.title || 'Knowledge session'}" for ${nextMeeting?.scheduledFor}.`,
+          targetId: proposalId,
+          targetScreen: 'knowledge-sharing',
+          recipientId: 'all',
+          isRead: false,
+          time: 'Just now',
+        });
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `proposals/${proposalId}`);
     }
   };
 
   const deleteAchievement = async (achievementId: string) => {
-    const idToken = await auth.currentUser?.getIdToken();
+    if (e2eMode) {
+      setAchievements(prev => prev.filter(item => item.id !== achievementId));
+      return;
+    }
+    const idToken = await actor?.getIdToken();
 
     try {
       const response = await fetch(`/api/achievements?id=${encodeURIComponent(achievementId)}`, {
@@ -567,6 +868,16 @@ const deleteProposal = async (proposalId: string) => {
   };
 
   const deleteComment = async (bugId: string, commentId: string) => {
+    if (e2eMode) {
+      setBugs(prev =>
+        prev.map(item =>
+          item.id === bugId
+            ? { ...item, comments: (item.comments || []).filter(comment => comment.id !== commentId) }
+            : item
+        )
+      );
+      return;
+    }
     try {
       await deleteCommentDoc(bugId, commentId);
     } catch (error) {
@@ -575,6 +886,21 @@ const deleteProposal = async (proposalId: string) => {
   };
 
   const editComment = async (bugId: string, commentId: string, newText: string) => {
+    if (e2eMode) {
+      setBugs(prev =>
+        prev.map(item =>
+          item.id === bugId
+            ? {
+                ...item,
+                comments: (item.comments || []).map(comment =>
+                  comment.id === commentId ? { ...comment, text: newText } : comment
+                ),
+              }
+            : item
+        )
+      );
+      return;
+    }
     try {
       await updateCommentDoc(bugId, commentId, newText);
     } catch (error) {
@@ -589,6 +915,9 @@ const deleteProposal = async (proposalId: string) => {
     achievements,
     notifications,
     addBug,
+    requestBugTriage,
+    markBugForHumanReview,
+    markBugTriageReviewed,
     deleteBug,
     editBug,
     addTip,
